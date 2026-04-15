@@ -262,62 +262,89 @@ def vista_archivo():
                 st.success("Guardado.")
 
 def vista_plantillas():
-    st.title("📄 Bóveda y Elaboración")
-    t1, t2 = st.tabs(["⚙️ Bóveda", "👤 Elaborar"])
-    pls = db.consultar_plantillas()
-    with t1:
-        if st.button("🔄 SINCRONIZAR", use_container_width=True):
-            for a in [f for f in os.listdir(db.PLANTILLAS_DIR) if f.endswith(".docx") and not f.startswith("~$")]: db.auto_registrar_plantilla(a)
-            st.rerun()
-            
-        p_sel = next((p for p in pls if p['id'] == st.session_state.p_edit_id), None)
-        with st.expander("➕ / ✏️ Configurar Plantilla", expanded=True if st.session_state.p_edit_id else False):
-            with st.form("f_pl"):
-                nom = st.text_input("Nombre a mostrar", value=p_sel['nombre_mostrar'] if p_sel else "")
-                dest_op = st.selectbox("Carpeta Destino", CARPETAS_DESTINO + ["📁 Crear Nueva Carpeta..."], index=0)
-                dest_new = st.text_input("Nombre Nueva Carpeta") if dest_op == "📁 Crear Nueva Carpeta..." else dest_op
-                if st.form_submit_button("💾 Guardar Cambios"):
-                    db.upsert_plantilla(st.session_state.p_edit_id, nom, p_sel['archivo_word'], dest_new, "General", "Instancia")
-                    st.session_state.p_edit_id = None; st.rerun()
+    st.title("📄 Gestor de Plantillas Cloud")
+    tab1, tab2 = st.tabs(["⚙️ Generar Documentos", "☁️ Subir Nueva Plantilla"])
 
-        for idx, row in pd.DataFrame(pls).iterrows():
-            c1, c2, c3 = st.columns([4,1,1])
-            c1.write(f"📄 **{row['nombre_mostrar']}** -> `{row['carpeta_destino_sugerida']}`")
-            if c2.button("✏️", key=f"pe_{row['id']}"): st.session_state.p_edit_id = row['id']; st.rerun()
-            if c3.button("🗑️", key=f"pb_{row['id']}"): db.borrar_plantilla(row['id']); st.rerun()
-
-    with t2:
+    with tab1:
+        pls = db.consultar_plantillas()
         exps = db.consultar_todo()
+        
         if exps and pls:
-            sel = st.selectbox("Cliente", [e['id'] for e in exps], format_func=lambda x: next(f"{e['cliente_nombre']}" for e in exps if e['id']==x))
+            sel = st.selectbox("Seleccione Cliente", [e['id'] for e in exps], format_func=lambda x: next((f"{e['cliente_nombre']}" for e in exps if e['id']==x), ""))
             cd = db.obtener_por_id(sel)
+            
+            st.write("Seleccione las plantillas a redactar:")
             nu = [p['id'] for p in pls if st.checkbox(f"Gen: {p['nombre_mostrar']}", key=f"n_{p['id']}")]
             st.divider()
+            
             cxm = form_estatico("ela")
+            
             if st.button("🚀 REDACTAR ZIP"):
+                import io, zipfile, os, json
+                from docxtpl import DocxTemplate
+                from datetime import datetime
+                
                 ctx = {'cli_nombre': cd['cliente_nombre'], 'cli_cedula': cd['cedula_rnc'], 'hoy': datetime.now().strftime("%d/%m/%Y")}
-                im = json.loads(cd.get('inmuebles_json') or "[]"); ap = json.loads(cd.get('apoderados_json') or "[]")
+                im = json.loads(cd.get('inmuebles_json') or "[]")
+                ap = json.loads(cd.get('apoderados_json') or "[]")
                 if im: ctx.update(im[0])
                 if ap: ctx.update(ap[0])
-                ctx.update(cxm)
-                ctx.update({'NOMBRE':ctx['cli_nombre'],'CEDULA':ctx['cli_cedula'],'RNC':ctx['cli_cedula'],'FECHA':ctx.get('doc_fecha',ctx['hoy']),'EXPEDIENTE':ctx.get('doc_expediente',''),'MATRICULA':ctx.get('inm_matricula',''),'COORDENADAS':ctx.get('inm_coordenadas',''),'SUPERFICIE':ctx.get('inm_superficie',''),'APODERADO':ctx.get('pod_nombre',''),'AGRIMENSOR':ctx.get('agr_nombre',''),'ABOGADO':ctx.get('tra_abogado',''),'SELLO':"Sello"})
-                rc = []
-                for pid in nu:
-                    p = next((x for x in pls if x['id']==pid),None)
-                    if p:
-                        try:
-                            doc = DocxTemplate(os.path.join(db.PLANTILLAS_DIR, p['archivo_word'])); doc.render(ctx)
-                            rs = os.path.join(cd['ruta_carpeta'], p['carpeta_destino_sugerida']); os.makedirs(rs, exist_ok=True)
-                            rf = os.path.join(rs, f"{p['nombre_mostrar']}_{cd['cliente_nombre']}.docx"); doc.save(rf); rc.append(rf)
-                        except Exception as e: st.error(e)
-                if rc:
-                    zb = io.BytesIO()
-                    with zipfile.ZipFile(zb,"w") as zf:
-                        for r in rc: zf.write(r, os.path.basename(r))
-                    st.session_state.zip_elab, st.session_state.zip_elab_name = zb.getvalue(), f"Docs_{cd['cliente_nombre']}.zip"
-                    st.success("✅ Completado."); st.balloons()
-            if st.session_state.zip_elab: st.download_button("📥 DESCARGAR", st.session_state.zip_elab, st.session_state.zip_elab_name, "application/zip")
+                if cxm: ctx.update(cxm)
+                
+                ctx.update({'NOMBRE': ctx['cli_nombre'], 'CEDULA': ctx['cli_cedula'], 'RNC': ctx['cli_cedula'], 'FECHA': ctx.get('doc_fecha', ctx['hoy']), 'EXPEDIENTE': ctx.get('doc_expediente', '')})
+                
+                zb = io.BytesIO()
+                with zipfile.ZipFile(zb, "w") as zf:
+                    for pid in nu:
+                        p = next((x for x in pls if x['id']==pid), None)
+                        if p:
+                            try:
+                                ruta = os.path.join(db.PLANTILLAS_DIR, p['archivo_word'])
+                                doc = DocxTemplate(ruta)
+                                doc.render(ctx)
+                                
+                                # Magia Cloud: Guardar en memoria en vez de en disco duro
+                                temp_io = io.BytesIO()
+                                doc.save(temp_io)
+                                temp_io.seek(0)
+                                
+                                nombre_archivo = f"{p['nombre_mostrar']}_{cd['cliente_nombre']}.docx"
+                                zf.writestr(nombre_archivo, temp_io.read())
+                            except Exception as e:
+                                st.error(f"Error en {p['nombre_mostrar']}: Revise que el archivo Word base exista.")
+                                
+                st.session_state.zip_elab = zb.getvalue()
+                st.session_state.zip_elab_name = f"Docs_{cd['cliente_nombre']}.zip"
+                st.success("✅ Completado.")
+                st.balloons()
+                
+        if 'zip_elab' in st.session_state:
+            st.download_button("📥 DESCARGAR DOCUMENTOS", st.session_state.zip_elab, st.session_state.zip_elab_name, "application/zip")
 
+    with tab2:
+        st.write("### Añadir Plantilla a la Base de Datos")
+        archivo_subido = st.file_uploader("1. Seleccione su archivo Word (.docx)", type=["docx"])
+        nombre_mostrar = st.text_input("2. ¿Con qué nombre quiere verla en el sistema? (Ej: Contrato de Litis)")
+        
+        if st.button("💾 Guardar Plantilla en la Nube"):
+            if archivo_subido and nombre_mostrar:
+                import os
+                os.makedirs(db.PLANTILLAS_DIR, exist_ok=True)
+                ruta_guardado = os.path.join(db.PLANTILLAS_DIR, archivo_subido.name)
+                
+                with open(ruta_guardado, "wb") as f:
+                    f.write(archivo_subido.getbuffer())
+                    
+                db.supabase.table("plantillas").insert({
+                    "nombre_mostrar": nombre_mostrar,
+                    "archivo_word": archivo_subido.name,
+                    "carpeta_destino_sugerida": "General"
+                }).execute()
+                
+                st.success("✅ Plantilla registrada con éxito.")
+                st.rerun()
+            else:
+                st.warning("⚠️ Debe subir un archivo y ponerle un nombre para guardar.")
 def vista_alertas():
     st.title("📅 Alertas y Plazos Jurídicos")
     t1, t2 = st.tabs(["🚨 Vencimientos", "➕ Nueva Alerta"])
