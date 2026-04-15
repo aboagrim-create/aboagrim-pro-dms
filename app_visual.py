@@ -312,15 +312,16 @@ def vista_plantillas():
                             except Exception as e:
                                 st.error(f"Error en {p['nombre_mostrar']}: Revise que el archivo Word base exista.")
                                 
-                st.session_state.zip_elab = zb.getvalue()
-                st.session_state.zip_elab_name = f"Docs_{cd['cliente_nombre']}.zip"
+                # LA MAGIA ESTÁ AQUÍ: Usamos un nombre de memoria 100% nuevo
+                st.session_state["archivo_zip_limpio"] = zb.getvalue()
                 st.success("✅ Completado.")
                 st.balloons()
                 
-        if 'zip_elab' in st.session_state:
+        # LEEMOS LA MEMORIA NUEVA
+        if "archivo_zip_limpio" in st.session_state:
             st.download_button(
                 label="📥 DESCARGAR DOCUMENTOS",
-                data=st.session_state.zip_elab,
+                data=st.session_state["archivo_zip_limpio"],
                 file_name="Expediente_AboAgrim.zip",
                 mime="application/zip"
             )
