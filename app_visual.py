@@ -303,7 +303,6 @@ def vista_plantillas():
                                 doc = DocxTemplate(ruta)
                                 doc.render(ctx)
                                 
-                                # Magia Cloud: Guardar en memoria en vez de en disco duro
                                 temp_io = io.BytesIO()
                                 doc.save(temp_io)
                                 temp_io.seek(0)
@@ -318,7 +317,7 @@ def vista_plantillas():
                 st.success("✅ Completado.")
                 st.balloons()
                 
-if 'zip_elab' in st.session_state:
+        if 'zip_elab' in st.session_state:
             st.download_button(
                 label="📥 DESCARGAR DOCUMENTOS",
                 data=st.session_state.zip_elab,
