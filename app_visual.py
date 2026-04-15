@@ -318,8 +318,13 @@ def vista_plantillas():
                 st.success("✅ Completado.")
                 st.balloons()
                 
-        if 'zip_elab' in st.session_state:
-            st.download_button("📥 DESCARGAR DOCUMENTOS", st.session_state.zip_elab, st.session_state.zip_elab_name, "application/zip")
+if 'zip_elab' in st.session_state:
+            st.download_button(
+                label="📥 DESCARGAR DOCUMENTOS",
+                data=st.session_state.zip_elab,
+                file_name="Expediente_AboAgrim.zip",
+                mime="application/zip"
+            )
 
     with tab2:
         st.write("### Añadir Plantilla a la Base de Datos")
