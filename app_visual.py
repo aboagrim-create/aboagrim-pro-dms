@@ -142,23 +142,22 @@ def vista_mando():
     with c2: st.plotly_chart(px.pie(df_f, names='jurisdiccion', values='monto', title="Por Jurisdicción", color_discrete_sequence=px.colors.sequential.Blues), use_container_width=True)
 
 def vista_registro():
-    st.subheader("📝 Registro Maestro y Redacción")
+    st.title("⚖️ Registro Maestro y Redacción")
     
     try:
-        # Estas líneas deben tener exactamente 8 espacios a la izquierda
-        from database import obtener_diccionario_maestro
+        # Estas líneas deben estar alineadas perfectamente
+        from database import obtener_diccionario_maestro, procesar_plantilla_maestra
+        
         diccionario = obtener_diccionario_maestro()
         
-        # Las pestañas también deben estar alineadas con lo anterior
+        # Esta es la línea 154 que daba error; ahora está alineada
         t1, t2, t3, t4, t5 = st.tabs(["👤 1. Cliente", "🏗️ 2. Inmuebles", "🎓 3. Prof", "📑 4. Trámites", "🚀 5. Generar"])
 
         with t1:
-            st.write("Datos del Propietario")
-            cli_nom = st.text_input("Nombre Completo", key="c_nom")
-            cli_ced = st.text_input("Cédula/RNC", key="c_ced")
-
-    except Exception as e:
-        st.error(f"Error de configuración: {e}")
+            st.subheader("Datos del Cliente")
+            cli_nom = st.text_input("Nombre Completo", key="c_nom_v")
+            cli_ced = st.text_input("Cédula / Pasaporte", key="c_ced_v")
+            
         with t2:
             st.subheader("Datos del Inmueble")
             ip = st.text_input("Parcela No.", key="i_parc_v")
@@ -167,7 +166,7 @@ def vista_registro():
         with t5:
             st.header("🚀 Finalizar y Generar")
             
-            # Recolección de datos para el Diccionario Maestro
+            # Bolsa de datos para el Word
             datos_finales = {
                 "cliente_nombre": cli_nom,
                 "cedula": cli_ced,
@@ -177,14 +176,12 @@ def vista_registro():
             }
             
             if st.button("Generar Cuota Litis", type="primary"):
-                # Busca el archivo CUOTA_LITIS.docx en la carpeta plantillas_maestras
                 resultado = procesar_plantilla_maestra(datos_finales, "CUOTA_LITIS.docx")
                 if "Error" in resultado:
-                    st.error(f"No se pudo generar: {resultado}")
+                    st.error(f"Aviso: {resultado}")
                 else:
                     st.success(f"✅ Documento guardado en: {resultado}")
 
     except Exception as e:
         st.error(f"Error de visualización: {e}")
-    elif menu == "💳 Facturación": vista_facturacion()
     elif menu == "⚙️ Configuración": vista_configuracion()
