@@ -59,3 +59,20 @@ def ejecutar_ddl():
             conn.close()
         except Exception as e:
             print(f"Error al ejecutar DDL: {e}")
+def procesar_plantilla_maestra(contexto, ruta_plantilla, ruta_salida):
+    """
+    Automatiza la generación de documentos legales (Contratos, Solicitud de Mensura, etc.)
+    fusionando los datos del sistema con plantillas de Word.
+    """
+    try:
+        from docxtpl import DocxTemplate
+        doc = DocxTemplate(ruta_plantilla)
+        doc.render(contexto)
+        doc.save(ruta_salida)
+        return True
+    except ImportError:
+        print("Librería docxtpl no instalada en el entorno.")
+        return False
+    except Exception as e:
+        print(f"Error procesando el documento legal: {e}")
+        return False
