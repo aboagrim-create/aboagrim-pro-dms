@@ -184,7 +184,7 @@ def vista_registro():
                     st.error("Error de conexión.")
             else:
                 st.warning("Número y Cliente obligatorios.")
-
+                
 def vista_archivo():
     st.title("📁 Bóveda Digital DMS")
     st.markdown("Sistema de gestión documental para planos y resoluciones.")
