@@ -103,6 +103,21 @@ import os
 
 def procesar_plantilla_maestra(datos, nombre_plantilla):
     """Genera el Word y lo guarda en la carpeta del cliente"""
+    # Continuación de la línea 105 en database.py
+    try:
+        doc = DocxTemplate(f"plantillas_maestras/{nombre_plantilla}")
+        doc.render(datos)
+        
+        # Crea la carpeta del cliente si no existe
+        ruta_carpeta = f"Expedientes/{datos.get('cliente_nombre', 'Sin_Nombre')}"
+        if not os.path.exists(ruta_carpeta):
+            os.makedirs(ruta_carpeta)
+            
+        ruta_final = f"{ruta_carpeta}/GENERADO_{nombre_plantilla}"
+        doc.save(ruta_final)
+        return ruta_final
+    except Exception as e:
+        return f"Error: {str(e)}"
     try:
         # 1. Ruta de la plantilla y carpeta de salida
         ruta_plantilla = os.path.join("plantillas_maestras", nombre_plantilla)
