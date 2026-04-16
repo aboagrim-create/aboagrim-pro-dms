@@ -1,23 +1,12 @@
-# =====================================================================
-# MOTOR DE BASE DE DATOS Y AUTENTICACIÓN (SUPABASE)
-# Sistema: AboAgrim Pro DMS - Versión Blindada
-# =====================================================================
-
 import streamlit as st
 from supabase import create_client, Client
 
-# --- ESCUDO ANTI-CRASH (DICCIONARIO SEGURO) ---
+# --- ESCUDO PROTECTOR PARA EVITAR PANTALLAS ROJAS ---
 class DiccionarioSeguro(dict):
-    """
-    Si la interfaz gráfica pide una columna que no existe en Supabase,
-    evita el 'KeyError' (pantalla roja) devolviendo 'N/A' automáticamente.
-    """
     def __missing__(self, key):
         return "N/A"
 
-# ---------------------------------------------------------------------
-# 1. CONEXIÓN AL SERVIDOR EN LA NUBE
-# ---------------------------------------------------------------------
+# --- CONEXIÓN PRINCIPAL ---
 @st.cache_resource
 def get_supabase() -> Client:
     url = st.secrets["SUPABASE_URL"]
@@ -26,88 +15,51 @@ def get_supabase() -> Client:
 
 db = get_supabase()
 
-# ---------------------------------------------------------------------
-# 2. EXTRACCIÓN DE PERFILES PROFESIONALES
-# ---------------------------------------------------------------------
+# --- FUNCIONES DE CONSULTA ---
 def obtener_diccionario_maestro():
     roles = ["agrimensor", "abogado", "notario", "representante", "apoderado", "reclamante", "solicitante"]
     dic = {rol: [] for rol in roles}
     try:
-        respuesta = db.table("personas").select("id, nombre_completo, rol").execute()
-        for p in respuesta.data:
-            rol_actual = p.get('rol')
-            if rol_actual in dic:
-                dic[rol_actual].append(p.get('nombre_completo'))
-    except Exception:
-        pass
+        res = db.table("personas").select("nombre_completo, rol").execute()
+        for p in res.data:
+            r = p.get('rol')
+            if r in dic: dic[r].append(p.get('nombre_completo'))
+    except: pass
     return dic
 
-# ---------------------------------------------------------------------
-# 3. EXTRACCIÓN DE EXPEDIENTES
-# ---------------------------------------------------------------------
 def consultar_todo(busqueda=""):
     try:
-        respuesta = db.table("casos").select("*").order("created_at", desc=True).execute()
-        # Envolvemos los resultados en el escudo
-        datos = [DiccionarioSeguro(d) for d in respuesta.data]
-        
+        res = db.table("casos").select("*").order("created_at", desc=True).execute()
+        datos = [DiccionarioSeguro(d) for d in res.data]
         if busqueda:
-            datos_filtrados = []
-            for caso in datos:
-                if busqueda.lower() in str(caso).lower():
-                    datos_filtrados.append(caso)
-            return datos_filtrados
-            
+            datos = [d for d in datos if busqueda.lower() in str(d).lower()]
         return datos
-    except Exception:
-        return []
+    except: return []
 
-# ---------------------------------------------------------------------
-# 4. INSERCIÓN DE NUEVOS REGISTROS
-# ---------------------------------------------------------------------
 def registrar_evento(tabla, datos):
     try:
         db.table(tabla).insert(datos).execute()
         return True
-    except Exception:
-        return False
+    except: return False
 
-# ---------------------------------------------------------------------
-# 5. SISTEMA DE AUTENTICACIÓN (LOGIN)
-# ---------------------------------------------------------------------
 def autenticar_usuario(email, password):
     try:
-        respuesta = db.auth.sign_in_with_password({"email": email, "password": password})
-        if respuesta.session:
-            return True, respuesta.user
-        return False, None
-    except Exception:
-        return False, None
+        res = db.auth.sign_in_with_password({"email": email, "password": password})
+        return (True, res.user) if res.session else (False, None)
+    except: return (False, None)
 
-# =====================================================================
-# 6. FUNCIONES DE INTERFAZ AVANZADA BLINDADAS
-# =====================================================================
-
+# --- FUNCIONES DE APOYO PARA MÓDULOS ---
 def consultar_plantillas():
-    try:
-        respuesta = db.table("plantillas").select("*").execute()
-        return [DiccionarioSeguro(d) for d in respuesta.data]
-    except Exception:
-        return []
+    try: return [DiccionarioSeguro(d) for d in db.table("plantillas").select("*").execute().data]
+    except: return []
 
 def consultar_alertas(solo_pendientes=False):
     try:
-        consulta = db.table("alertas").select("*")
-        if solo_pendientes:
-            consulta = consulta.eq("estado", "Pendiente")
-        respuesta = consulta.execute()
-        return [DiccionarioSeguro(d) for d in respuesta.data]
-    except Exception:
-        return []
+        q = db.table("alertas").select("*")
+        if solo_pendientes: q = q.eq("estado", "Pendiente")
+        return [DiccionarioSeguro(d) for d in q.execute().data]
+    except: return []
 
 def consultar_facturas():
-    try:
-        respuesta = db.table("pagos").select("*").execute()
-        return [DiccionarioSeguro(d) for d in respuesta.data]
-    except Exception:
-        return []
+    try: return [DiccionarioSeguro(d) for d in db.table("pagos").select("*").execute().data]
+    except: return []
