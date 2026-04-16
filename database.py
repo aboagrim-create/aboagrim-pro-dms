@@ -88,3 +88,8 @@ def auto_registrar_plantilla(nombre_archivo):
 
 def borrar_plantilla(id_p):
     supabase.table("plantillas").delete().eq("id", id_p).execute()
+# Pégalo al final de database.py
+def obtener_diccionario_maestro():
+    """Trae todas las variables configuradas en Supabase"""
+    query = supabase.table("variables_sistema").select("*").execute()
+    return query.data
