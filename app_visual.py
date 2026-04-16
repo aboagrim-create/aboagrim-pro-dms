@@ -186,7 +186,12 @@ def vista_registro():
         st.error(f"Error de visualización: {e}")
 # --- 1. CREAMOS EL MENÚ LATERAL (Para que la variable 'menu' exista) ---
 menu = st.sidebar.radio("Navegación", ["🏠 Mando", "👤 Registro Maestro", "⚙ Configuración"])
+import streamlit as st
 
+def vista_configuracion():
+    st.title("⚙️ Configuración del Sistema")
+    st.info("Módulo de configuración en mantenimiento tras la restauración.")
+    # Aquí luego agregaremos tus ajustes de plantillas y base de datos
 # --- 2. NAVEGACIÓN DEL SISTEMA ---
 if menu == "🏠 Mando":
     vista_mando()
