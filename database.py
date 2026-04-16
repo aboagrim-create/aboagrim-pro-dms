@@ -1,11 +1,10 @@
 # =====================================================================
-# MOTOR DE BASE DE DATOS Y AUTOMATIZACIÓN (SUPABASE)
-# Sistema: AboAgrim Pro DMS v17.1
+# MOTOR DE BASE DE DATOS Y AUTENTICACIÓN (SUPABASE)
+# Sistema: AboAgrim Pro DMS v18.0 (Edición Limpia)
 # =====================================================================
 
 import streamlit as st
 from supabase import create_client, Client
-import io
 
 # ---------------------------------------------------------------------
 # 1. CONEXIÓN AL SERVIDOR EN LA NUBE
@@ -33,7 +32,6 @@ def obtener_diccionario_maestro():
     Recupera el listado completo de profesionales y clientes,
     organizándolos por su rol para poblar los menús desplegables.
     """
-    # Definición de las 7 categorías de roles del sistema
     roles_permitidos = [
         "agrimensor", 
         "abogado", 
@@ -44,14 +42,11 @@ def obtener_diccionario_maestro():
         "solicitante"
     ]
     
-    # Crear un diccionario vacío con listas para cada rol
     diccionario_roles = {rol: [] for rol in roles_permitidos}
     
     try:
-        # Consulta a la tabla personas en Supabase
         respuesta = db.table("personas").select("id, nombre_completo, rol").execute()
         
-        # Clasificar cada persona en su lista correspondiente
         for persona in respuesta.data:
             rol_actual = persona.get('rol')
             nombre_actual = persona.get('nombre_completo')
@@ -60,7 +55,6 @@ def obtener_diccionario_maestro():
                 diccionario_roles[rol_actual].append(nombre_actual)
                 
     except Exception as e:
-        # Falla silenciosa para evitar romper la interfaz si la tabla está vacía
         pass
         
     return diccionario_roles
@@ -74,7 +68,6 @@ def consultar_todo():
     y las tablas del Mando Central.
     """
     try:
-        # Traer todos los expedientes ordenados por fecha de creación
         respuesta = db.table("casos").select("*").order("created_at", desc=True).execute()
         return respuesta.data
     except Exception as e:
@@ -95,33 +88,7 @@ def registrar_evento(tabla, datos):
         return False
 
 # ---------------------------------------------------------------------
-# 5. MOTOR DE PLANTILLAS WORD (DOCXTPL)
-# ---------------------------------------------------------------------
-def procesar_plantilla_maestra(contexto, plantilla_bytes):
-    """
-    Recibe un diccionario con datos (contexto) y un archivo Word en bytes.
-    Reemplaza las variables y devuelve un nuevo archivo Word listo para descargar.
-    """
-    try:
-        from docxtpl import DocxTemplate
-        
-        # Cargar la plantilla desde la memoria (BytesIO)
-        documento = DocxTemplate(io.BytesIO(plantilla_bytes))
-        
-        # Procesar e inyectar las variables
-        documento.render(contexto)
-        
-        # Guardar el resultado en un nuevo espacio de memoria
-        archivo_salida = io.BytesIO()
-        documento.save(archivo_salida)
-        archivo_salida.seek(0)
-        
-        return archivo_salida
-        
-    except Exception as e:
-        return None
-# ---------------------------------------------------------------------
-# 6. SISTEMA DE AUTENTICACIÓN (LOGIN)
+# 5. SISTEMA DE AUTENTICACIÓN (LOGIN)
 # ---------------------------------------------------------------------
 def autenticar_usuario(email, password):
     """
@@ -134,5 +101,4 @@ def autenticar_usuario(email, password):
             return True, respuesta.user
         return False, None
     except Exception as e:
-        # Falla si la contraseña es incorrecta o el usuario no existe
         return False, None
