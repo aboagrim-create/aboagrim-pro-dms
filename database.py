@@ -1,6 +1,6 @@
 # =====================================================================
 # MOTOR DE BASE DE DATOS Y AUTENTICACIÓN (SUPABASE)
-# Sistema: AboAgrim Pro DMS v18.0
+# Sistema: AboAgrim Pro DMS
 # =====================================================================
 
 import streamlit as st
@@ -34,22 +34,21 @@ def obtener_diccionario_maestro():
     return dic
 
 # ---------------------------------------------------------------------
-# 3. EXTRACCIÓN DE EXPEDIENTES (Arreglado para recibir búsquedas)
+# 3. EXTRACCIÓN DE EXPEDIENTES (Preparado para el buscador)
 # ---------------------------------------------------------------------
 def consultar_todo(busqueda=""):
     """
     Descarga todos los casos registrados. 
-    Ahora acepta un parámetro de 'busqueda' para que no dé error en el Archivo Digital.
+    Acepta un parámetro de búsqueda para el Archivo Digital.
     """
     try:
         respuesta = db.table("casos").select("*").order("created_at", desc=True).execute()
         datos = respuesta.data
         
-        # Si la interfaz envía un texto de búsqueda, filtramos los resultados
+        # Filtro inteligente si el usuario escribe en el buscador
         if busqueda:
             datos_filtrados = []
             for caso in datos:
-                # Busca coincidencias en cualquier parte del caso
                 if busqueda.lower() in str(caso).lower():
                     datos_filtrados.append(caso)
             return datos_filtrados
@@ -81,22 +80,19 @@ def autenticar_usuario(email, password):
         return False, None
 
 # =====================================================================
-# 6. FUNCIONES RESTAURADAS PARA INTERFAZ AVANZADA (Plantillas, Alertas, Facturas)
+# 6. FUNCIONES DE LA INTERFAZ AVANZADA (Para evitar los errores rojos)
 # =====================================================================
 
 def consultar_plantillas():
-    """Recupera la lista de plantillas disponibles."""
+    """Recupera la lista de plantillas para el módulo de Plantillas Auto."""
     try:
         respuesta = db.table("plantillas").select("*").execute()
         return respuesta.data
     except Exception:
-        return [] # Retorna lista vacía si falla para no romper la interfaz
+        return []
 
 def consultar_alertas(solo_pendientes=False):
-    """
-    Recupera las alertas.
-    Acepta el parámetro 'solo_pendientes' que requiere la interfaz.
-    """
+    """Recupera las alertas de plazos y audiencias."""
     try:
         consulta = db.table("alertas").select("*")
         if solo_pendientes:
@@ -107,7 +103,7 @@ def consultar_alertas(solo_pendientes=False):
         return []
 
 def consultar_facturas():
-    """Recupera el historial de facturación y pagos."""
+    """Recupera el historial de facturación para el módulo financiero."""
     try:
         respuesta = db.table("pagos").select("*").execute()
         return respuesta.data
