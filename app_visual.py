@@ -143,120 +143,44 @@ def vista_mando():
 
 def vista_registro():
     st.title("⚖️ Registro Maestro y Redacción")
-try:
-    from database import obtener_diccionario_maestro
-    diccionario = obtener_diccionario_maestro()
-    # Esto cargará automáticamente etiquetas como {{ parcela }}
-    # que definió en su diccionario
-    t1, t2, t3, t4, t5 = st.tabs(["👤 1. Cliente", "🏗️ 2. Inmuebles", "🎓 3. Prof", "📑 4. Trámites", "🚀 5. Generar"])
-            c1,c2,c3 = st.columns(3)
-            cli_nom, cli_ced, cli_nac = c1.text_input("Nombre",key="cno"), c2.text_input("Cédula/RNC",key="cce"), c3.text_input("Nacionalidad",value="Dominicana",key="cna")
-            c4,c5,c6 = st.columns(3)
-            cli_eci, cli_con, cli_dom = c4.selectbox("Estado Civil",["Soltero/a","Casado/a","Divorciado/a","Unión Libre"],key="cec"), c5.text_input("Cónyuge",key="cco"), c6.text_input("Domicilio",key="cdo")
-            c7,c8 = st.columns(2)
-            cli_tel, cli_eml = c7.text_input("Teléfono",key="cte"), c8.text_input("Email",key="cem")
-            fir_cli = st.text_input("Firma Cliente",key="fcli")
+    try:
+        from database import obtener_diccionario_maestro, procesar_plantilla_maestra
+        diccionario = obtener_diccionario_maestro()
+        
+        # Definición de pestañas
+        t1, t2, t3, t4, t5 = st.tabs(["👤 1. Cliente", "🏗️ 2. Inmuebles", "🎓 3. Prof", "📑 4. Trámites", "🚀 5. Generar"])
+
+        with t1:
+            c1, c2 = st.columns(2)
+            cli_nom = c1.text_input("Nombre del Cliente", key="c_nom")
+            cli_ced = c2.text_input("Cédula/RNC", key="c_ced")
 
         with t2:
-            with st.expander("➕ Añadir Inmueble", expanded=True):
-                i1,i2,i3,i4 = st.columns(4)
-                ip, idc, isup, imat = i1.text_input("Parcela",key="ip"), i2.text_input("DC",key="idc"), i3.text_input("Superficie",key="isu"), i4.text_input("Matrícula",key="ima")
-                i5,i6,i7,i8 = st.columns(4)
-                idp, idi, inr, isu = i5.text_input("Desig Pos",key="idp"), i6.text_input("Dirección",key="idi"), i7.text_input("Norte",key="in"), i8.text_input("Sur",key="is")
-                i9,i10,i11,i12 = st.columns(4)
-                ies, ioe, ias, iti = i9.text_input("Este",key="ie"), i10.text_input("Oeste",key="io"), i11.text_input("Asiento",key="ias"), i12.text_input("Título",key="iti")
-                i13,i14,i15,i16 = st.columns(4)
-                ico, ifi, ife, irf = i13.text_input("Coordenadas",key="ico"), i14.text_input("Fec Ins",key="ifi"), i15.text_input("Fec Emi",key="ife"), i16.text_input("Ref",key="irf")
-                i17,i18 = st.columns(2)
-                ili, ifo = i17.text_input("Libro",key="ili"), i18.text_input("Folio",key="ifo")
-                if st.button("💾 Inmueble"): st.session_state.reg_inm.append({'inm_parcela':ip,'inm_dc':idc,'inm_superficie':isup,'inm_matricula':imat,'inm_desig_catastral':idp,'inm_direccion':idi,'inm_norte':inr,'inm_sur':isu,'inm_este':ies,'inm_oeste':ioe,'inm_asiento':ias,'inm_titulo':iti,'inm_coordenadas':ico,'inm_fec_inscripcion':ifi,'inm_fec_emision':ife,'inm_referencias':irf,'inm_libro':ili,'inm_folio':ifo})
-            for x, it in enumerate(st.session_state.reg_inm):
-                st.info(f"Parcela: {it['inm_parcela']}"); 
-                if st.button(f"🗑️ Quitar Inm {x}", key=f"q_i{x}"): st.session_state.reg_inm.pop(x); st.rerun()
+            i1, i2 = st.columns(2)
+            parc = i1.text_input("Parcela No.", key="i_parc")
+            matr = i2.text_input("Matrícula No.", key="i_matr")
 
-            with st.expander("➕ Añadir Apoderado"):
-                a1,a2,a3 = st.columns(3)
-                pno, pce, pti = a1.text_input("Nombre Apo",key="pno"), a2.text_input("Cédula",key="pce"), a3.text_input("Poder",key="pti")
-                a4,a5,a6 = st.columns(3)
-                pin, pnt, pal = a4.selectbox("Inscrito",["Sí","No"],key="pin"), a5.text_input("Notaría",key="pnt"), a6.text_input("Alcance",key="pal")
-                a7,a8,a9 = st.columns(3)
-                pdu, pis, pli = a7.text_input("Vigencia",key="pdu"), a8.text_input("Inst.",key="pis"), a9.text_input("Libro",key="pli")
-                a10,a11,a12 = st.columns(3)
-                pfo, fap, fre = a10.text_input("Folio",key="pfo"), a11.text_input("Firma Apo",key="fap"), a12.text_input("Firma Rep",key="fre")
-                if st.button("💾 Apoderado"): st.session_state.reg_apo.append({'pod_nombre':pno,'pod_cedula':pce,'pod_tipo':pti,'pod_inscrito':pin,'pod_notaria':pnt,'pod_alcance':pal,'pod_duracion':pdu,'pod_institucion':pis,'pod_libro':pli,'pod_folio':pfo,'fir_apoderado':fap,'fir_representante':fre})
-            for x, ap in enumerate(st.session_state.reg_apo):
-                st.info(f"Apo: {ap['pod_nombre']}"); 
-                if st.button(f"🗑️ Quitar Apo {x}", key=f"q_a{x}"): st.session_state.reg_apo.pop(x); st.rerun()
-
-        with t3:
-            with st.expander("➕ Agrimensores y Abogados", expanded=True):
-                g1,g2,g3 = st.columns(3)
-                gn, gc, gt = g1.text_input("Nom Agr",key="gn"), g2.text_input("Codia",key="gc"), g3.text_input("Mensura",key="gt")
-                g4,g5,g6 = st.columns(3)
-                gd, gco, gte = g4.text_input("Dir",key="gd"), g5.text_input("Correo",key="gco"), g6.text_input("Tel",key="gte")
-                gf = st.text_input("Firma Agr",key="gf")
-                if st.button("💾 Agrimensor"): st.session_state.reg_agrim.append({'agr_nombre':gn,'agr_codia':gc,'agr_tipo_mensura':gt,'agr_direccion':gd,'agr_correo':gco,'agr_telefono':gte,'agr_firma':gf})
-                for x, ag in enumerate(st.session_state.reg_agrim): st.info(f"Agr: {ag['agr_nombre']}"); 
-                
-                abn, abc = st.columns(2)
-                bn, bc = abn.text_input("Nom Abogado",key="bn"), abc.text_input("CARD",key="bc")
-                if st.button("💾 Abogado"): st.session_state.reg_abog.append({'abog_nombre':bn,'abog_card':bc})
-                for x, ab in enumerate(st.session_state.reg_abog): st.info(f"Abog: {ab['abog_nombre']}")
-
-        with t4:
-            j1, j2, j3 = st.columns(3)
-            juris = j1.selectbox("Jurisdicción", list(JI_DATA.keys()))
-            tram = j2.selectbox("Trámite", list(JI_DATA[juris].keys()))
-            mon = j3.number_input("Honorarios RD$", 0.0)
-            ctx_meta = form_estatico("reg")
-            # Recolectamos lo que escribió en t1, t2, etc.
-# --- Línea 216 aprox ---
-        ctx_meta = form_estatico("reg")
-        
-        # Recolectamos los datos (Asegúrese de que este bloque tenga el mismo margen que ctx_meta)
-        datos_para_plantilla = {
-            "cliente_nombre": cli_nom,
-            "cedula": cli_ced,
-            "parcela": ip,
-            "jhonny_matos_titulos": "Lic. Jhonny Matos. M.A., Presidente"
-        }
-
-        with t5: # Este debe estar alineado con with t4
+        with t5:
             st.header("🚀 Generación de Documentos")
-            if st.button("Generar Cuota Litis y Actos", type="primary"):
-                from database import procesar_plantilla_maestra
-                
-                # Procesa el Word usando los datos recolectados arriba
-                resultado = procesar_plantilla_maestra(datos_para_plantilla, "CUOTA_LITIS.docx")
-                st.success(f"✅ ¡Éxito! Documento guardado en: {resultado}")
-    
-                    if sp:
-                        ctx = {'cli_nombre':cli_nom,'cli_cedula':cli_ced,'cli_nacionalidad':cli_nac,'cli_ecivil':cli_eci,'cli_conyuge':cli_con,'cli_domicilio':cli_dom,'cli_telefono':cli_tel,'cli_email':cli_eml,'fir_cliente':fir_cli,'hoy':datetime.now().strftime("%d/%m/%Y")}
-                        if st.session_state.reg_inm: ctx.update(st.session_state.reg_inm[0])
-                        if st.session_state.reg_apo: ctx.update(st.session_state.reg_apo[0])
-                        if st.session_state.reg_agrim: ctx.update(st.session_state.reg_agrim[0])
-                        if st.session_state.reg_abog: ctx['tra_abogado'] = st.session_state.reg_abog[0].get('abog_nombre','')
-                        ctx.update(ctx_meta)
-                        ctx.update({'NOMBRE':cli_nom,'CEDULA':cli_ced,'RNC':cli_ced,'FECHA':ctx.get('doc_fecha',ctx['hoy']),'EXPEDIENTE':ctx.get('doc_expediente',''),'MATRICULA':ctx.get('inm_matricula',''),'COORDENADAS':ctx.get('inm_coordenadas',''),'SUPERFICIE':ctx.get('inm_superficie',''),'APODERADO':ctx.get('pod_nombre',''),'AGRIMENSOR':ctx.get('agr_nombre',''),'ABOGADO':ctx.get('tra_abogado',''),'FIRMA':ctx.get('doc_firma_sol',''),'SELLO':"Sello"})
-                        rc = []
-                        for pid in sp:
-                            p = next((x for x in pls if x['id']==pid),None)
-                            if p:
-                                try:
-                                    doc = DocxTemplate(os.path.join(db.PLANTILLAS_DIR, p['archivo_word'])); doc.render(ctx)
-                                    rs = os.path.join(n_e['ruta_carpeta'], p['carpeta_destino_sugerida']); os.makedirs(rs, exist_ok=True)
-                                    rf = os.path.join(rs, f"{p['nombre_mostrar']}_{cli_nom}.docx"); doc.save(rf); rc.append(rf)
-                                except Exception as e: st.error(f"Err {p['nombre_mostrar']}: {e}")
-                        if rc:
-                            zb = io.BytesIO()
-                            with zipfile.ZipFile(zb,"w") as zf:
-                                for r in rc: zf.write(r, os.path.basename(r))
-                            st.session_state.zip_reg, st.session_state.zip_reg_name = zb.getvalue(), f"Exp_{cli_nom}.zip"
-                            st.success("✅ Generado."); st.balloons()
-                    for k in ['reg_inm','reg_apo','reg_abog','reg_agrim','reg_custom']: st.session_state[k] = []
-                else: st.error("Falta Nombre.")
-            if st.session_state.zip_reg: st.download_button("📥 DESCARGAR ZIP", st.session_state.zip_reg, st.session_state.zip_reg_name, "application/zip")
-    except Exception as e: st.error(f"Error: {e}")
+            # Bolsa de datos que irá al Word
+            datos_finales = {
+                "cliente_nombre": cli_nom,
+                "cedula": cli_ced,
+                "parcela": parc,
+                "matricula": matr,
+                "jhonny_matos_titulos": "Lic. Jhonny Matos. M.A., Presidente"
+            }
+            
+            if st.button("Generar Cuota Litis", type="primary"):
+                # Busca el archivo CUOTA_LITIS.docx en la carpeta plantillas_maestras
+                resultado = procesar_plantilla_maestra(datos_finales, "CUOTA_LITIS.docx")
+                if "Error" in resultado:
+                    st.error(resultado)
+                else:
+                    st.success(f"✅ ¡Éxito! Guardado en: {resultado}")
+
+    except Exception as e:
+        st.error(f"Error de sistema: {e}")
 
 def vista_archivo():
     st.title("📂 Archivo Digital Maestro")
