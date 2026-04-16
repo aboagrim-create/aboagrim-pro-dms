@@ -143,7 +143,7 @@ def vista_mando():
 
 def vista_registro():
     st.title("⚖️ Registro Maestro y Redacción")
-    try:
+try:
         from database import obtener_diccionario_maestro
         diccionario = obtener_diccionario_maestro()
         # Esto cargará automáticamente etiquetas como {{ parcela }}
