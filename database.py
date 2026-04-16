@@ -20,19 +20,12 @@ def obtener_diccionario_maestro():
             if rol_actual in dic:
                 dic[rol_actual].append(p['nombre_completo'])
     except Exception:
-        pass # Falla silenciosamente si la tabla no existe, sin romper la interfaz
+        pass
     return dic
 
 def consultar_todo():
     try:
-        res = db.table("casos").select("*").order("fecha_apertura", desc=True).execute()
-        return res.data
-    except Exception:
-        return []
-
-def consultar_honorarios_completos():
-    try:
-        res = db.table("honorarios").select("*").execute()
+        res = db.table("casos").select("*").order("created_at", desc=True).execute()
         return res.data
     except Exception:
         return []
