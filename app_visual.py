@@ -184,7 +184,16 @@ def vista_registro():
 
     except Exception as e:
         st.error(f"Error de visualización: {e}")
-# --- NAVEGACIÓN DEL SISTEMA ---
+# --- 1. CREAMOS EL MENÚ LATERAL (Para que la variable 'menu' exista) ---
+menu = st.sidebar.radio("Navegación", ["🏠 Mando", "👤 Registro Maestro", "⚙ Configuración"])
+
+# --- 2. NAVEGACIÓN DEL SISTEMA ---
+if menu == "🏠 Mando":
+    vista_mando()
+elif menu == "👤 Registro Maestro":
+    vista_registro()
+elif menu == "⚙ Configuración":
+    vista_configuracion()---
 if menu == "🏠 Mando":
     vista_mando()
 elif menu == "👤 Registro Maestro":
