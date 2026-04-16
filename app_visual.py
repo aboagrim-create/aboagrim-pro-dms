@@ -36,27 +36,29 @@ if not st.session_state['autenticado']:
         st.markdown("<h2 style='text-align: center; color: white;'>⚖️ AboAgrim Pro</h2>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; color: #cbd5e1;'>Acceso Restringido al Sistema DMS</p>", unsafe_allow_html=True)
         
-        with st.form("form_login"):
+with st.form("form_login"):
             correo = st.text_input("Correo Electrónico Institucional:")
             clave = st.text_input("Contraseña de Acceso:", type="password")
             submit = st.form_submit_button("Iniciar Sesión", use_container_width=True)
             
             if submit:
-                if correo and clave:
-                    exito, usuario = autenticar_usuario(correo, clave)
+                # 1. Limpiar espacios en blanco invisibles al inicio o al final
+                correo_limpio = correo.strip()
+                
+                # 2. Validaciones de formato
+                if not correo_limpio or not clave:
+                    st.warning("⚠️ Por favor, complete ambos campos.")
+                elif "@" not in correo_limpio or "." not in correo_limpio:
+                    st.error("❌ Formato inválido. Asegúrese de escribir un correo real (ej. usuario@dominio.com).")
+                else:
+                    # 3. Autenticación con el correo ya limpio
+                    exito, usuario = autenticar_usuario(correo_limpio, clave)
                     if exito:
                         st.session_state['autenticado'] = True
-                        st.session_state['correo_usuario'] = correo
+                        st.session_state['correo_usuario'] = correo_limpio
                         st.rerun() # Recarga la página para mostrar el sistema
                     else:
-                        st.error("❌ Credenciales incorrectas o usuario no registrado.")
-                else:
-                    st.warning("⚠️ Complete ambos campos.")
-        st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Detiene la ejecución del código aquí. Nadie pasa si no se loguea.
-    st.stop() 
-
+                        st.error("❌ Credenciales incorrectas o usuario no registrado en Supabase.")
 # =====================================================================
 # EL USUARIO HA PASADO EL LOGIN - MOSTRAR EL SISTEMA
 # =====================================================================
