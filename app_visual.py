@@ -151,11 +151,6 @@ diccionario = obtener_diccionario_maestro()
 # Esto cargará automáticamente etiquetas como {{ parcela }} o {{ matricula }}
 # que definió en su diccionario[cite: 27, 29].
 # Busque el bloque 'with t5:' más abajo en app_visual.py
-with t5:
-    st.header("🚀 Generación de Documentos")
-    if st.button("Crear Expediente Completo"):
-        # El sistema tomará los datos de t1 y t2 y los pegará en el Word
-        st.info("Generando archivos basados en su Diccionario Maestro...")
         t1, t2, t3, t4, t5 = st.tabs(["👤 1. Cliente", "🏗️ 2. Inmuebles/Apo", "🎓 3. Prof", "📄 4. Trámites/Metadatos", "🚀 5. Generar"])
         with t1:
             c1,c2,c3 = st.columns(3)
@@ -218,14 +213,27 @@ with t5:
             tram = j2.selectbox("Trámite", list(JI_DATA[juris].keys()))
             mon = j3.number_input("Honorarios RD$", 0.0)
             ctx_meta = form_estatico("reg")
+            # Recolectamos lo que escribió en t1, t2, etc.
+# --- Línea 216 aprox ---
+        ctx_meta = form_estatico("reg")
+        
+        # Recolectamos los datos (Asegúrese de que este bloque tenga el mismo margen que ctx_meta)
+        datos_para_plantilla = {
+            "cliente_nombre": cli_nom,
+            "cedula": cli_ced,
+            "parcela": ip,
+            "jhonny_matos_titulos": "Lic. Jhonny Matos. M.A., Presidente"
+        }
 
-        with t5:
-            pls = db.consultar_plantillas()
-            sp = [p['id'] for p in pls if st.checkbox(f"📄 {p['nombre_mostrar']}", key=f"chk_{p['id']}")] if pls else []
-            if st.button("🚀 GUARDAR Y EMPAQUETAR", use_container_width=True):
-                if cli_nom:
-                    db.guardar_expediente_elite({'n':cli_nom,'c':cli_ced,'t':cli_tel,'m':mon,'pg':0,'act':tram,'f':datetime.now().strftime("%d/%m/%Y"),'area':0,'ref':ctx_meta.get('doc_expediente',''),'req':"",'jur':juris,'inm':json.dumps(st.session_state.reg_inm),'apo':json.dumps(st.session_state.reg_apo),'prof':json.dumps({"abogados":st.session_state.reg_abog,"agrimensores":st.session_state.reg_agrim})})
-                    n_e = db.consultar_todo()[0]
+        with t5: # Este debe estar alineado con with t4
+            st.header("🚀 Generación de Documentos")
+            if st.button("Generar Cuota Litis y Actos", type="primary"):
+                from database import procesar_plantilla_maestra
+                
+                # Procesa el Word usando los datos recolectados arriba
+                resultado = procesar_plantilla_maestra(datos_para_plantilla, "CUOTA_LITIS.docx")
+                st.success(f"✅ ¡Éxito! Documento guardado en: {resultado}")
+    
                     if sp:
                         ctx = {'cli_nombre':cli_nom,'cli_cedula':cli_ced,'cli_nacionalidad':cli_nac,'cli_ecivil':cli_eci,'cli_conyuge':cli_con,'cli_domicilio':cli_dom,'cli_telefono':cli_tel,'cli_email':cli_eml,'fir_cliente':fir_cli,'hoy':datetime.now().strftime("%d/%m/%Y")}
                         if st.session_state.reg_inm: ctx.update(st.session_state.reg_inm[0])
