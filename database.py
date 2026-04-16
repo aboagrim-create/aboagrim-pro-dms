@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 import sqlite3
 
+from database import obtener_diccionario_maestro
 def obtener_diccionario_maestro(db_name="aboagrim.db"):
     """
     Recupera las listas de profesionales y roles para poblar 
