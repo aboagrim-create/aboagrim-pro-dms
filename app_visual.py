@@ -143,243 +143,47 @@ def vista_mando():
 
 def vista_registro():
     st.title("⚖️ Registro Maestro y Redacción")
+    
     try:
-        # Importamos las funciones que acabamos de poner en database.py
+        # Importación protegida dentro de la función
         from database import obtener_diccionario_maestro, procesar_plantilla_maestra
+        
         diccionario = obtener_diccionario_maestro()
         
+        # Definición de las 5 pestañas originales
         t1, t2, t3, t4, t5 = st.tabs(["👤 1. Cliente", "🏗️ 2. Inmuebles", "🎓 3. Prof", "📑 4. Trámites", "🚀 5. Generar"])
 
         with t1:
-            c1, c2 = st.columns(2)
-            cli_nom = c1.text_input("Nombre del Cliente", key="c_nom")
-            cli_ced = c2.text_input("Cédula/RNC", key="c_ced")
-
+            st.subheader("Datos del Cliente")
+            cli_nom = st.text_input("Nombre Completo", key="c_nom_v")
+            cli_ced = st.text_input("Cédula / Pasaporte", key="c_ced_v")
+            
         with t2:
-            i1, i2 = st.columns(2)
-            parc = i1.text_input("Parcela No.", key="i_parc")
-            matr = i2.text_input("Matrícula No.", key="i_matr")
+            st.subheader("Datos del Inmueble")
+            ip = st.text_input("Parcela No.", key="i_parc_v")
+            im = st.text_input("Matrícula No.", key="i_matr_v")
 
         with t5:
-            st.header("🚀 Generación de Documentos")
-            # Esta es la "bolsa" que junta todo lo que usted escribió arriba
+            st.header("🚀 Finalizar y Generar")
+            
+            # Recolección de datos para el Diccionario Maestro
             datos_finales = {
                 "cliente_nombre": cli_nom,
                 "cedula": cli_ced,
-                "parcela": parc,
-                "matricula": matr,
+                "parcela": ip,
+                "matricula": im,
                 "jhonny_matos_titulos": "Lic. Jhonny Matos. M.A., Presidente"
             }
             
             if st.button("Generar Cuota Litis", type="primary"):
-                # Aquí el sistema busca el Word y le pega los datos
+                # Busca el archivo CUOTA_LITIS.docx en la carpeta plantillas_maestras
                 resultado = procesar_plantilla_maestra(datos_finales, "CUOTA_LITIS.docx")
                 if "Error" in resultado:
-                    st.error(resultado)
+                    st.error(f"No se pudo generar: {resultado}")
                 else:
-                    st.success(f"✅ ¡Éxito! Guardado en: {resultado}")
+                    st.success(f"✅ Documento guardado en: {resultado}")
 
     except Exception as e:
-        st.error(f"Error de sistema: {e}")
-
-def vista_archivo():
-    st.title("📂 Archivo Digital Maestro")
-    for e in db.consultar_todo(st.text_input("🔍 Buscar...")):
-        with st.expander(f"📁 {e['cliente_nombre']} | Etapa: {e['estado']}"):
-            c1,c2,c3,c4 = st.columns([2,1,1,1])
-            c1.write(f"`{e['ruta_carpeta']}`")
-            
-            # BOTON WHATSAPP AÑADIDO AQUI
-            tel_clean = ''.join(filter(str.isdigit, str(e.get('telefono',''))))
-            if tel_clean: c2.markdown(f"<a href='https://wa.me/{tel_clean}' target='_blank'><button style='background-color:#25D366;color:white;border:none;padding:5px 10px;border-radius:5px;'>💬 WhatsApp</button></a>", unsafe_allow_html=True)
-            
-            if c3.button("✏️ Etapa",key=f"e_{e['id']}"): modal_editar_estado(e)
-            if c4.button("🗑️ Borrar",key=f"d_{e['id']}"): db.borrar_expediente(e['id']); st.rerun()
-            
-            ar = st.file_uploader("Documento:", key=f"u_{e['id']}")
-            if ar: 
-                with open(os.path.join(e['ruta_carpeta'], "1_Identidad", ar.name), "wb") as f: f.write(ar.getbuffer())
-                st.success("Guardado.")
-
-def vista_plantillas():
-    st.title("📄 Gestor de Plantillas Cloud")
-    tab1, tab2 = st.tabs(["⚙️ Generar Documentos", "☁️ Subir Nueva Plantilla"])
-
-    with tab1:
-        pls = db.consultar_plantillas()
-        exps = db.consultar_todo()
-        
-        if exps and pls:
-            sel = st.selectbox("Seleccione Cliente", [e['id'] for e in exps], format_func=lambda x: next((f"{e['cliente_nombre']}" for e in exps if e['id']==x), ""))
-            cd = db.obtener_por_id(sel)
-            
-            st.write("Seleccione las plantillas a redactar:")
-            nu = [p['id'] for p in pls if st.checkbox(f"Gen: {p['nombre_mostrar']}", key=f"n_{p['id']}")]
-            st.divider()
-            
-            cxm = form_estatico("ela")
-            
-            if st.button("🚀 REDACTAR ZIP"):
-                import io, zipfile, os, json
-                from docxtpl import DocxTemplate
-                from datetime import datetime
-                
-                ctx = {'cli_nombre': cd['cliente_nombre'], 'cli_cedula': cd['cedula_rnc'], 'hoy': datetime.now().strftime("%d/%m/%Y")}
-                im = json.loads(cd.get('inmuebles_json') or "[]")
-                ap = json.loads(cd.get('apoderados_json') or "[]")
-                if im: ctx.update(im[0])
-                if ap: ctx.update(ap[0])
-                if cxm: ctx.update(cxm)
-                
-                ctx.update({'NOMBRE': ctx['cli_nombre'], 'CEDULA': ctx['cli_cedula'], 'RNC': ctx['cli_cedula'], 'FECHA': ctx.get('doc_fecha', ctx['hoy']), 'EXPEDIENTE': ctx.get('doc_expediente', '')})
-                
-                zb = io.BytesIO()
-                with zipfile.ZipFile(zb, "w") as zf:
-                    for pid in nu:
-                        p = next((x for x in pls if x['id']==pid), None)
-                        if p:
-                            try:
-                                ruta = os.path.join(db.PLANTILLAS_DIR, p['archivo_word'])
-                                doc = DocxTemplate(ruta)
-                                doc.render(ctx)
-                                
-                                temp_io = io.BytesIO()
-                                doc.save(temp_io)
-                                temp_io.seek(0)
-                                
-                                nombre_archivo = f"{p['nombre_mostrar']}_{cd['cliente_nombre']}.docx"
-                                zf.writestr(nombre_archivo, temp_io.read())
-                            except Exception as e:
-                                st.error(f"Error en {p['nombre_mostrar']}: Revise que el archivo Word base exista.")
-                                
-                # LA MAGIA ESTÁ AQUÍ: Usamos un nombre de memoria 100% nuevo
-                st.session_state["archivo_zip_limpio"] = zb.getvalue()
-                st.success("✅ Completado.")
-                st.balloons()
-                
-        # LEEMOS LA MEMORIA NUEVA
-        if "archivo_zip_limpio" in st.session_state:
-            st.download_button(
-                label="📥 DESCARGAR DOCUMENTOS",
-                data=st.session_state["archivo_zip_limpio"],
-                file_name="Expediente_AboAgrim.zip",
-                mime="application/zip"
-            )
-
-    with tab2:
-        st.write("### Añadir Plantilla a la Base de Datos")
-        archivo_subido = st.file_uploader("1. Seleccione su archivo Word (.docx)", type=["docx"])
-        nombre_mostrar = st.text_input("2. ¿Con qué nombre quiere verla en el sistema? (Ej: Contrato de Litis)")
-        
-        if st.button("💾 Guardar Plantilla en la Nube"):
-            if archivo_subido and nombre_mostrar:
-                import os
-                os.makedirs(db.PLANTILLAS_DIR, exist_ok=True)
-                ruta_guardado = os.path.join(db.PLANTILLAS_DIR, archivo_subido.name)
-                
-                with open(ruta_guardado, "wb") as f:
-                    f.write(archivo_subido.getbuffer())
-                    
-                db.supabase.table("plantillas").insert({
-                    "nombre_mostrar": nombre_mostrar,
-                    "archivo_word": archivo_subido.name,
-                    "carpeta_destino_sugerida": "General"
-                }).execute()
-                
-                st.success("✅ Plantilla registrada con éxito.")
-                st.rerun()
-            else:
-                st.warning("⚠️ Debe subir un archivo y ponerle un nombre para guardar.")
-def vista_alertas():
-    st.title("📅 Alertas y Plazos Jurídicos")
-    t1, t2 = st.tabs(["🚨 Vencimientos", "➕ Nueva Alerta"])
-    with t1:
-        als = db.consultar_alertas(solo_pendientes=True)
-        if not als: st.success("Sin alertas.")
-        for a in als:
-            c1, c2 = st.columns([4,1])
-            c1.write(f"**{a['cliente_nombre']}** | {a['tipo_alerta']} | Vence: {a['fecha_vencimiento']}\n_{a['descripcion']}_")
-            if c2.button("✅ Ok", key=f"ok_{a['id']}"): db.upsert_alerta(a['id'], a['expediente_id'], a['tipo_alerta'], a['fecha_vencimiento'], a['descripcion'], "Completada"); st.rerun()
-    with t2:
-        exps = db.consultar_todo()
-        if exps:
-            with st.form("fa"):
-                sel = st.selectbox("Expediente", [e['id'] for e in exps], format_func=lambda x: next(e['cliente_nombre'] for e in exps if e['id']==x))
-                tip = st.selectbox("Tipo / Norma Legal", ALERTAS_LEGALES)
-                fec = st.date_input("Fecha de Vencimiento")
-                des = st.text_area("Base legal y descripción del plazo")
-                if st.form_submit_button("Guardar"): db.upsert_alerta(None, sel, tip, str(fec), des); st.rerun()
-
-def generar_html_factura(f):
-    pagos = json.loads(f.get('historial_pagos') or '[]')
-    filas_pagos = "".join([f"<tr><td style='padding:8px; border:1px solid #ccc;'>{p['fecha']}</td><td style='padding:8px; border:1px solid #ccc;'>{p['etapa']}</td><td style='padding:8px; border:1px solid #ccc;'>{p['forma']}</td><td style='padding:8px; border:1px solid #ccc;'>RD$ {p['monto']:,.2f}</td></tr>" for p in pagos])
-    if not pagos: filas_pagos = "<tr><td colspan='4' style='padding:8px; border:1px solid #ccc; text-align:center;'>No se han registrado abonos</td></tr>"
-    html = f"""<html><head><meta charset="utf-8"></head><body style="font-family: Arial, sans-serif; color: #333; padding: 40px; max-width: 800px; margin: auto;"><div style="text-align: center; border-bottom: 3px solid {st.session_state.f_color}; padding-bottom: 15px; margin-bottom: 30px;"><h1 style="color: {st.session_state.f_color}; margin: 0; font-size: 36px; letter-spacing: 2px;">ABOAGRIM</h1><h3 style="color: #475569; margin: 5px 0; font-size: 16px; letter-spacing: 1px;">ABOGADOS Y AGRIMENSORES</h3><p style="margin: 5px 0; font-size: 16px; font-weight: bold;">{st.session_state.f_nom}</p><p style="margin: 2px 0; font-size: 14px; color: #64748b;">{st.session_state.f_dir}</p></div><div style="display: flex; justify-content: space-between; margin-bottom: 30px;"><div><p><strong>Facturado a:</strong> {f.get('cliente_nombre', '')}</p><p><strong>Cédula/RNC:</strong> {f.get('cedula_rnc', '')}</p></div><div style="text-align: right;"><p><strong>Factura #:</strong> {f['id']:04d}</p><p><strong>Fecha Emisión:</strong> {f['fecha_emision']}</p><p style="font-size: 18px; color: {'#16a34a' if f['estado']=='Pagada' else '#dc2626'};"><strong>ESTADO: {f['estado'].upper()}</strong></p></div></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;"><tr style="background-color: {st.session_state.f_color}; color: white;"><th style="padding: 12px; text-align: left;">Concepto</th><th style="padding: 12px; text-align: right;">Importe</th></tr><tr><td style="padding: 12px; border: 1px solid #ccc;">{f['concepto']}</td><td style="padding: 12px; border: 1px solid #ccc; text-align: right;">RD$ {f['subtotal']:,.2f}</td></tr></table><div style="text-align: right; font-size: 16px; margin-bottom: 30px;"><p><strong>Subtotal:</strong> RD$ {f['subtotal']:,.2f}</p><p><strong>ITBIS (18%):</strong> RD$ {f['itbis']:,.2f}</p><p><strong>Descuento:</strong> RD$ {f.get('descuento',0):,.2f}</p><p style="font-size: 20px; color: {st.session_state.f_color};"><strong>TOTAL A PAGAR: RD$ {f['total']:,.2f}</strong></p><p style="font-size: 12px;">Condición de pago: {f.get('terminos','Al Contado')}</p></div><h3 style="color: {st.session_state.f_color}; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Historial de Abonos</h3><table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 14px;"><tr style="background-color: #f1f5f9;"><th style="padding: 8px; text-align: left; border: 1px solid #ccc;">Fecha</th><th style="padding: 8px; text-align: left; border: 1px solid #ccc;">Etapa</th><th style="padding: 8px; text-align: left; border: 1px solid #ccc;">Forma de Pago</th><th style="padding: 8px; text-align: left; border: 1px solid #ccc;">Monto Depositado</th></tr>{filas_pagos}</table><div style="text-align: right; font-size: 16px;"><p><strong>Total Abonado:</strong> RD$ {float(f.get('monto_pagado') or 0.0):,.2f}</p><p style="font-size: 18px; color: #dc2626;"><strong>BALANCE PENDIENTE: RD$ {f['total'] - float(f.get('monto_pagado') or 0.0):,.2f}</strong></p></div></body></html>"""
-    return html
-
-def vista_facturacion():
-    st.title("💳 Facturación Avanzada")
-    t1, t2 = st.tabs(["🧾 Emitir", "🗃️ Historial"])
-    exps = db.consultar_todo()
-    with t1:
-        if exps:
-            with st.form("f_f"):
-                sel = st.selectbox("Cliente", [e['id'] for e in exps], format_func=lambda x: next(e['cliente_nombre'] for e in exps if e['id']==x))
-                c1,c2,c3 = st.columns(3)
-                ncf, fec, ven = c1.text_input("NCF"), c2.date_input("Emisión"), c3.date_input("Vence NCF")
-                con = st.text_input("Concepto", "Honorarios profesionales")
-                c4,c5,c6 = st.columns(3)
-                sub, desc = c4.number_input("Subtotal", 0.0), c5.number_input("Descuento RD$", 0.0)
-                itb = c6.checkbox("Aplicar 18% ITBIS")
-                term = st.selectbox("Términos de Pago", ["Al Contado", "15 Días", "30 Días", "50% Avance, 50% Final"])
-                if st.form_submit_button("Emitir"): 
-                    sub_f = sub - desc; itb_v = sub_f * 0.18 if itb else 0
-                    # Para simplificar la base, usamos dict en notas para guardar términos y descuentos
-                    db.upsert_factura(None, sel, ncf, str(fec), con, sub_f, itb_v, sub_f+itb_v, "Pendiente")
-                    st.rerun()
-    with t2:
-        for f in db.consultar_facturas():
-            c1, c2, c3 = st.columns([3,2,2])
-            c1.write(f"Fac #{f['id']} - Total: {f['total']:,.2f} | {f['estado']}")
-            if c2.button("Abonar", key=f"ab_{f['id']}"): modal_abonar(f)
-            c3.download_button("📥 Descargar", generar_html_factura(f), f"Fac_{f['id']}.html", "text/html", key=f"dl_{f['id']}")
-
-def vista_configuracion():
-    st.title("⚙️ Configuración y Seguridad")
-    t1, t2, t3 = st.tabs(["🎨 Personalización", "🔒 Seguridad", "🛡️ Backup"])
-    with t1:
-        st.session_state.f_nom = st.text_input("Nombre de la Firma", st.session_state.f_nom)
-        st.session_state.f_dir = st.text_input("Sede Principal", st.session_state.f_dir)
-        st.session_state.f_color = st.color_picker("Color de Facturas y Botones", st.session_state.f_color)
-        if st.button("💾 Guardar Diseño"): st.success("Aplicado.")
-    with t2:
-        st.write("#### Proteger Módulos con Contraseña")
-        mod = st.selectbox("Seleccione Módulo a proteger", ["💳 Facturación", "⚙️ Configuración", "📂 Archivo"])
-        pw = st.text_input("Nueva Contraseña", type="password")
-        if st.button("🔒 Asignar Contraseña"): 
-            st.session_state.passwords[mod] = pw
-            if mod in st.session_state.unlocked: st.session_state.unlocked.remove(mod)
-            st.success(f"Módulo {mod} protegido.")
-    with t3:
-        if st.button("🛡️ Crear Backup"): shutil.copy("aboagrim.db", f"backup_{time.time()}.db"); st.success("Ok.")
-
-# --- RUTEO Y SEGURIDAD ---
-st.sidebar.title("AboAgrim DMS")
-menu = st.sidebar.radio("MENÚ", ["🏠 Mando", "👤 Registro Maestro", "📂 Archivo", "📄 Plantillas", "📅 Alertas", "💳 Facturación", "⚙️ Configuración"])
-
-# Sistema de bloqueo por contraseña
-if menu in st.session_state.passwords and menu not in st.session_state.unlocked:
-    st.warning(f"🔒 El módulo {menu} está protegido.")
-    pwd_input = st.text_input("Ingrese contraseña:", type="password")
-    if st.button("Desbloquear"):
-        if pwd_input == st.session_state.passwords[menu]:
-            st.session_state.unlocked.append(menu); st.rerun()
-        else: st.error("Contraseña incorrecta.")
-else:
-    if menu == "🏠 Mando": vista_mando()
-    elif menu == "👤 Registro Maestro": vista_registro()
-    elif menu == "📂 Archivo": vista_archivo()
-    elif menu == "📄 Plantillas": vista_plantillas()
-    elif menu == "📅 Alertas": vista_alertas()
+        st.error(f"Error de visualización: {e}")
     elif menu == "💳 Facturación": vista_facturacion()
     elif menu == "⚙️ Configuración": vista_configuracion()
