@@ -191,8 +191,11 @@ import streamlit as st
 def vista_configuracion():
     st.title("⚙️ Configuración del Sistema")
     st.info("Módulo de configuración en mantenimiento tras la restauración.")
-    # Aquí luego agregaremos tus ajustes de plantillas y base de datos
-# --- 2. NAVEGACIÓN DEL SISTEMA ---
+# --- Lógica de navegación (Debe ir al final del archivo) ---
+
+# Revisa cómo se llama la variable de tu menú (suele ser 'menu', 'opcion', o 'seleccion'). 
+# Si se llama distinto, solo cambia la palabra 'menu' por la tuya:
+
 if menu == "Mando":
     vista_mando()
 elif menu == "Registro Maestro":
