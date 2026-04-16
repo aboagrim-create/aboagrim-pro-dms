@@ -2,52 +2,55 @@ import streamlit as st
 from supabase import create_client, Client
 import io
 
-# --- Conexión a la Nube (Supabase) ---
+# --- Conexión Blindada a Supabase ---
 @st.cache_resource
 def get_supabase() -> Client:
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-    return create_client(url, key)
+    return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-supabase = get_supabase()
+db = get_supabase()
 
 def obtener_diccionario_maestro():
-    """Extrae profesionales directamente desde Supabase."""
+    """Recupera todos los perfiles profesionales y técnicos."""
     roles = ["agrimensor", "abogado", "notario", "representante", "apoderado", "reclamante", "solicitante"]
-    diccionario = {rol: [] for rol in roles}
+    dic = {rol: [] for rol in roles}
     try:
-        respuesta = supabase.table("personas").select("id, nombre_completo, rol").execute()
-        for persona in respuesta.data:
-            rol = persona.get("rol")
-            if rol in diccionario:
-                diccionario[rol].append(persona)
-    except Exception as e:
-        print(f"Error conectando a Supabase: {e}")
-    return diccionario
+        res = db.table("personas").select("id, nombre_completo, rol").execute()
+        for p in res.data:
+            if p['rol'] in dic: dic[p['rol']].append(p['nombre_completo'])
+    except: pass
+    return dic
 
-def consultar_todo():
-    """Trae todos los expedientes desde la nube para las métricas."""
+def consultar_expedientes():
+    """Trae la data completa para el Mando Central."""
     try:
-        respuesta = supabase.table("casos").select("*").order("fecha_apertura", desc=True).execute()
-        return respuesta.data
-    except Exception as e:
-        print(f"Error consultando casos en Supabase: {e}")
-        return []
+        res = db.table("casos").select("*").order("created_at", desc=True).execute()
+        return res.data
+    except: return []
 
-def procesar_plantilla_maestra(contexto, archivo_plantilla_bytes):
-    """
-    Procesa plantillas en memoria sin depender del disco duro local,
-    preparado para funcionar en Streamlit Cloud.
-    """
+def consultar_honorarios():
+    """Trae los estados de cuenta y cobros."""
+    try:
+        res = db.table("honorarios").select("*, casos(numero_expediente)").execute()
+        return res.data
+    except: return []
+
+def registrar_evento(tabla, datos):
+    """Función universal de inserción (Upsert)."""
+    try:
+        db.table(tabla).insert(datos).execute()
+        return True
+    except Exception as e:
+        st.error(f"Error en registro: {e}")
+        return False
+
+def generar_word_pro(contexto, plantilla_bytes):
+    """Motor de redacción automatizada."""
     try:
         from docxtpl import DocxTemplate
-        doc = DocxTemplate(io.BytesIO(archivo_plantilla_bytes))
+        doc = DocxTemplate(io.BytesIO(plantilla_bytes))
         doc.render(contexto)
-        
-        salida_bytes = io.BytesIO()
-        doc.save(salida_bytes)
-        salida_bytes.seek(0)
-        return salida_bytes
-    except Exception as e:
-        print(f"Error en plantilla: {e}")
-        return None
+        output = io.BytesIO()
+        doc.save(output)
+        output.seek(0)
+        return output
+    except: return None
