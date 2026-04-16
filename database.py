@@ -1,10 +1,19 @@
 # =====================================================================
 # MOTOR DE BASE DE DATOS Y AUTENTICACIÓN (SUPABASE)
-# Sistema: AboAgrim Pro DMS
+# Sistema: AboAgrim Pro DMS - Versión Blindada
 # =====================================================================
 
 import streamlit as st
 from supabase import create_client, Client
+
+# --- ESCUDO ANTI-CRASH (DICCIONARIO SEGURO) ---
+class DiccionarioSeguro(dict):
+    """
+    Si la interfaz gráfica pide una columna que no existe en Supabase,
+    evita el 'KeyError' (pantalla roja) devolviendo 'N/A' automáticamente.
+    """
+    def __missing__(self, key):
+        return "N/A"
 
 # ---------------------------------------------------------------------
 # 1. CONEXIÓN AL SERVIDOR EN LA NUBE
@@ -34,18 +43,14 @@ def obtener_diccionario_maestro():
     return dic
 
 # ---------------------------------------------------------------------
-# 3. EXTRACCIÓN DE EXPEDIENTES (Preparado para el buscador)
+# 3. EXTRACCIÓN DE EXPEDIENTES
 # ---------------------------------------------------------------------
 def consultar_todo(busqueda=""):
-    """
-    Descarga todos los casos registrados. 
-    Acepta un parámetro de búsqueda para el Archivo Digital.
-    """
     try:
         respuesta = db.table("casos").select("*").order("created_at", desc=True).execute()
-        datos = respuesta.data
+        # Envolvemos los resultados en el escudo
+        datos = [DiccionarioSeguro(d) for d in respuesta.data]
         
-        # Filtro inteligente si el usuario escribe en el buscador
         if busqueda:
             datos_filtrados = []
             for caso in datos:
@@ -80,32 +85,29 @@ def autenticar_usuario(email, password):
         return False, None
 
 # =====================================================================
-# 6. FUNCIONES DE LA INTERFAZ AVANZADA (Para evitar los errores rojos)
+# 6. FUNCIONES DE INTERFAZ AVANZADA BLINDADAS
 # =====================================================================
 
 def consultar_plantillas():
-    """Recupera la lista de plantillas para el módulo de Plantillas Auto."""
     try:
         respuesta = db.table("plantillas").select("*").execute()
-        return respuesta.data
+        return [DiccionarioSeguro(d) for d in respuesta.data]
     except Exception:
         return []
 
 def consultar_alertas(solo_pendientes=False):
-    """Recupera las alertas de plazos y audiencias."""
     try:
         consulta = db.table("alertas").select("*")
         if solo_pendientes:
             consulta = consulta.eq("estado", "Pendiente")
         respuesta = consulta.execute()
-        return respuesta.data
+        return [DiccionarioSeguro(d) for d in respuesta.data]
     except Exception:
         return []
 
 def consultar_facturas():
-    """Recupera el historial de facturación para el módulo financiero."""
     try:
         respuesta = db.table("pagos").select("*").execute()
-        return respuesta.data
+        return [DiccionarioSeguro(d) for d in respuesta.data]
     except Exception:
         return []
