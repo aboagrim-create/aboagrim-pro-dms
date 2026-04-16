@@ -120,3 +120,19 @@ def procesar_plantilla_maestra(contexto, plantilla_bytes):
         
     except Exception as e:
         return None
+# ---------------------------------------------------------------------
+# 6. SISTEMA DE AUTENTICACIÓN (LOGIN)
+# ---------------------------------------------------------------------
+def autenticar_usuario(email, password):
+    """
+    Se comunica con el endpoint de Supabase Auth para verificar las credenciales.
+    Retorna True y los datos del usuario si es exitoso, False si falla.
+    """
+    try:
+        respuesta = db.auth.sign_in_with_password({"email": email, "password": password})
+        if respuesta.session:
+            return True, respuesta.user
+        return False, None
+    except Exception as e:
+        # Falla si la contraseña es incorrecta o el usuario no existe
+        return False, None
