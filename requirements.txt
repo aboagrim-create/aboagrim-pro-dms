@@ -3,10 +3,11 @@ sqlalchemy
 python-docx
 uvicorn
 pydantic
-streamlit
-pandas
 plotly
-docxtpl
 openpyxl
 xlsxwriter
+streamlit
+pandas
 supabase
+docxtpl
+python-dotenv
