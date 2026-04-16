@@ -87,25 +87,21 @@ def auto_registrar_plantilla(nombre_archivo):
     existe = supabase.table("plantillas").select("*").eq("archivo_word", nombre_archivo).execute()
     if not existe.data:
         supabase.table("plantillas").insert({"nombre_mostrar": nombre_archivo.replace(".docx", ""), "archivo_word": nombre_archivo, "carpeta_destino_sugerida": "General"}).execute()
-
-def borrar_plantilla(id_p):
-    supabase.table("plantillas").delete().eq("id", id_p).execute()
-# Pégalo al final de database.py
-# --- REEMPLAZAR DESDE LA LÍNEA 85 HASTA EL FINAL ---
-
 def obtener_diccionario_maestro():
-    """Trae las etiquetas desde la tabla variables_sistema"""
+    """Trae las etiquetas desde Supabase"""
     try:
         query = supabase.table("variables_sistema").select("*").execute()
         return query.data
     except Exception as e:
-        st.error(f"Error al leer diccionario: {e}")
+        st.error(f"Error al conectar con el diccionario: {e}")
         return []
 
 def procesar_plantilla_maestra(datos, nombre_plantilla):
-    """Crea el Word y lo guarda en la carpeta Expedientes"""
+    """Genera el Word y lo guarda en la carpeta Expedientes"""
+    from docxtpl import DocxTemplate
+    import os
     try:
-        # 1. Ruta de la plantilla (Asegúrese de que la carpeta exista)
+        # 1. Ruta de la plantilla
         ruta_plantilla = os.path.join("plantillas_maestras", nombre_plantilla)
         
         # 2. Carpeta de salida por cliente
@@ -115,13 +111,16 @@ def procesar_plantilla_maestra(datos, nombre_plantilla):
         if not os.path.exists(ruta_salida):
             os.makedirs(ruta_salida)
             
-        # 3. Cargar plantilla y aplicar datos
+        # 3. Procesar Word
         doc = DocxTemplate(ruta_plantilla)
         doc.render(datos)
         
-        # 4. Guardar archivo final
+        # 4. Guardar
         archivo_final = f"{ruta_salida}/GENERADO_{nombre_plantilla}"
         doc.save(archivo_final)
+        return archivo_final
+    except Exception as e:
+        return f"Error técnico: {str(e)}"
         return archivo_final
     except Exception as e:
         return f"Error técnico: {str(e)}"
