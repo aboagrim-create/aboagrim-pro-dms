@@ -143,7 +143,7 @@ def vista_mando():
             st.dataframe(df_filtrado, use_container_width=True)
         else:
             st.warning("No se encontraron expedientes con los tags y criterios de búsqueda especificados.")
-    else:
+else:
         st.info("🟢 El motor de base de datos está en línea y operando de manera óptima. Inicie registrando su primer expediente.")
         st.divider()
         col1, col2 = st.columns(2)
@@ -152,8 +152,7 @@ def vista_mando():
             st.markdown("- Gestión automatizada de Litis y Demandas\n- Redacción inteligente de Contratos\n- Seguimiento de Audiencias y Plazos")
         with col2:
             st.markdown("#### 📐 Área de Agrimensura")
-            st.markdown("- Control de Saneamientos y Deslindes\n- Bóveda digital para planos y AutoCAD\n- Control de etapas de Mensura")l para planos y AutoCAD\n- Control de etapas de Mensura")
-
+            st.markdown("- Control de Saneamientos y Deslindes\n- Bóveda digital para planos y AutoCAD\n- Control de etapas de Mensura")
 # --- 3. ARCHIVO DIGITAL ---
 def vista_archivo():
     st.title("📁 Archivo Digital DMS (Nube)")
