@@ -184,4 +184,10 @@ def vista_registro():
 
     except Exception as e:
         st.error(f"Error de visualización: {e}")
-    elif menu == "⚙️ Configuración": vista_configuracion()
+# --- NAVEGACIÓN DEL SISTEMA ---
+if menu == "🏠 Mando":
+    vista_mando()
+elif menu == "👤 Registro Maestro":
+    vista_registro()
+elif menu == "⚙ Configuración":
+    vista_configuracion()
