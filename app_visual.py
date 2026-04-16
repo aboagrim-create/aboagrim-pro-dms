@@ -26,7 +26,6 @@ menu = st.sidebar.radio(
 )
 
 # --- 2. REGISTRO MAESTRO ---
-# --- 2. REGISTRO MAESTRO ---
 def vista_registro_maestro():
     st.title("⚖️ Registro Maestro y Asignación")
     dic = obtener_diccionario_maestro()
