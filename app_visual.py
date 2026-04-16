@@ -150,6 +150,12 @@ from database import obtener_diccionario_maestro
 diccionario = obtener_diccionario_maestro()
 # Esto cargará automáticamente etiquetas como {{ parcela }} o {{ matricula }}
 # que definió en su diccionario[cite: 27, 29].
+# Busque el bloque 'with t5:' más abajo en app_visual.py
+with t5:
+    st.header("🚀 Generación de Documentos")
+    if st.button("Crear Expediente Completo"):
+        # El sistema tomará los datos de t1 y t2 y los pegará en el Word
+        st.info("Generando archivos basados en su Diccionario Maestro...")
         t1, t2, t3, t4, t5 = st.tabs(["👤 1. Cliente", "🏗️ 2. Inmuebles/Apo", "🎓 3. Prof", "📄 4. Trámites/Metadatos", "🚀 5. Generar"])
         with t1:
             c1,c2,c3 = st.columns(3)
