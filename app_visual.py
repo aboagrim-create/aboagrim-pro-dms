@@ -1,8 +1,3 @@
-# =====================================================================
-# INTERFAZ GRÁFICA Y SISTEMA EXPERTO LEGAL JI
-# Sistema: AboAgrim Pro DMS v18.0 (Edición Normativa JI)
-# =====================================================================
-
 import streamlit as st
 import pandas as pd
 import datetime
@@ -18,11 +13,60 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------
+# PANTALLA DE LOGIN (PUNTO DE CONTROL DE ACCESO)
+# ---------------------------------------------------------------------
+if 'autenticado' not in st.session_state:
+    st.session_state['autenticado'] = False
+
+if not st.session_state['autenticado']:
+    st.markdown("""
+        <style>
+        .login-box {
+            max-width: 400px; margin: 0 auto; padding: 30px; 
+            border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background-color: #1E3A8A; color: white; border-top: 5px solid #FBBF24;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("<div class='login-box'>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; color: white;'>⚖️ AboAgrim Pro</h2>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #cbd5e1;'>Acceso Restringido al Sistema DMS</p>", unsafe_allow_html=True)
+        
+        with st.form("form_login"):
+            correo = st.text_input("Correo Electrónico Institucional:")
+            clave = st.text_input("Contraseña de Acceso:", type="password")
+            submit = st.form_submit_button("Iniciar Sesión", use_container_width=True)
+            
+            if submit:
+                if correo and clave:
+                    exito, usuario = autenticar_usuario(correo, clave)
+                    if exito:
+                        st.session_state['autenticado'] = True
+                        st.session_state['correo_usuario'] = correo
+                        st.rerun() # Recarga la página para mostrar el sistema
+                    else:
+                        st.error("❌ Credenciales incorrectas o usuario no registrado.")
+                else:
+                    st.warning("⚠️ Complete ambos campos.")
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Detiene la ejecución del código aquí. Nadie pasa si no se loguea.
+    st.stop() 
+
+# =====================================================================
+# EL USUARIO HA PASADO EL LOGIN - MOSTRAR EL SISTEMA
+# =====================================================================
+
+# ---------------------------------------------------------------------
 # BARRA LATERAL (SIDEBAR) Y MENÚ DE NAVEGACIÓN
 # ---------------------------------------------------------------------
 st.sidebar.markdown("### Abogados y Agrimensores")
 st.sidebar.markdown("## 'AboAgrim'")
-st.sidebar.markdown("**Lic. Jhonny Matos. M.A., Presidente Fundador**")
+st.sidebar.markdown(f"**Usuario:** {st.session_state['correo_usuario']}")
 st.sidebar.divider()
 
 opciones_menu = [
@@ -38,7 +82,12 @@ opciones_menu = [
 menu = st.sidebar.radio("Módulos del Sistema", opciones_menu, label_visibility="collapsed")
 
 st.sidebar.divider()
-st.sidebar.markdown("🟢 **Estado:** Base de Datos Conectada")
+
+# Botón para cerrar sesión
+if st.sidebar.button("🚪 Cerrar Sesión", use_container_width=True):
+    st.session_state['autenticado'] = False
+    st.rerun()
+
 st.sidebar.caption("Motor: AboAgrim OS v18.0 - Ley 108-05")
 
 # =====================================================================
