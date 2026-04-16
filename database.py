@@ -97,3 +97,27 @@ def obtener_diccionario_maestro():
     except Exception as e:
         st.error(f"Error al conectar con el diccionario: {e}")
         return []
+# Agregue esto al final de database.py
+from docxtpl import DocxTemplate
+import os
+
+def procesar_plantilla_maestra(datos, nombre_plantilla):
+    """Genera el Word y lo guarda en la carpeta del cliente"""
+    try:
+        # 1. Ruta de la plantilla y carpeta de salida
+        ruta_plantilla = os.path.join("plantillas_maestras", nombre_plantilla)
+        carpeta_cliente = f"Expedientes/{datos['cliente_nombre']}"
+        
+        if not os.path.exists(carpeta_cliente):
+            os.makedirs(carpeta_cliente)
+            
+        # 2. Cargar y procesar
+        doc = DocxTemplate(ruta_plantilla)
+        doc.render(datos) # Aquí se llenan etiquetas como {{ parcela }} [cite: 27]
+        
+        # 3. Guardar archivo final
+        ruta_final = os.path.join(carpeta_cliente, f"GENERADO_{nombre_plantilla}")
+        doc.save(ruta_final)
+        return ruta_final
+    except Exception as e:
+        return f"Error: {e}"
