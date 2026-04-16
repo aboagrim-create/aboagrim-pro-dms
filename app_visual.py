@@ -1,77 +1,113 @@
 import streamlit as st
 import pandas as pd
-import datetime
+from database import *
 
-# --- CONFIGURACIÓN DE PÁGINA ---
+# --- Configuración de Interfaz ---
 st.set_page_config(page_title="AboAgrim Pro DMS", layout="wide")
 
-# --- BARRA LATERAL (SIDEBAR) ---
-st.sidebar.markdown(f"## AboAgrim Pro")
-st.sidebar.markdown(f"Lic. Jhonny Matos. M.A., Presidente")
+# --- Identidad Corporativa ---
+st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=80)
+st.sidebar.markdown("## Abogados y Agrimensores 'AboAgrim'")
+st.sidebar.markdown("**Lic. Jhonny Matos. M.A., Presidente**")
 st.sidebar.divider()
 
-# Menú de navegación
+# Menú de Navegación
 menu = st.sidebar.radio(
     "Módulos del Sistema",
-    ["Mando Central", "Registro Catastral & Legal", "Archivo Digital DMS", "Configuración de Firma"]
+    ["📊 Mando Central", "📝 Registro Catastral & Legal", "💰 Honorarios y Cobros", "📂 Archivo Digital DMS", "⚙️ Configuración"]
 )
 
-# --- IMPORTACIÓN DE DATOS SIMULADOS (PARA EL EJEMPLO) ---
-def get_casos_ejemplo():
-    data = {
-        'Número': ['2023-01', '2023-02', '2023-03'],
-        'Cliente': ['Cliente A', 'Cliente B', 'Cliente C'],
-        'Tipo': ['Deslinde', 'Saneamiento', 'Litis'],
-        'Jurisdicción': ['Distrito Nacional', 'Santiago', 'Santo Domingo'],
-        'Estado': ['Abierto', 'Cerrado', 'Abierto']
-    }
-    return pd.DataFrame(data)
-
-def get_litigios_ejemplo():
-    data = {
-        'Número': ['2023-L01', '2023-L02'],
-        'Cliente': ['Cliente D', 'Cliente E'],
-        'Tipo': ['Reclamación de Linderos', 'Servidumbre'],
-        'Jurisdicción': ['La Vega', 'San Cristóbal'],
-        'Estado': ['Abierto', 'Abierto']
-    }
-    return pd.DataFrame(data)
-
-# --- FUNCIONES DE VISTA (LAS VISTAS DESEADAS) ---
+# --- 1. MANDO CENTRAL (Dashboard) ---
 def vista_mando_central():
-    st.title("Mando Central: Resumen Operativo")
+    st.title("📊 Mando Central: Resumen Operativo")
+    casos = consultar_todo()
     
-    st.subheader("Expedientes Catastrales (Deslindes, etc.)")
-    df_casos = get_casos_ejemplo()
-    st.dataframe(df_casos, use_container_width=True)
+    if casos:
+        df = pd.DataFrame(casos)
+        # Métricas principales
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Total Expedientes", len(df))
+        m2.metric("Deslindes", len(df[df['tipo_caso'] == 'Deslinde']) if 'tipo_caso' in df else 0)
+        m3.metric("Litis", len(df[df['tipo_caso'] == 'Litis sobre derecho registrado']) if 'tipo_caso' in df else 0)
+        m4.metric("Casos Abiertos", len(df[df['estado'] == 'Abierto']) if 'estado' in df else 0)
 
-    st.divider()
+        col_izq, col_der = st.columns([2, 1])
+        with col_izq:
+            st.subheader("Buscador Global de Expedientes")
+            busqueda = st.text_input("Filtrar por Cliente o Número:")
+            if busqueda:
+                df = df[df.astype(str).apply(lambda x: busqueda.lower() in x.str.lower().values, axis=1)]
+            st.dataframe(df, use_container_width=True)
+            
+        with col_der:
+            st.subheader("Distribución por Jurisdicción")
+            if 'jurisdiccion' in df:
+                st.bar_chart(df['jurisdiccion'].value_counts())
+    else:
+        st.info("Inicie registrando casos en el módulo de Registro.")
+
+# --- 2. REGISTRO CATASTRAL & LEGAL ---
+def vista_registro():
+    st.title("📝 Registro Catastral y Legal")
+    dic = obtener_diccionario_maestro()
     
-    st.subheader("Litigios y Litis")
-    df_litigios = get_litigios_ejemplo()
-    st.dataframe(df_litigios, use_container_width=True)
+    with st.form("form_registro_completo"):
+        st.subheader("Información General del Caso")
+        c1, c2, c3 = st.columns(3)
+        numero = c1.text_input("Número de Expediente:")
+        tipo = c2.selectbox("Tipo de Acto:", ["Deslinde", "Saneamiento", "Litis", "Transferencia", "Subdivisión"])
+        jurisdiccion = c3.selectbox("Jurisdicción:", ["Santiago", "La Vega", "Santo Domingo", "Puerto Plata", "Moca"])
+        
+        st.subheader("Partes Interesadas")
+        f1, f2 = st.columns(2)
+        cliente = f1.text_input("Nombre del Cliente / Reclamante:")
+        cedula = f2.text_input("Cédula / RNC:")
+        
+        st.subheader("Asignación de Personal Técnico")
+        a1, a2, a3 = st.columns(3)
+        agrimensor = a1.selectbox("Agrimensor:", dic['agrimensor'] or ["N/A"])
+        abogado = a2.selectbox("Abogado:", dic['abogado'] or ["N/A"])
+        notario = a3.selectbox("Notario:", dic['notario'] or ["N/A"])
 
-def vista_registro_catastral_legal():
-    st.title("Módulo de Registro Catastral y Legal")
-    st.info("Formulario para registro de nuevos expedientes.")
-    # Implementación del formulario aquí...
+        if st.form_submit_button("✅ Blindar y Guardar Expediente"):
+            datos = {
+                "numero_expediente": numero,
+                "tipo_caso": tipo,
+                "jurisdiccion": jurisdiccion,
+                "cliente": cliente,
+                "estado": "Abierto",
+                "etapa": "Recepción"
+            }
+            if registrar_evento("casos", datos):
+                st.success("Expediente registrado exitosamente en Supabase.")
 
-def vista_archivo_digital_dms():
-    st.title("Módulo de Archivo Digital DMS")
-    st.info("Búsqueda y gestión de documentos digitales.")
-    # Implementación del archivo aquí...
+# --- 3. HONORARIOS Y COBROS ---
+def vista_honorarios():
+    st.title("💰 Gestión Financiera de Honorarios")
+    datos_fin = consultar_honorarios_completos()
+    if datos_fin:
+        df_fin = pd.DataFrame(datos_fin)
+        st.dataframe(df_fin, use_container_width=True)
+    else:
+        st.warning("No hay registros financieros activos.")
 
-def vista_configuracion_firma():
-    st.title("Módulo de Configuración de Firma")
-    st.info("Ajustes generales y perfiles de firma.")
-    # Implementación de configuración aquí...
+# --- 4. ARCHIVO DIGITAL DMS ---
+def vista_archivo():
+    st.title("📂 Archivo Digital DMS")
+    st.info("Gestión de archivos en la nube (Planos, Word, PDF).")
+    uploaded_file = st.file_uploader("Subir documento técnico:", type=["docx", "pdf", "dwg"])
+    if uploaded_file:
+        st.success("Archivo preparado para carga.")
 
-# --- LÓGICA DE NAVEGACIÓN (CONECTANDO EL MENÚ A LAS VISTAS) ---
-if menu == "Mando Central":
+# --- Lógica de Enrutamiento Final ---
+if menu == "📊 Mando Central":
     vista_mando_central()
-elif menu == "Registro Catastral & Legal":
-    vista_registro_catastral_legal()
-elif menu == "Archivo Digital DMS":
-    vista_archivo_digital_dms()
-elif menu == "Configuración de Firma":
-    vista_configuracion_firma()
+elif menu == "📝 Registro Catastral & Legal":
+    vista_registro()
+elif menu == "💰 Honorarios y Cobros":
+    vista_honorarios()
+elif menu == "📂 Archivo Digital DMS":
+    vista_archivo()
+elif menu == "⚙️ Configuración":
+    st.title("⚙️ Configuración General")
+    st.write("Sistema AboAgrim Pro v17.1 - Estado: **Óptimo**")
