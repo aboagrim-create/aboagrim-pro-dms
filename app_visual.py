@@ -193,15 +193,9 @@ def vista_configuracion():
     st.info("Módulo de configuración en mantenimiento tras la restauración.")
     # Aquí luego agregaremos tus ajustes de plantillas y base de datos
 # --- 2. NAVEGACIÓN DEL SISTEMA ---
-if menu == "🏠 Mando":
+if menu == "Mando":
     vista_mando()
-elif menu == "👤 Registro Maestro":
-    vista_registro()
-elif menu == "⚙ Configuración":
-    vista_configuracion()
-if menu == "🏠 Mando":
-    vista_mando()
-elif menu == "👤 Registro Maestro":
-    vista_registro()
-elif menu == "⚙ Configuración":
+elif menu == "Registro Maestro":
+    vista_registro_maestro()
+elif menu == "Configuración":
     vista_configuracion()
