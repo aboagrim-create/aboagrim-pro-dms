@@ -193,7 +193,7 @@ if menu == "🏠 Mando":
 elif menu == "👤 Registro Maestro":
     vista_registro()
 elif menu == "⚙ Configuración":
-    vista_configuracion()---
+    vista_configuracion()
 if menu == "🏠 Mando":
     vista_mando()
 elif menu == "👤 Registro Maestro":
