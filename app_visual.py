@@ -191,6 +191,7 @@ import streamlit as st
 def vista_configuracion():
     st.title("⚙️ Configuración del Sistema")
     st.info("Módulo de configuración en mantenimiento tras la restauración.")
+    
 # --- Lógica de navegación ---
 if menu == "🏠 Mando":
     vista_mando()
