@@ -144,10 +144,10 @@ def vista_mando():
 def vista_registro():
     st.title("⚖️ Registro Maestro y Redacción")
     try:
+        # Importamos las funciones que acabamos de poner en database.py
         from database import obtener_diccionario_maestro, procesar_plantilla_maestra
         diccionario = obtener_diccionario_maestro()
         
-        # Definición de pestañas
         t1, t2, t3, t4, t5 = st.tabs(["👤 1. Cliente", "🏗️ 2. Inmuebles", "🎓 3. Prof", "📑 4. Trámites", "🚀 5. Generar"])
 
         with t1:
@@ -162,7 +162,7 @@ def vista_registro():
 
         with t5:
             st.header("🚀 Generación de Documentos")
-            # Bolsa de datos que irá al Word
+            # Esta es la "bolsa" que junta todo lo que usted escribió arriba
             datos_finales = {
                 "cliente_nombre": cli_nom,
                 "cedula": cli_ced,
@@ -172,7 +172,7 @@ def vista_registro():
             }
             
             if st.button("Generar Cuota Litis", type="primary"):
-                # Busca el archivo CUOTA_LITIS.docx en la carpeta plantillas_maestras
+                # Aquí el sistema busca el Word y le pega los datos
                 resultado = procesar_plantilla_maestra(datos_finales, "CUOTA_LITIS.docx")
                 if "Error" in resultado:
                     st.error(resultado)
