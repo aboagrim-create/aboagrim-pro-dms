@@ -151,8 +151,8 @@ def vista_registro():
         diccionario = obtener_diccionario_maestro()
         
         # Definición de las 5 pestañas originales
-        t1, t2, t3, t4, t5 = st.tabs(["👤 1. Cliente", "🏗️ 2. Inmuebles", "🎓 3. Prof", "📑 4. Trámites", "🚀 5. Generar"])
-
+                t1, t2, t3, t4, t5 = st.tabs(["👤 1. Cliente", "🏗️ 2. Inmuebles", "🎓 3. Prof", "📑 4. Trámites", "🚀 5. Generar"])
+        
         with t1:
             st.subheader("Datos del Cliente")
             cli_nom = st.text_input("Nombre Completo", key="c_nom_v")
