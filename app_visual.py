@@ -1,211 +1,143 @@
 import streamlit as st
 import pandas as pd
-import datetime
 from database import *
 
-# --- Configuración Base ---
-st.set_page_config(page_title="AboAgrim Pro DMS v17.1", layout="wide", initial_sidebar_state="expanded")
+# --- Configuración de Interfaz ---
+st.set_page_config(page_title="AboAgrim Pro DMS", layout="wide", initial_sidebar_state="expanded")
 
-# --- Menú Lateral Corporativo ---
-st.sidebar.markdown("### Abogados y Agrimensores\n### 'AboAgrim'")
+# --- Menú Lateral Oficial ---
+st.sidebar.markdown("### Abogados y Agrimensores 'AboAgrim'")
 st.sidebar.markdown("**Lic. Jhonny Matos. M.A., Presidente**")
 st.sidebar.divider()
 
 menu = st.sidebar.radio(
     "Navegación",
-    [
-        "🏠 Mando", 
-        "👤 Registro Maestro", 
-        "📁 Archivo", 
-        "📄 Plantillas", 
-        "📅 Alertas", 
-        "💳 Facturación", 
-        "⚙️ Configuración"
-    ],
+    ["🏠 Mando", "👤 Registro Maestro", "📁 Archivo", "📄 Plantillas", "📅 Alertas", "💳 Facturación", "⚙️ Configuración"],
     label_visibility="collapsed"
 )
 
-# --- 1. MANDO CENTRAL ---
+# --- 1. MANDO CENTRAL (DISEÑO PREMIUM + TAGS) ---
 def vista_mando():
-    # Inyección de CSS para un diseño Premium
     st.markdown("""
         <style>
         .hero-banner {
             background: linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%);
-            padding: 40px 30px;
-            border-radius: 12px;
-            color: white;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            margin-bottom: 2rem;
-            border-left: 6px solid #FBBF24;
+            padding: 40px; border-radius: 15px; color: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2); margin-bottom: 25px;
+            border-left: 8px solid #FBBF24;
         }
-        .hero-title {
-            font-size: 2.8rem;
-            font-weight: 800;
-            margin-bottom: 0.5rem;
-            letter-spacing: -0.025em;
-        }
-        .hero-subtitle {
-            font-size: 1.4rem;
-            color: #94A3B8;
-            font-weight: 400;
-            margin-bottom: 1.5rem;
-        }
-        .founder-name {
-            font-size: 1.25rem;
-            color: #FBBF24; 
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .area-tags {
-            margin-top: 15px;
-            font-size: 0.9rem;
-            color: #E2E8F0;
-            background: rgba(255,255,255,0.1);
-            display: inline-block;
-            padding: 5px 15px;
-            border-radius: 20px;
-        }
+        .founder { color: #FBBF24; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
         </style>
-    """, unsafe_allow_html=True)
-
-    # Banner Corporativo Renderizado
-    st.markdown("""
         <div class="hero-banner">
-            <div class="hero-title">AboAgrim Pro DMS ⚖️📐</div>
-            <div class="hero-subtitle">Plataforma Inteligente de Gestión Jurídica y Mensura Catastral</div>
-            <div class="founder-name">Lic. Jhonny Matos, M.A. | Fundador</div>
-            <div class="area-tags">Jurisdicción Inmobiliaria • Deslindes • Litis • Saneamientos</div>
+            <h1 style='color: white; margin:0;'>AboAgrim Pro DMS ⚖️📐</h1>
+            <p style='font-size: 1.2rem; opacity: 0.8;'>Gestión Integral de Jurisdicción Inmobiliaria y Mensura</p>
+            <div class="founder">Lic. Jhonny Matos, M.A. | Fundador</div>
         </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("### 📈 Indicadores de Desempeño Operativo")
-    
     casos = consultar_todo()
     if casos:
         df = pd.DataFrame(casos)
         
-        st.markdown("#### 🔍 Filtros Avanzados")
+        # Sistema de Tags
+        st.markdown("#### 🔍 Filtrado por Etiquetas (Tags)")
+        cols_tag = ['tipo_caso', 'jurisdiccion', 'estado', 'etapa']
+        tags_disp = sorted(list(set([str(val) for col in cols_tag if col in df.columns for val in df[col].dropna().unique() if str(val).strip()])))
         
-        tags_disponibles = []
-        columnas_tag = ['tipo_caso', 'jurisdiccion', 'estado', 'etapa']
-        for col in columnas_tag:
-            if col in df.columns:
-                tags_disponibles.extend([str(val) for val in df[col].dropna().unique() if str(val).strip() != ""])
-        
-        tags_disponibles = sorted(list(set(tags_disponibles)))
+        c_f1, c_f2 = st.columns([2, 1])
+        t_sel = c_f1.multiselect("Tags:", options=tags_disp, placeholder="Filtre por cualquier atributo...")
+        b_txt = c_f2.text_input("Buscar Cliente o Expediente:")
 
-        col_filtro1, col_filtro2 = st.columns([2, 1])
-        with col_filtro1:
-            tags_seleccionados = st.multiselect(
-                "Filtrar por Etiquetas (Tags):",
-                options=tags_disponibles,
-                placeholder="Ej. Selecciona 'Deslinde' y 'Santiago'..."
-            )
-        with col_filtro2:
-            busqueda_texto = st.text_input("Búsqueda por Expediente o Cliente:")
+        df_f = df.copy()
+        if t_sel:
+            for t in t_sel:
+                df_f = df_f[df_f.astype(str).apply(lambda r: t in r.values, axis=1)]
+        if b_txt:
+            df_f = df_f[df_f.astype(str).apply(lambda x: x.str.contains(b_txt, case=False, na=False)).any(axis=1)]
 
-        df_filtrado = df.copy()
-        
-        if tags_seleccionados:
-            for tag in tags_seleccionados:
-                mask = df_filtrado.astype(str).apply(lambda row: tag in row.values, axis=1)
-                df_filtrado = df_filtrado[mask]
-                
-        if busqueda_texto:
-            mask_texto = df_filtrado.astype(str).apply(lambda x: x.str.contains(busqueda_texto, case=False, na=False)).any(axis=1)
-            df_filtrado = df_filtrado[mask_texto]
+        # Métricas Dinámicas
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Resultados", len(df_f))
+        m2.metric("Deslindes", len(df_f[df_f['tipo_caso'] == 'Deslinde']) if 'tipo_caso' in df_f.columns else 0)
+        m3.metric("Abiertos", len(df_f[df_f['estado'] == 'Abierto']) if 'estado' in df_f.columns else 0)
+        m4.metric("Jurisdicción", df_f['jurisdiccion'].mode()[0] if 'jurisdiccion' in df_f.columns and not df_f.empty else "N/A")
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Resultados de Búsqueda", len(df_filtrado))
-        c2.metric("En Proceso", len(df_filtrado[df_filtrado['estado'] == 'Abierto']) if 'estado' in df_filtrado.columns else 0)
-        c3.metric("Deslindes", len(df_filtrado[df_filtrado['tipo_caso'] == 'Deslinde']) if 'tipo_caso' in df_filtrado.columns else 0)
-        c4.metric("Litis", len(df_filtrado[df_filtrado['tipo_caso'] == 'Litis']) if 'tipo_caso' in df_filtrado.columns else 0)
-        
         st.divider()
-        st.subheader("📋 Base de Datos de Expedientes")
-        if not df_filtrado.empty:
-            st.dataframe(df_filtrado, use_container_width=True)
-        else:
-            st.warning("No se encontraron expedientes con los tags y criterios de búsqueda.")
+        st.dataframe(df_f, use_container_width=True)
     else:
-        st.info("🟢 El motor de base de datos está en línea y operando de manera óptima.")
-        st.divider()
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("#### ⚖️ Área de Derecho")
-            st.markdown("- Gestión automatizada de Litis y Demandas\n- Redacción inteligente de Contratos")
-        with col2:
-            st.markdown("#### 📐 Área de Agrimensura")
-            st.markdown("- Control de Saneamientos y Deslindes\n- Bóveda digital para planos y AutoCAD")
+        st.info("Sistema en línea. Registre su primer expediente para activar el panel.")
 
-# --- 2. REGISTRO MAESTRO ---
+# --- 2. REGISTRO MAESTRO (FORMULARIO EXTENDIDO) ---
 def vista_registro_maestro():
-    st.title("⚖️ Registro Maestro y Asignación")
+    st.title("⚖️ Registro Maestro y Redacción")
     dic = obtener_diccionario_maestro()
     
-    with st.form("form_registro_oficial"):
-        st.subheader("Apertura de Nuevo Expediente")
+    with st.form("registro_full"):
+        st.subheader("I. Datos del Expediente")
         c1, c2, c3 = st.columns(3)
-        num = c1.text_input("Número de Expediente:")
+        num = c1.text_input("N° de Expediente:")
         tipo = c2.selectbox("Tipo de Acto:", ["Deslinde", "Saneamiento", "Litis", "Transferencia", "Determinación de Herederos"])
-        jur = c3.selectbox("Jurisdicción:", ["Santiago", "La Vega", "Santo Domingo", "Puerto Plata", "Tribunal Superior de Tierras"])
+        jur = c3.selectbox("Jurisdicción:", ["Santiago", "La Vega", "Santo Domingo", "Puerto Plata", "Moca"])
         
-        c4, c5 = st.columns(2)
-        cliente = c4.text_input("Nombre del Cliente / Propietario:")
-        etapa = c5.selectbox("Etapa Inicial:", ["Recepción de Documentos", "Mensura Catastral", "Sometimiento a Tribunal", "Sentencia"])
-        
-        st.markdown("---")
-        st.subheader("Personal Técnico y Legal")
-        a1, a2, a3 = st.columns(3)
-        agrimensor = a1.selectbox("Agrimensor a cargo:", dic.get('agrimensor', []) or ["Sin registros"])
-        abogado = a2.selectbox("Abogado apoderado:", dic.get('abogado', []) or ["Sin registros"])
-        notario = a3.selectbox("Notario actuante:", dic.get('notario', []) or ["Sin registros"])
+        st.subheader("II. Partes Interesadas")
+        f1, f2, f3 = st.columns(3)
+        cli = f1.text_input("Cliente / Reclamante:")
+        ced = f2.text_input("Cédula / RNC:")
+        eta = f3.selectbox("Etapa Actual:", ["Recepción", "Mensura", "Sometimiento", "Tribunal", "Sentencia"])
 
-        if st.form_submit_button("🛡️ Guardar Expediente Oficial"):
-            if num and cliente:
-                exito = registrar_evento("casos", {"numero_expediente": num, "tipo_caso": tipo, "jurisdiccion": jur, "cliente_id": cliente, "etapa": etapa, "estado": "Abierto"})
-                if exito: st.success("✅ Expediente blindado en la base de datos.")
-                else: st.error("Error de conexión al guardar.")
-            else:
-                st.warning("⚠️ Complete el número de expediente y el cliente.")
+        st.subheader("III. Asignación de Profesionales")
+        a1, a2, a3 = st.columns(3)
+        agrim = a1.selectbox("Agrimensor:", dic.get('agrimensor', []) or ["Sin datos"])
+        abog = a2.selectbox("Abogado:", dic.get('abogado', []) or ["Sin datos"])
+        notar = a3.selectbox("Notario:", dic.get('notario', []) or ["Sin datos"])
+        
+        a4, a5, a6 = st.columns(3)
+        repre = a4.selectbox("Representante:", dic.get('representante', []) or ["Sin datos"])
+        apoder = a5.selectbox("Apoderado:", dic.get('apoderado', []) or ["Sin datos"])
+        solic = a6.selectbox("Solicitante:", dic.get('solicitante', []) or ["Sin datos"])
+
+        if st.form_submit_button("🛡️ Registrar Expediente Oficialmente"):
+            if num and cli:
+                datos = {"numero_expediente": num, "tipo_caso": tipo, "jurisdiccion": jur, "cliente_id": cli, "etapa": eta, "estado": "Abierto"}
+                if registrar_evento("casos", datos): st.success("✅ Expediente guardado en la nube.")
+                else: st.error("Error al conectar con la base de datos.")
 
 # --- 3. ARCHIVO DIGITAL ---
 def vista_archivo():
-    st.title("📁 Archivo Digital DMS (Nube)")
-    st.markdown("Gestión documental vinculada a expedientes (Planos Civil 3D, PDFs, Sentencias).")
-    with st.expander("Subir Nuevos Documentos", expanded=True):
-        st.file_uploader("Arrastre sus archivos aquí", accept_multiple_files=True)
+    st.title("📁 Archivo Digital DMS")
+    st.markdown("Gestión de planos Civil 3D, Word y PDF.")
+    exp = st.text_input("Vincular al Expediente N°:")
+    st.file_uploader("Subir archivos técnicos:", accept_multiple_files=True)
+    st.button("⬆️ Cargar a Bóveda")
 
 # --- 4. PLANTILLAS ---
 def vista_plantillas():
-    st.title("📄 Motor de Plantillas Inteligentes")
-    st.markdown("Generación automática de documentos legales.")
-    st.selectbox("Documento a Generar:", ["Contrato de Cuota Litis", "Solicitud de Mensura"])
-    st.button("⚙️ Procesar y Generar Word")
+    st.title("📄 Motor de Plantillas Automáticas")
+    st.selectbox("Seleccione Documento:", ["Contrato Cuota Litis", "Poder Especial", "Solicitud Mensura"])
+    st.text_input("Número de Expediente para fusión:")
+    st.button("⚙️ Generar Word")
 
 # --- 5. ALERTAS ---
 def vista_alertas():
-    st.title("📅 Panel de Control de Alertas y Plazos")
-    st.info("No hay alertas programadas.")
+    st.title("📅 Panel de Alertas y Plazos")
+    st.info("Seguimiento de plazos de Mensura y Fechas de Audiencia.")
+    st.dataframe(pd.DataFrame({"Fecha": ["2026-04-20"], "Caso": ["EXP-001"], "Evento": ["Audiencia Santiago"], "Prioridad": ["Alta"]}))
 
 # --- 6. FACTURACIÓN ---
 def vista_facturacion():
-    st.title("💳 Facturación y Control de Honorarios")
-    st.info("Módulo financiero enlazado a Supabase.")
+    st.title("💳 Control de Honorarios")
+    st.number_input("Monto Contrato RD$:", min_value=0.0)
+    st.number_input("Abonos Recibidos RD$:", min_value=0.0)
+    st.button("Actualizar Balance Financiero")
 
 # --- 7. CONFIGURACIÓN ---
 def vista_configuracion():
-    st.title("⚙️ Configuración General y Mantenimiento")
-    st.success("Conexión a Base de Datos: ACTIVA")
+    st.title("⚙️ Configuración")
+    st.text_input("Oficina:", value="AboAgrim")
+    st.text_input("Dirección:", value="Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Santiago")
+    st.success("Sistema conectado a Supabase - Versión 17.1")
 
-# --- LÓGICA DE NAVEGACIÓN ---
-if menu == "🏠 Mando": vista_mando()
-elif menu == "👤 Registro Maestro": vista_registro_maestro()
-elif menu == "📁 Archivo": vista_archivo()
-elif menu == "📄 Plantillas": vista_plantillas()
-elif menu == "📅 Alertas": vista_alertas()
-elif menu == "💳 Facturación": vista_facturacion()
-elif menu == "⚙️ Configuración": vista_configuracion()
+# --- NAVEGACIÓN ---
+vistas = {"🏠 Mando": vista_mando, "👤 Registro Maestro": vista_registro_maestro, "📁 Archivo": vista_archivo, 
+          "📄 Plantillas": vista_plantillas, "📅 Alertas": vista_alertas, "💳 Facturación": vista_facturacion, "⚙️ Configuración": vista_configuracion}
+vistas[menu]()
