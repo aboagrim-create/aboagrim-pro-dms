@@ -144,11 +144,11 @@ def vista_mando():
 def vista_registro():
     st.title("⚖️ Registro Maestro y Redacción")
 try:
-        from database import obtener_diccionario_maestro
-        diccionario = obtener_diccionario_maestro()
-        # Esto cargará automáticamente etiquetas como {{ parcela }}
-        # que definió en su diccionario
-        t1, t2, t3, t4, t5 = st.tabs(["👤 1. Cliente", "🏗️ 2. Inmuebles", "🎓 3. Prof", "📑 4. Trámites", "🚀 5. Generar"])
+    from database import obtener_diccionario_maestro
+    diccionario = obtener_diccionario_maestro()
+    # Esto cargará automáticamente etiquetas como {{ parcela }}
+    # que definió en su diccionario
+    t1, t2, t3, t4, t5 = st.tabs(["👤 1. Cliente", "🏗️ 2. Inmuebles", "🎓 3. Prof", "📑 4. Trámites", "🚀 5. Generar"])
             c1,c2,c3 = st.columns(3)
             cli_nom, cli_ced, cli_nac = c1.text_input("Nombre",key="cno"), c2.text_input("Cédula/RNC",key="cce"), c3.text_input("Nacionalidad",value="Dominicana",key="cna")
             c4,c5,c6 = st.columns(3)
