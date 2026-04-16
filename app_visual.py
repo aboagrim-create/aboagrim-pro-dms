@@ -142,22 +142,23 @@ def vista_mando():
     with c2: st.plotly_chart(px.pie(df_f, names='jurisdiccion', values='monto', title="Por Jurisdicción", color_discrete_sequence=px.colors.sequential.Blues), use_container_width=True)
 
 def vista_registro():
-    st.title("⚖️ Registro Maestro y Redacción")
+    st.subheader("📝 Registro Maestro y Redacción")
     
     try:
-        # Importación protegida dentro de la función
-        from database import obtener_diccionario_maestro, procesar_plantilla_maestra
-        
+        # Estas líneas deben tener exactamente 8 espacios a la izquierda
+        from database import obtener_diccionario_maestro
         diccionario = obtener_diccionario_maestro()
         
-        # Definición de las 5 pestañas originales
-                t1, t2, t3, t4, t5 = st.tabs(["👤 1. Cliente", "🏗️ 2. Inmuebles", "🎓 3. Prof", "📑 4. Trámites", "🚀 5. Generar"])
-        
+        # Las pestañas también deben estar alineadas con lo anterior
+        t1, t2, t3, t4, t5 = st.tabs(["👤 1. Cliente", "🏗️ 2. Inmuebles", "🎓 3. Prof", "📑 4. Trámites", "🚀 5. Generar"])
+
         with t1:
-            st.subheader("Datos del Cliente")
-            cli_nom = st.text_input("Nombre Completo", key="c_nom_v")
-            cli_ced = st.text_input("Cédula / Pasaporte", key="c_ced_v")
-            
+            st.write("Datos del Propietario")
+            cli_nom = st.text_input("Nombre Completo", key="c_nom")
+            cli_ced = st.text_input("Cédula/RNC", key="c_ced")
+
+    except Exception as e:
+        st.error(f"Error de configuración: {e}")
         with t2:
             st.subheader("Datos del Inmueble")
             ip = st.text_input("Parcela No.", key="i_parc_v")
