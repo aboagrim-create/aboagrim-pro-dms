@@ -144,6 +144,12 @@ def vista_mando():
 def vista_registro():
     st.title("⚖️ Registro Maestro y Redacción")
     try:
+        # Inserte esto entre la línea 146 y 147
+from database import obtener_diccionario_maestro
+
+diccionario = obtener_diccionario_maestro()
+# Esto cargará automáticamente etiquetas como {{ parcela }} o {{ matricula }}
+# que definió en su diccionario[cite: 27, 29].
         t1, t2, t3, t4, t5 = st.tabs(["👤 1. Cliente", "🏗️ 2. Inmuebles/Apo", "🎓 3. Prof", "📄 4. Trámites/Metadatos", "🚀 5. Generar"])
         with t1:
             c1,c2,c3 = st.columns(3)
