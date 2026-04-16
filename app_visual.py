@@ -26,6 +26,7 @@ menu = st.sidebar.radio(
 )
 
 # --- 2. REGISTRO MAESTRO ---
+# --- 2. REGISTRO MAESTRO ---
 def vista_registro_maestro():
     st.title("⚖️ Registro Maestro y Asignación")
     dic = obtener_diccionario_maestro()
@@ -55,7 +56,6 @@ def vista_registro_maestro():
                 else: st.error("Error de conexión al guardar.")
             else:
                 st.warning("⚠️ Complete el número de expediente y el cliente.")
-            st.markdown("- Control de Saneamientos y Deslindes\n- Bóveda digital para planos y AutoCAD")
 # --- 3. ARCHIVO DIGITAL ---
 def vista_archivo():
     st.title("📁 Archivo Digital DMS (Nube)")
