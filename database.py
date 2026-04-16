@@ -10,53 +10,52 @@ def get_db_connection():
     return conn
 
 def obtener_diccionario_maestro():
-    """
-    Recupera las listas de profesionales y roles para poblar 
-    los menús desplegables en el Registro Maestro y formularios.
-    Incluye todos los roles técnicos solicitados.
-    """
+    """Recupera las listas de profesionales para los menús desplegables."""
     diccionario_maestro = {
-        "agrimensor": [],
-        "abogado": [],
-        "notario": [],
-        "representante": [],
-        "apoderado": [],
-        "reclamante": [],
-        "solicitante": []
+        "agrimensor": [], "abogado": [], "notario": [],
+        "representante": [], "apoderado": [], "reclamante": [], "solicitante": []
     }
-    
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        # Extraemos los registros para cada rol
         for rol in diccionario_maestro.keys():
             try:
                 cursor.execute("SELECT id, nombre_completo FROM personas WHERE rol = ?", (rol,))
-                resultados = cursor.fetchall()
-                diccionario_maestro[rol] = [dict(row) for row in resultados]
+                diccionario_maestro[rol] = [dict(row) for row in cursor.fetchall()]
             except sqlite3.OperationalError:
-                # Si la tabla aún no se ha creado, pasamos silenciosamente para no colapsar la app
                 pass 
-                
         conn.close()
         return diccionario_maestro
-        
-    except Exception as e:
-        print(f"Error crítico al conectar con la base de datos: {e}")
+    except Exception:
         return diccionario_maestro
 
+def consultar_todo():
+    """
+    Recupera todos los expedientes para armar las gráficas 
+    y métricas del Mando Central.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        # Seleccionamos todos los casos para el DataFrame de pandas
+        cursor.execute("SELECT * FROM casos")
+        resultados = cursor.fetchall()
+        conn.close()
+        # Convertimos a una lista de diccionarios para que Streamlit/Pandas lo lea bien
+        return [dict(row) for row in resultados]
+    except Exception as e:
+        print(f"Error consultando casos: {e}")
+        return []
+
 def ejecutar_ddl():
-    """Ejecuta el archivo ddl.sql para asegurar que las tablas existan."""
+    """Ejecuta el archivo ddl.sql para asegurar la estructura de tablas."""
     if os.path.exists('ddl.sql'):
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
             with open('ddl.sql', 'r', encoding='utf-8') as f:
-                sql_script = f.read()
-            cursor.executescript(sql_script)
+                cursor.executescript(f.read())
             conn.commit()
             conn.close()
-            print("Base de datos estructurada correctamente.")
         except Exception as e:
             print(f"Error al ejecutar DDL: {e}")
