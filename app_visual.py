@@ -145,7 +145,7 @@ def vista_registro():
     st.title("⚖️ Registro Maestro y Redacción")
     try:
         # Inserte esto entre la línea 146 y 147
-from database import obtener_diccionario_maestro
+        from database import obtener_diccionario_maestro
 
 diccionario = obtener_diccionario_maestro()
 # Esto cargará automáticamente etiquetas como {{ parcela }} o {{ matricula }}
