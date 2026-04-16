@@ -191,14 +191,10 @@ import streamlit as st
 def vista_configuracion():
     st.title("⚙️ Configuración del Sistema")
     st.info("Módulo de configuración en mantenimiento tras la restauración.")
-# --- Lógica de navegación (Debe ir al final del archivo) ---
-
-# Revisa cómo se llama la variable de tu menú (suele ser 'menu', 'opcion', o 'seleccion'). 
-# Si se llama distinto, solo cambia la palabra 'menu' por la tuya:
-
-if menu == "Mando":
+# --- Lógica de navegación ---
+if menu == "🏠 Mando":
     vista_mando()
-elif menu == "Registro Maestro":
+elif menu == "👤 Registro Maestro":
     vista_registro_maestro()
-elif menu == "Configuración":
+elif menu == "⚙️ Configuración":
     vista_configuracion()
