@@ -2,6 +2,49 @@ import sqlite3
 import os
 import json
 from datetime import datetime
+import sqlite3
+
+def obtener_diccionario_maestro(db_name="aboagrim.db"):
+    """
+    Recupera las listas de profesionales y roles para poblar 
+    los menús desplegables en el Registro Maestro y formularios.
+    """
+    diccionario_maestro = {
+        "agrimensor": [],
+        "abogado": [],
+        "notario": [],
+        "representante": [],
+        "apoderado": [],
+        "reclamante": [],
+        "solicitante": []
+    }
+    
+    try:
+        conn = sqlite3.connect(db_name)
+        # Permite acceder a las columnas por su nombre
+        conn.row_factory = sqlite3.Row 
+        cursor = conn.cursor()
+        
+        # Lógica para extraer los datos de tu base de datos SQLite.
+        # Ajusta el nombre de la tabla ('contactos' o 'personas') según tu esquema.
+        # Este es un ejemplo asumiendo una tabla unificada con una columna 'rol':
+        
+        for rol in diccionario_maestro.keys():
+            try:
+                # Se busca en la base de datos por el rol específico
+                cursor.execute("SELECT id, nombre_completo FROM personas WHERE rol = ?", (rol,))
+                resultados = cursor.fetchall()
+                diccionario_maestro[rol] = [dict(row) for row in resultados]
+            except sqlite3.OperationalError:
+                # Si la tabla o columna aún no existe, evita que el sistema colapse
+                pass 
+                
+        conn.close()
+        return diccionario_maestro
+        
+    except Exception as e:
+        print(f"Error crítico al conectar con la base de datos: {e}")
+        return diccionario_maestro # Retorna vacío pero no rompe la app
 
 # --- INFRAESTRUCTURA ---
 CARPETA_RAIZ = "Expedientes_AboAgrim"
