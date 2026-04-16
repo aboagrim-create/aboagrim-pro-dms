@@ -89,50 +89,37 @@ def auto_registrar_plantilla(nombre_archivo):
 def borrar_plantilla(id_p):
     supabase.table("plantillas").delete().eq("id", id_p).execute()
 # Pégalo al final de database.py
+# --- REEMPLAZAR DESDE LA LÍNEA 85 HASTA EL FINAL ---
+
 def obtener_diccionario_maestro():
-    """Trae todas las variables (etiquetas) desde Supabase"""
+    """Trae las etiquetas desde la tabla variables_sistema"""
     try:
         query = supabase.table("variables_sistema").select("*").execute()
         return query.data
     except Exception as e:
-        st.error(f"Error al conectar con el diccionario: {e}")
+        st.error(f"Error al leer diccionario: {e}")
         return []
-# Agregue esto al final de database.py
-from docxtpl import DocxTemplate
-import os
 
 def procesar_plantilla_maestra(datos, nombre_plantilla):
-    """Genera el Word y lo guarda en la carpeta del cliente"""
-    # Continuación de la línea 105 en database.py
+    """Crea el Word y lo guarda en la carpeta Expedientes"""
     try:
-        doc = DocxTemplate(f"plantillas_maestras/{nombre_plantilla}")
+        # 1. Ruta de la plantilla (Asegúrese de que la carpeta exista)
+        ruta_plantilla = os.path.join("plantillas_maestras", nombre_plantilla)
+        
+        # 2. Carpeta de salida por cliente
+        nombre_cli = datos.get('cliente_nombre', 'Nuevo_Expediente').replace(" ", "_")
+        ruta_salida = f"Expedientes/{nombre_cli}"
+        
+        if not os.path.exists(ruta_salida):
+            os.makedirs(ruta_salida)
+            
+        # 3. Cargar plantilla y aplicar datos
+        doc = DocxTemplate(ruta_plantilla)
         doc.render(datos)
         
-        # Crea la carpeta del cliente si no existe
-        ruta_carpeta = f"Expedientes/{datos.get('cliente_nombre', 'Sin_Nombre')}"
-        if not os.path.exists(ruta_carpeta):
-            os.makedirs(ruta_carpeta)
-            
-        ruta_final = f"{ruta_carpeta}/GENERADO_{nombre_plantilla}"
-        doc.save(ruta_final)
-        return ruta_final
+        # 4. Guardar archivo final
+        archivo_final = f"{ruta_salida}/GENERADO_{nombre_plantilla}"
+        doc.save(archivo_final)
+        return archivo_final
     except Exception as e:
-        return f"Error: {str(e)}"
-    try:
-        # 1. Ruta de la plantilla y carpeta de salida
-        ruta_plantilla = os.path.join("plantillas_maestras", nombre_plantilla)
-        carpeta_cliente = f"Expedientes/{datos['cliente_nombre']}"
-        
-        if not os.path.exists(carpeta_cliente):
-            os.makedirs(carpeta_cliente)
-            
-        # 2. Cargar y procesar
-        doc = DocxTemplate(ruta_plantilla)
-        doc.render(datos) # Aquí se llenan etiquetas como {{ parcela }} [cite: 27]
-        
-        # 3. Guardar archivo final
-        ruta_final = os.path.join(carpeta_cliente, f"GENERADO_{nombre_plantilla}")
-        doc.save(ruta_final)
-        return ruta_final
-    except Exception as e:
-        return f"Error: {e}"
+        return f"Error técnico: {str(e)}"
