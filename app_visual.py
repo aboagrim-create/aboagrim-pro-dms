@@ -82,25 +82,20 @@ def vista_mando():
 
     st.markdown("### 📈 Indicadores de Desempeño Operativo")
     
-    # Extraer datos reales
     casos = consultar_todo()
     if casos:
         df = pd.DataFrame(casos)
         
-        # --- NUEVO: MOTOR DE BÚSQUEDA POR TAGS ---
         st.markdown("#### 🔍 Filtros Avanzados")
         
-        # 1. Recolectar dinámicamente los tags de la base de datos
         tags_disponibles = []
         columnas_tag = ['tipo_caso', 'jurisdiccion', 'estado', 'etapa']
         for col in columnas_tag:
             if col in df.columns:
-                # Añade los valores únicos que no estén vacíos
                 tags_disponibles.extend([str(val) for val in df[col].dropna().unique() if str(val).strip() != ""])
         
-        tags_disponibles = sorted(list(set(tags_disponibles))) # Elimina duplicados y ordena alfabéticamente
+        tags_disponibles = sorted(list(set(tags_disponibles)))
 
-        # 2. Interfaz de búsqueda
         col_filtro1, col_filtro2 = st.columns([2, 1])
         with col_filtro1:
             tags_seleccionados = st.multiselect(
@@ -111,48 +106,40 @@ def vista_mando():
         with col_filtro2:
             busqueda_texto = st.text_input("Búsqueda por Expediente o Cliente:")
 
-        # 3. Lógica de filtrado
         df_filtrado = df.copy()
         
-        # Filtrar por Tags (Condición AND: debe cumplir con todos los tags seleccionados)
         if tags_seleccionados:
             for tag in tags_seleccionados:
-                # Aplica el filtro fila por fila buscando coincidencias exactas
                 mask = df_filtrado.astype(str).apply(lambda row: tag in row.values, axis=1)
                 df_filtrado = df_filtrado[mask]
                 
-        # Filtrar por texto libre
         if busqueda_texto:
-            # Busca en todas las columnas si alguna contiene el texto escrito
             mask_texto = df_filtrado.astype(str).apply(lambda x: x.str.contains(busqueda_texto, case=False, na=False)).any(axis=1)
             df_filtrado = df_filtrado[mask_texto]
-        
-        # --- FIN DEL MOTOR DE BÚSQUEDA ---
 
-        # Actualizar las métricas para que reflejen los datos filtrados, no el total
-        st.markdown("<br>", unsafe_allow_html=True) # Espacio visual
+        st.markdown("<br>", unsafe_allow_html=True)
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Resultados de Búsqueda", len(df_filtrado))
-        c2.metric("En Proceso (Filtrados)", len(df_filtrado[df_filtrado['estado'] == 'Abierto']) if 'estado' in df_filtrado.columns else 0)
-        c3.metric("Deslindes (Filtrados)", len(df_filtrado[df_filtrado['tipo_caso'] == 'Deslinde']) if 'tipo_caso' in df_filtrado.columns else 0)
-        c4.metric("Litis (Filtradas)", len(df_filtrado[df_filtrado['tipo_caso'] == 'Litis']) if 'tipo_caso' in df_filtrado.columns else 0)
+        c2.metric("En Proceso", len(df_filtrado[df_filtrado['estado'] == 'Abierto']) if 'estado' in df_filtrado.columns else 0)
+        c3.metric("Deslindes", len(df_filtrado[df_filtrado['tipo_caso'] == 'Deslinde']) if 'tipo_caso' in df_filtrado.columns else 0)
+        c4.metric("Litis", len(df_filtrado[df_filtrado['tipo_caso'] == 'Litis']) if 'tipo_caso' in df_filtrado.columns else 0)
         
         st.divider()
         st.subheader("📋 Base de Datos de Expedientes")
         if not df_filtrado.empty:
             st.dataframe(df_filtrado, use_container_width=True)
         else:
-            st.warning("No se encontraron expedientes con los tags y criterios de búsqueda especificados.")
-else:
-        st.info("🟢 El motor de base de datos está en línea y operando de manera óptima. Inicie registrando su primer expediente.")
+            st.warning("No se encontraron expedientes con los tags y criterios de búsqueda.")
+    else:
+        st.info("🟢 El motor de base de datos está en línea y operando de manera óptima.")
         st.divider()
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("#### ⚖️ Área de Derecho")
-            st.markdown("- Gestión automatizada de Litis y Demandas\n- Redacción inteligente de Contratos\n- Seguimiento de Audiencias y Plazos")
+            st.markdown("- Gestión automatizada de Litis y Demandas\n- Redacción inteligente de Contratos")
         with col2:
             st.markdown("#### 📐 Área de Agrimensura")
-            st.markdown("- Control de Saneamientos y Deslindes\n- Bóveda digital para planos y AutoCAD\n- Control de etapas de Mensura")
+            st.markdown("- Control de Saneamientos y Deslindes\n- Bóveda digital para planos y AutoCAD")
 # --- 3. ARCHIVO DIGITAL ---
 def vista_archivo():
     st.title("📁 Archivo Digital DMS (Nube)")
