@@ -286,23 +286,63 @@ def vista_plantillas():
 # MÓDULO 5: ALERTAS Y PLAZOS
 # =====================================================================
 def vista_alertas():
-    st.title("📅 Motor de Alertas, Plazos y Caducidades")
+    st.title("📅 Motor de Alertas y Plazos Legales")
+    st.info("Cálculo automático de caducidades y prescripciones procesales de la JI.")
     
-    tab_alertas, tab_leyes = st.tabs(["🔔 Mis Alertas Activas", "⚖️ Calculadora de Plazos Ley 108-05"])
+    tab_calc, tab_activas = st.tabs(["⏱️ Calculadora y Registro", "🔔 Panel de Vencimientos"])
     
-    with tab_alertas:
-        st.warning("No hay plazos críticos por vencer en los próximos 7 días.")
-        
-    with tab_leyes:
-        st.subheader("Tabla Oficial de Plazos, Prescripciones y Caducidades de la JI")
-        datos = {
-            "Actuación / Proceso": ["Autorización de Mensura", "Prórroga de Mensura", "Aviso de Mensura", "Apelación TJO", "Revisión por Fraude", "Casación"],
-            "Plazo Legal": ["60 días", "30 días adicionales", "15 días antes", "30 días", "1 Año", "30 días"],
-            "Efecto Legal": ["Caducidad", "Administrativo", "Nulidad", "Prescripción", "Prescripción", "Caducidad"],
-            "Base Normativa": ["Art. 41 Reg. Mensuras", "Art. 42 Reg. Mensuras", "Art. 46 Reg. Mensuras", "Art. 80 Ley 108-05", "Art. 86 Ley 108-05", "Art. 82 Ley 108-05"]
-        }
-        st.dataframe(pd.DataFrame(datos), use_container_width=True, hide_index=True)
-
+    with tab_calc:
+        with st.form("form_alertas", clear_on_submit=True):
+            st.subheader("Registrar un nuevo plazo")
+            c1, c2 = st.columns(2)
+            exp = c1.text_input("Expediente N°:")
+            evento = c2.selectbox("Evento Procesal (Ley 108-05):", [
+                "Autorización de Mensura (60 días)", 
+                "Prórroga de Mensura (30 días)",
+                "Apelación de Sentencia (30 días)", 
+                "Revisión por Causa de Fraude (1 Año)"
+            ])
+            
+            fecha_inicio = st.date_input("Fecha de Notificación / Emisión (Día Cero):")
+            
+            if st.form_submit_button("⏳ Calcular y Guardar Alerta"):
+                if exp:
+                    # El cerebro jurídico: calcula los días según la opción elegida
+                    dias = 60 if "60" in evento else 30 if "30" in evento else 365
+                    fecha_venc = fecha_inicio + datetime.timedelta(days=dias)
+                    
+                    datos = {
+                        "expediente_id": exp,
+                        "tipo_alerta": evento,
+                        "fecha_inicio": fecha_inicio.strftime("%Y-%m-%d"),
+                        "fecha_vencimiento": fecha_venc.strftime("%Y-%m-%d"),
+                        "estado": "Pendiente"
+                    }
+                    if registrar_evento("alertas", datos):
+                        st.success(f"✅ Alerta guardada. Fecha de vencimiento exacta: {fecha_venc.strftime('%d/%m/%Y')}")
+                    else:
+                        st.error("Error al conectar con la base de datos.")
+                else:
+                    st.warning("⚠️ Ingrese un número de expediente.")
+                    
+    with tab_activas:
+        st.subheader("🚨 Control de Vencimientos")
+        alertas = consultar_alertas(solo_pendientes=True)
+        if alertas:
+            df_al = pd.DataFrame(alertas)
+            hoy = datetime.datetime.now().date()
+            
+            # Formateamos las fechas y calculamos cuántos días faltan
+            df_al['fecha_vencimiento'] = pd.to_datetime(df_al['fecha_vencimiento']).dt.date
+            df_al['Días Restantes'] = (df_al['fecha_vencimiento'] - hoy).dt.days
+            
+            # Reorganizamos la tabla para que se vea profesional
+            st.dataframe(
+                df_al[['expediente_id', 'tipo_alerta', 'fecha_vencimiento', 'Días Restantes', 'estado']], 
+                use_container_width=True
+            )
+        else:
+            st.success("Tranquilidad total. No hay plazos críticos pendientes en este momento.")
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
