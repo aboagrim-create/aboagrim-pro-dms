@@ -37,8 +37,8 @@ if not st.session_state['autenticado']:
         st.markdown("<h2 style='text-align: center; color: white;'>⚖️ AboAgrim Pro</h2>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; color: #94A3B8;'>Acceso Restringido DMS</p>", unsafe_allow_html=True)
         
-        with st.form("Login_Seguro"):
-            u = st.text_input("Correo Institucional:").strip()
+     with st.form("Login_Seguro"):
+            u = st.text_input("Correo Institucional:").strip().lower()
             p = st.text_input("Contraseña:", type="password")
             if st.form_submit_button("Entrar al Sistema", use_container_width=True):
                 if u and p:
