@@ -6,6 +6,8 @@
 import streamlit as st
 import pandas as pd
 import datetime
+import zipfile   # <--- NUEVO
+import io        # <--- NUEVO
 from database import *
 
 # --- CONFIGURACIÓN DE MARCA Y SISTEMA ---
