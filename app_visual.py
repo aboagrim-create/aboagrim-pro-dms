@@ -160,37 +160,59 @@ def vista_registro_maestro():
                 st.warning("⚠️ El Número de Expediente y el Cliente son obligatorios.")
 
 # =====================================================================
-# MÓDULO 3: ARCHIVO DIGITAL (CONECTADO A SUPABASE STORAGE)
+# MÓDULO 3: ARCHIVO DIGITAL (BÓVEDA Y EXPLORADOR)
 # =====================================================================
 def vista_archivo():
     st.title("📁 Bóveda Digital DMS")
     tab1, tab2 = st.tabs(["⬆️ Cargar Documentos", "🗄️ Explorador de Bóveda"])
     
     with tab1:
-        st.markdown("Vincule planos de Civil 3D (DWG), PDFs, o sentencias directamente a un expediente.")
-        exp = st.text_input("Vincular al Expediente N° (Ej. EXP-001):")
+        st.markdown("Vincule planos de Civil 3D (DWG), PDFs, o sentencias a un expediente.")
+        exp = st.text_input("Vincular al Expediente N° (Ej. EXP-001):", key="upload_exp")
         archivos = st.file_uploader("Arrastre sus archivos aquí:", accept_multiple_files=True)
         
         if st.button("⬆️ Subir a la Nube Segura"):
             if exp.strip() != "" and archivos:
                 with st.spinner("Encriptando y subiendo archivos a la Bóveda..."):
                     for archivo in archivos:
-                        # Leer los bytes del archivo
                         file_bytes = archivo.read()
-                        # Crear una ruta segura: Ej. EXP-001/plano_mensura.pdf
                         ruta_segura = f"{exp.strip()}/{archivo.name}"
-                        
-                        # Llamar al motor de base de datos
                         exito = subir_documento("expedientes", ruta_segura, file_bytes)
-                        
                         if exito:
-                            st.success(f"✅ {archivo.name} guardado en el expediente {exp}.")
+                            st.success(f"✅ {archivo.name} guardado en {exp}.")
                     st.toast("Transferencia completada.", icon="☁️")
             else:
                 st.warning("⚠️ Debe indicar el N° de Expediente y seleccionar al menos un archivo.")
                 
     with tab2:
-        st.info("Explorador de Bóveda: Próximamente podrá visualizar y descargar los archivos desde aquí.")
+        st.markdown("### 🔍 Buscar Documentos por Expediente")
+        exp_busqueda = st.text_input("Ingrese el N° de Expediente a consultar:", key="search_exp")
+        
+        if st.button("🗂️ Buscar Archivos"):
+            if exp_busqueda.strip():
+                # Llamamos al motor para buscar la carpeta en Supabase
+                archivos_encontrados = listar_documentos("expedientes", exp_busqueda.strip())
+                
+                if archivos_encontrados and len(archivos_encontrados) > 0:
+                    st.success(f"Archivos encontrados para el expediente {exp_busqueda}:")
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    
+                    for arch in archivos_encontrados:
+                        nombre_archivo = arch.get('name')
+                        # Evitamos mostrar archivos invisibles o temporales
+                        if nombre_archivo and nombre_archivo != '.emptyFolderPlaceholder':
+                            ruta_completa = f"{exp_busqueda.strip()}/{nombre_archivo}"
+                            url_descarga = obtener_url_descarga("expedientes", ruta_completa)
+                            
+                            col1, col2 = st.columns([3, 1])
+                            col1.markdown(f"📄 **{nombre_archivo}**")
+                            # Botón de descarga con estilo
+                            col2.markdown(f"<a href='{url_descarga}' target='_blank'><button style='width:100%; padding:5px; border-radius:5px; background-color:#1E3A8A; color:white; border:none; cursor:pointer;'>⬇️ Ver / Descargar</button></a>", unsafe_allow_html=True)
+                            st.divider()
+                else:
+                    st.info("No se encontraron documentos en esta carpeta o el expediente no existe.")
+            else:
+                st.warning("⚠️ Por favor, ingrese un número de expediente.")
 
 # =====================================================================
 # MÓDULO 4: PLANTILLAS Y LEY 108-05
