@@ -160,20 +160,37 @@ def vista_registro_maestro():
                 st.warning("⚠️ El Número de Expediente y el Cliente son obligatorios.")
 
 # =====================================================================
-# MÓDULO 3: ARCHIVO DIGITAL
+# MÓDULO 3: ARCHIVO DIGITAL (CONECTADO A SUPABASE STORAGE)
 # =====================================================================
 def vista_archivo():
     st.title("📁 Bóveda Digital DMS")
     tab1, tab2 = st.tabs(["⬆️ Cargar Documentos", "🗄️ Explorador de Bóveda"])
     
     with tab1:
-        st.markdown("Vincule planos de Civil 3D, PDF o sentencias a un expediente.")
-        exp = st.text_input("Vincular al Expediente N°:")
-        archivos = st.file_uploader("Arrastre archivos aquí", accept_multiple_files=True)
-        if st.button("Subir a la Nube Segura"):
-            if archivos: st.toast(f"{len(archivos)} archivos encriptados y subidos.", icon="☁️")
+        st.markdown("Vincule planos de Civil 3D (DWG), PDFs, o sentencias directamente a un expediente.")
+        exp = st.text_input("Vincular al Expediente N° (Ej. EXP-001):")
+        archivos = st.file_uploader("Arrastre sus archivos aquí:", accept_multiple_files=True)
+        
+        if st.button("⬆️ Subir a la Nube Segura"):
+            if exp.strip() != "" and archivos:
+                with st.spinner("Encriptando y subiendo archivos a la Bóveda..."):
+                    for archivo in archivos:
+                        # Leer los bytes del archivo
+                        file_bytes = archivo.read()
+                        # Crear una ruta segura: Ej. EXP-001/plano_mensura.pdf
+                        ruta_segura = f"{exp.strip()}/{archivo.name}"
+                        
+                        # Llamar al motor de base de datos
+                        exito = subir_documento("expedientes", ruta_segura, file_bytes)
+                        
+                        if exito:
+                            st.success(f"✅ {archivo.name} guardado en el expediente {exp}.")
+                    st.toast("Transferencia completada.", icon="☁️")
+            else:
+                st.warning("⚠️ Debe indicar el N° de Expediente y seleccionar al menos un archivo.")
+                
     with tab2:
-        st.info("Explorador de Bóveda: Conectado al módulo de Storage de Supabase.")
+        st.info("Explorador de Bóveda: Próximamente podrá visualizar y descargar los archivos desde aquí.")
 
 # =====================================================================
 # MÓDULO 4: PLANTILLAS Y LEY 108-05
