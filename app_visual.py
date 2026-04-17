@@ -384,9 +384,9 @@ def vista_facturacion():
 # MÓDULO 7: CONFIGURACIÓN
 # =====================================================================
 def vista_configuracion():
-    st.title("⚙️ Ajustes del Sistema y Biblioteca Legal")
+    st.title("⚙️ Ajustes del Sistema y Accesos")
     
-    tab_perfil, tab_leyes = st.tabs(["⚙️ Perfil de la Firma", "📚 Compendio Normativo de la JI"])
+    tab_perfil, tab_leyes, tab_usuarios = st.tabs(["⚙️ Perfil de la Firma", "📚 Compendio Normativo", "👥 Gestión de Accesos"])
     
     with tab_perfil:
         st.text_input("Razón Social:", value="Abogados y Agrimensores 'AboAgrim'")
@@ -403,11 +403,21 @@ def vista_configuracion():
         4. **Reglamento General de Registro de Títulos.**
         """)
 
-# --- ENRUTADOR ---
-vistas = {
-    "🏠 Mando Central": vista_mando, "👤 Registro Maestro": vista_registro_maestro, 
-    "📁 Archivo Digital": vista_archivo, "📄 Plantillas Auto": vista_plantillas, 
-    "📅 Alertas y Plazos": vista_alertas, "💳 Facturación": vista_facturacion, 
-    "⚙️ Configuración": vista_configuracion
-}
-vistas[menu]()
+    with tab_usuarios:
+        st.subheader("Crear Cuenta para Nuevo Miembro del Equipo")
+        st.info("Al registrar un correo aquí, le otorgarás acceso inmediato al sistema a tu personal.")
+        
+        with st.form("form_nuevo_usuario", clear_on_submit=True):
+            c1, c2 = st.columns(2)
+            nuevo_email = c1.text_input("Correo del empleado / asociado:")
+            nuevo_pass = c2.text_input("Contraseña Temporal (Min. 6 caracteres):", type="password")
+            
+            if st.form_submit_button("🔐 Autorizar y Crear Usuario"):
+                if nuevo_email and len(nuevo_pass) >= 6:
+                    if registrar_nuevo_usuario(nuevo_email, nuevo_pass):
+                        st.success(f"✅ Acceso concedido. El usuario {nuevo_email} ya puede iniciar sesión.")
+                        st.balloons()
+                    else:
+                        st.error("Error: Verifica que el correo tenga formato válido o que no exista ya en el sistema.")
+                else:
+                    st.warning("⚠️ Ingrese un correo válido y una contraseña de al menos 6 caracteres.")
