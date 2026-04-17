@@ -74,9 +74,10 @@ def subir_documento(bucket, ruta_archivo, file_bytes):
     Sube un archivo físico a la bóveda de Supabase Storage.
     """
     try:
+        # CORRECCIÓN: Usamos 'path' para el nombre y 'file' para los datos
         db.storage.from_(bucket).upload(
-            file=ruta_archivo, 
-            data=file_bytes, 
+            path=ruta_archivo, 
+            file=file_bytes, 
             file_options={"upsert": "true"}
         )
         return True
