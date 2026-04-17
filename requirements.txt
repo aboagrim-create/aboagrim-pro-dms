@@ -1,8 +1,4 @@
-# Interfaz Gráfica y Sistema Operativo
 streamlit>=1.32.0
-
-# Manipulación de Datos y Tablas (Mando Central)
 pandas>=2.0.0
-
-# Conexión a Base de Datos y Autenticación
 supabase>=2.3.0
+python-docx>=1.1.0
