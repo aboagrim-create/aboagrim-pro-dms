@@ -8,6 +8,7 @@ import pandas as pd
 import datetime
 import zipfile   # <--- NUEVO
 import io        # <--- NUEVO
+from docx import Document
 from database import *
 
 # --- CONFIGURACIÓN DE MARCA Y SISTEMA ---
@@ -242,35 +243,44 @@ def vista_archivo():
 # MÓDULO 4: PLANTILLAS Y LEY 108-05
 # =====================================================================
 def vista_plantillas():
-    st.title("📄 Motor de Plantillas y Requisitos (Ley 108-05)")
+    st.title("📄 Motor de Redacción Legal (Word)")
+    st.info("Genera documentos en formato .docx listos para imprimir y firmar.")
     
-    tab_docs, tab_req = st.tabs(["⚙️ Generador de Documentos", "📋 Requisitos Legales de la JI"])
+    casos = consultar_todo()
+    if not casos:
+        st.warning("Debe registrar al menos un expediente en el sistema.")
+        return
+        
+    lista_exps = [f"{c.get('numero_expediente')} - {c.get('cliente_id')}" for c in casos]
+    exp_seleccionado = st.selectbox("Seleccione el Expediente:", lista_exps)
+    tipo_doc = st.selectbox("Seleccione el Documento a Generar:", ["Contrato de Prestación de Servicios y Cuota Litis", "Instancia Introductiva (Genérica)"])
     
-    with tab_docs:
-        c1, c2 = st.columns(2)
-        with c1:
-            via = st.radio("Vía de Actuación:", ["Administrativa (DRMC / RT)", "Contenciosa (Tribunales)"])
-            if via == "Administrativa (DRMC / RT)":
-                doc = st.selectbox("Documento:", ["Solicitud de Mensura", "Contrato de Mensura", "Instancia Transferencia"])
-            else:
-                doc = st.selectbox("Documento:", ["Contrato Cuota Litis", "Poder Especial", "Demanda Litis", "Conclusiones"])
+    if st.button("⚙️ Generar Documento Word"):
+        with st.spinner("Ensamblando documento legal..."):
+            doc = Document()
+            num_exp = exp_seleccionado.split(" - ")[0]
+            cliente = exp_seleccionado.split(" - ")[1]
             
-            exp = st.text_input("Extraer datos del Expediente N°:")
-            if st.button("⚙️ Ensamblar Documento Word"):
-                st.toast(f"Generando {doc}...", icon="⏳")
-        with c2:
-            st.info("💡 **Inteligencia Documental:** El sistema detectará automáticamente la jurisdicción y adaptará el encabezado legal.")
-
-    with tab_req:
-        tramite = st.selectbox("Consultar Checklist Legal para:", ["Deslinde", "Saneamiento", "Litis sobre Derechos Registrados", "Transferencia por Venta"])
-        if tramite == "Deslinde":
-            st.success("**Trámite: Deslinde (Res. 3642-2016)**\n1. Contrato de Mensura firmado.\n2. Constancia Anotada.\n3. Cédula del titular.\n4. Acta de Hitos y Mensura.\n5. Planos.")
-        elif tramite == "Saneamiento":
-            st.success("**Trámite: Saneamiento (Art. 20 Ley 108-05)**\n1. Instancia de solicitud.\n2. Croquis ilustrativo.\n3. Certificación del Ayuntamiento.\n4. Pruebas de posesión.")
-        elif tramite == "Litis sobre Derechos Registrados":
-            st.success("**Trámite: Litis (Art. 28 Ley 108-05)**\n1. Demanda introductiva.\n2. Acto de Alguacil (octava franca).\n3. Depósito en RT.\n4. Copia del Título.")
-        elif tramite == "Transferencia por Venta":
-            st.success("**Trámite: Transferencia (RT)**\n1. Acto de venta original.\n2. Título original.\n3. Impuesto (3% DGII).\n4. Certificación de IPI.")
+            doc.add_heading(f'{tipo_doc.upper()}', 0)
+            doc.add_paragraph(f"Expediente Vinculado: {num_exp}")
+            doc.add_paragraph(f"Fecha: {datetime.datetime.now().strftime('%d de %B del %Y')}")
+            doc.add_paragraph("\nENTRE LAS PARTES:")
+            doc.add_paragraph(f"De una parte, el Lic. JHONNY MATOS, M.A., Abogado/Agrimensor...")
+            doc.add_paragraph(f"Y de la otra parte, el señor(a) {cliente}, quien en lo adelante se denominará EL CLIENTE.")
+            doc.add_paragraph("\nSE HA CONVENIDO Y PACTADO LO SIGUIENTE:")
+            doc.add_paragraph("PRIMERO: EL CLIENTE apodera a la firma AboAgrim para realizar los trabajos legales y técnicos correspondientes al caso.")
+            
+            word_buffer = io.BytesIO()
+            doc.save(word_buffer)
+            word_buffer.seek(0)
+            
+            st.success("✅ Documento generado con éxito.")
+            st.download_button(
+                label="⬇️ Descargar Archivo de Word",
+                data=word_buffer,
+                file_name=f"{tipo_doc}_{num_exp}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
 
 # =====================================================================
 # MÓDULO 5: ALERTAS Y PLAZOS
@@ -297,30 +307,38 @@ def vista_alertas():
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
 def vista_facturacion():
-    st.title("💳 Facturación y Gestión de Cobros")
+    st.title("💳 Finanzas y Control de Honorarios")
     
-    with st.expander("⚖️ Consultar Guía de Tasas e Impuestos (JI y DGII)", expanded=False):
-        st.markdown("""
-        * **Impuesto de Transferencia (DGII):** 3% del valor del inmueble.
-        * **Colegio de Abogados (Ley 3-19):** RD$ 50.00 (Sello por acto).
-        * **Colegio de Notarios:** RD$ 100.00 (Por legalización).
-        * **Tasa Mensuras:** Varía según extensión superficial.
-        """)
-    
-    st.markdown("### Registro de Transacción")
     with st.form("form_pagos", clear_on_submit=True):
+        st.subheader("Registrar un Nuevo Pago / Abono")
         c1, c2, c3 = st.columns(3)
         exp = c1.text_input("Expediente N°:")
-        tot = c2.number_input("Honorarios Totales (RD$):", min_value=0.0, step=1000.0)
-        abo = c3.number_input("Abono Recibido (RD$):", min_value=0.0, step=1000.0)
+        tot = c2.number_input("Honorarios Acordados (RD$):", min_value=0.0, step=1000.0)
+        abo = c3.number_input("Monto Abonado Hoy (RD$):", min_value=0.0, step=1000.0)
         
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.form_submit_button("💳 Aplicar Cobro a Cuenta", use_container_width=True):
+        if st.form_submit_button("💳 Registrar Ingreso"):
             if exp and abo > 0:
-                datos_pago = {"expediente_id": exp, "honorarios_totales": tot, "monto_pagado": abo, "fecha_registro": datetime.datetime.now().strftime("%Y-%m-%d")}
-                registrar_evento("pagos", datos_pago)
-                st.success(f"✅ Abono de RD$ {abo:,.2f} aplicado al expediente {exp}.")
-            else: st.warning("⚠️ Ingrese el Expediente y un Abono mayor a 0.")
+                datos_pago = {
+                    "expediente_id": exp, "honorarios_totales": tot, 
+                    "monto_pagado": abo, "fecha_registro": datetime.datetime.now().strftime("%Y-%m-%d")
+                }
+                if registrar_evento("pagos", datos_pago): st.success(f"✅ Pago de RD$ {abo:,.2f} registrado.")
+                else: st.error("Error al registrar el pago.")
+            else: st.warning("Ingrese Expediente y Monto.")
+            
+    st.divider()
+    
+    st.subheader("📊 Historial de Movimientos")
+    facturas = consultar_facturas()
+    if facturas:
+        df_pagos = pd.DataFrame(facturas)
+        df_pagos['Balance Pendiente'] = pd.to_numeric(df_pagos['honorarios_totales']) - pd.to_numeric(df_pagos['monto_pagado'])
+        st.dataframe(df_pagos[['fecha_registro', 'expediente_id', 'honorarios_totales', 'monto_pagado', 'Balance Pendiente']], use_container_width=True)
+        
+        total_ingresos = pd.to_numeric(df_pagos['monto_pagado']).sum()
+        st.metric("Total Ingresos Históricos (RD$)", f"RD$ {total_ingresos:,.2f}")
+    else:
+        st.info("No hay pagos registrados aún.")
 
 # =====================================================================
 # MÓDULO 7: CONFIGURACIÓN
