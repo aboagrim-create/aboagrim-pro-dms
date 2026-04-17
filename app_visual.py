@@ -233,11 +233,11 @@ def vista_plantillas():
         st.subheader("Biblioteca de Plantillas (Uso General)")
         archivo_nuevo = st.file_uploader("Subir nuevo modelo Word (.docx)", type=['docx'])
         
-        if st.button("⬆️ Cargar a la Biblioteca"):
+       if st.button("⬆️ Cargar a la Biblioteca"):
             if archivo_nuevo:
                 try:
                     file_bytes = archivo_nuevo.getvalue()
-                    # Subida con protección 'upsert' para evitar errores rojos
+                    # Subida con 'upsert' para que si el archivo ya existe, lo reemplace sin dar error
                     db.storage.from_('plantillas').upload(
                         path=archivo_nuevo.name, 
                         file=file_bytes,
@@ -246,7 +246,8 @@ def vista_plantillas():
                     st.success(f"✅ Modelo '{archivo_nuevo.name}' cargado con éxito.")
                     st.rerun()
                 except Exception as e:
-                    st.error("⚠️ Error de conexión. Verifica que las 'Policies' en Supabase estén activas para el bucket 'plantillas'.")
+                    st.error("⚠️ La nube rechazó la conexión.")
+                    st.info("Verifique que en Supabase el bucket 'plantillas' tenga la política 'ALL' activa.")
 
         modelos = listar_modelos()
         if modelos:
