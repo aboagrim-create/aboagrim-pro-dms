@@ -84,3 +84,18 @@ def subir_documento(bucket, ruta_archivo, file_bytes):
     except Exception as e:
         st.error(f"Error de Storage: {str(e)}")
         return False
+def listar_documentos(bucket, prefijo=""):
+    """Lista los archivos dentro de una carpeta (expediente) en Supabase Storage."""
+    try:
+        respuesta = db.storage.from_(bucket).list(prefijo)
+        return respuesta
+    except Exception as e:
+        st.error(f"Error al listar archivos: {str(e)}")
+        return []
+
+def obtener_url_descarga(bucket, ruta_archivo):
+    """Genera el enlace público para descargar o ver el archivo."""
+    try:
+        return db.storage.from_(bucket).get_public_url(ruta_archivo)
+    except:
+        return ""
