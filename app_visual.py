@@ -230,11 +230,23 @@ def vista_plantillas():
     with tab_mng:
         st.subheader("Biblioteca de Plantillas (Uso General)")
         archivo_nuevo = st.file_uploader("Subir nuevo modelo Word (.docx)", type=['docx'])
+        st.subheader("Biblioteca de Plantillas (Uso General)")
+        archivo_nuevo = st.file_uploader("Subir nuevo modelo Word (.docx)", type=['docx'])
+        
         if st.button("⬆️ Cargar a la Biblioteca"):
             if archivo_nuevo:
-                db.storage.from_('plantillas').upload(archivo_nuevo.name, archivo_nuevo.getvalue())
-                st.success(f"Modelo {archivo_nuevo.name} guardado en el servidor.")
-                st.rerun()
+                try:
+                    file_bytes = archivo_nuevo.getvalue()
+                    # Subida con protección 'upsert' para evitar errores rojos
+                    db.storage.from_('plantillas').upload(
+                        path=archivo_nuevo.name, 
+                        file=file_bytes,
+                        file_options={"upsert": "true"}
+                    )
+                    st.success(f"✅ Modelo '{archivo_nuevo.name}' cargado con éxito.")
+                    st.rerun()
+                except Exception as e:
+                    st.error("⚠️ Error de conexión. Verifica que las 'Policies' en Supabase estén activas para el bucket 'plantillas'.")
 
         modelos = listar_modelos()
         if modelos:
