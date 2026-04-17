@@ -19,39 +19,23 @@ if 'autenticado' not in st.session_state:
     st.session_state['autenticado'] = False
 
 if not st.session_state['autenticado']:
-    st.markdown("""
-        <style>
-        .login-box {
-            max-width: 450px; margin: 0 auto; padding: 40px; 
-            border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            background: linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%); 
-            color: white; border-top: 6px solid #FBBF24;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-    
-col1, col2, col3 = st.columns([1, 1.5, 1])
-    with col2:
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>⚖️ AboAgrim Pro</h2>", unsafe_allow_html=True)
-        
-        with st.form("Login_Seguro"):
-            u = st.text_input("Correo Institucional:").strip().lower()
-            p = st.text_input("Contraseña:", type="password")
-            if st.form_submit_button("Entrar al Sistema", use_container_width=True):
-                exito, user = autenticar_usuario(u, p)
-                if exito:
-                    st.session_state['autenticado'] = True
-                    st.session_state['user'] = u
-                    st.rerun()
-                else:
-                    st.error("❌ Credenciales incorrectas.")
-        st.stop()
-
-# --- INTERFAZ PRINCIPAL (BARRA LATERAL) ---
-st.sidebar.markdown(f"### AboAgrim Pro\n**Lic. Jhonny Matos, M.A.**\n`Usuario: {st.session_state['user']}`")
-st.sidebar.divider()
-
+        col1, col2, col3 = st.columns([1, 1.5, 1])
+        with col2:
+            st.markdown("<br><br>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>⚖️ AboAgrim Pro</h2>", unsafe_allow_html=True)
+            
+            with st.form("Login_Seguro"):
+                u = st.text_input("Correo Institucional:").strip().lower()
+                p = st.text_input("Contraseña:", type="password")
+                if st.form_submit_button("Entrar al Sistema", use_container_width=True):
+                    exito, user = autenticar_usuario(u, p)
+                    if exito:
+                        st.session_state['autenticado'] = True
+                        st.session_state['user'] = u
+                        st.rerun()
+                    else:
+                        st.error("❌ Credenciales incorrectas.")
+            st.stop()
 menu = st.sidebar.radio(
     "Navegación", 
     ["🏠 Mando Central", "👤 Registro Maestro", "📁 Archivo Digital", "📄 Plantillas Auto", "📅 Alertas y Plazos", "💳 Facturación", "⚙️ Configuración"]
