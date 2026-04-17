@@ -125,7 +125,13 @@ def subir_a_expediente(file_data, file_name, carpeta_cliente):
     """Guarda el documento generado en la carpeta del cliente en el bucket."""
     path = f"{carpeta_cliente}/{file_name}"
     try:
-        db.storage.from_('expedientes').upload(path, file_data, {"content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"})
+        # Agregamos 'upsert': True para evitar errores si el archivo ya existe
+        db.storage.from_('expedientes').upload(
+            path=path, 
+            file=file_data, 
+            file_options={"content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "upsert": "true"}
+        )
         return True
-    except:
+    except Exception as e:
+        st.error(f"Error al subir a expedientes: {str(e)}")
         return False
