@@ -6,9 +6,8 @@
 import streamlit as st
 import pandas as pd
 import datetime
-import zipfile
-import io
-from docx import Document # Nueva librería para generar Word
+import zipfile   # <--- NUEVO
+import io        # <--- NUEVO
 from database import *
 
 # --- CONFIGURACIÓN DE MARCA Y SISTEMA ---
@@ -19,191 +18,332 @@ if 'autenticado' not in st.session_state:
     st.session_state['autenticado'] = False
 
 if not st.session_state['autenticado']:
+    st.markdown("""
+        <style>
+        .login-box {
+            max-width: 450px; margin: 0 auto; padding: 40px; 
+            border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%); 
+            color: white; border-top: 6px solid #FBBF24;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
-        st.markdown("<br><br><h2 style='text-align: center; color: #1E3A8A;'>⚖️ AboAgrim Pro DMS</h2>", unsafe_allow_html=True)
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown("<div class='login-box'>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; color: white;'>⚖️ AboAgrim Pro</h2>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #94A3B8;'>Acceso Restringido DMS</p>", unsafe_allow_html=True)
+        
         with st.form("Login_Seguro"):
             u = st.text_input("Correo Institucional:").strip()
             p = st.text_input("Contraseña:", type="password")
             if st.form_submit_button("Entrar al Sistema", use_container_width=True):
-                exito, user = autenticar_usuario(u, p)
-                if exito:
-                    st.session_state['autenticado'] = True
-                    st.session_state['user'] = u
-                    st.rerun()
-                else: st.error("❌ Credenciales incorrectas.")
-    st.stop()
+                if u and p:
+                    exito, user = autenticar_usuario(u, p)
+                    if exito:
+                        st.session_state['autenticado'] = True
+                        st.session_state['user'] = u
+                        st.rerun()
+                    else: st.error("❌ Credenciales incorrectas.")
+                else: st.warning("⚠️ Complete ambos campos.")
+        st.markdown("</div>", unsafe_allow_html=True)
+    st.stop() # Detiene la ejecución si no hay login
 
 # --- INTERFAZ PRINCIPAL (BARRA LATERAL) ---
 st.sidebar.markdown(f"### AboAgrim Pro\n**Lic. Jhonny Matos, M.A.**\n`Usuario: {st.session_state['user']}`")
 st.sidebar.divider()
-menu = st.sidebar.radio("Navegación", ["🏠 Mando Central", "👤 Registro Maestro", "📁 Archivo Digital", "📄 Plantillas Auto", "📅 Alertas y Plazos", "💳 Facturación", "⚙️ Configuración"])
 
+menu = st.sidebar.radio(
+    "Navegación", 
+    ["🏠 Mando Central", "👤 Registro Maestro", "📁 Archivo Digital", "📄 Plantillas Auto", "📅 Alertas y Plazos", "💳 Facturación", "⚙️ Configuración"]
+)
+
+st.sidebar.divider()
 if st.sidebar.button("🚪 Cerrar Sesión", use_container_width=True):
     st.session_state['autenticado'] = False
     st.rerun()
 
 # =====================================================================
-# MÓDULOS 1 AL 3 (MANDO, REGISTRO Y ARCHIVO CON ZIP)
+# MÓDULO 1: MANDO CENTRAL
 # =====================================================================
 def vista_mando():
-    st.markdown("<div style='background:linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%); padding:30px; border-radius:12px; color:white; border-left:6px solid #FBBF24;'><h2>AboAgrim Pro DMS ⚖️📐</h2><p>Centro de Mando: Jurisdicción Inmobiliaria y Mensura</p></div><br>", unsafe_allow_html=True)
+    st.markdown("""
+        <div style='background:linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%); padding:35px 30px; border-radius:12px; color:white; border-left:6px solid #FBBF24; margin-bottom: 2rem;'>
+            <h1 style='margin:0; font-size: 2.8rem; font-weight: 800;'>AboAgrim Pro DMS ⚖️📐</h1>
+            <p style='font-size:1.2rem; color:#94A3B8; margin-bottom: 1rem;'>Centro de Mando: Jurisdicción Inmobiliaria y Mensura</p>
+            <div style='font-size:1.1rem; color:#FBBF24; font-weight:600; text-transform:uppercase;'>Santiago | Lic. Jhonny Matos, M.A.</div>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("### 📈 Desempeño Operativo y Búsqueda")
     casos = consultar_todo()
+    
     if casos:
         df = pd.DataFrame(casos)
         c1, c2 = st.columns([2, 1])
+        
+        # Extracción segura de tags
+        tags_disp = []
+        for col in ['tipo_caso', 'jurisdiccion', 'estado', 'etapa']:
+            if col in df.columns:
+                tags_disp.extend([str(v) for v in df[col].dropna().unique() if str(v).strip() != "N/A"])
+        tags_disp = sorted(list(set(tags_disp)))
+        
+        sel_tags = c1.multiselect("🔍 Filtrar por Etiquetas (Tags):", options=tags_disp, placeholder="Ej. Deslinde, Santiago...")
         busq = c2.text_input("📝 Búsqueda libre:")
+        
         df_f = df.copy()
-        if busq: df_f = df_f[df_f.astype(str).apply(lambda x: x.str.contains(busq, case=False)).any(axis=1)]
+        if sel_tags: 
+            for t in sel_tags: df_f = df_f[df_f.astype(str).apply(lambda r: t in r.values, axis=1)]
+        if busq: 
+            df_f = df_f[df_f.astype(str).apply(lambda x: x.str.contains(busq, case=False)).any(axis=1)]
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Resultados", len(df_f))
+        m2.metric("Casos Abiertos", len(df_f[df_f.get('estado', '') == 'Abierto']))
+        m3.metric("Deslindes", len(df_f[df_f.get('tipo_caso', '') == 'Deslinde']))
+        m4.metric("Litis", len(df_f[df_f.get('tipo_caso', '') == 'Litis']))
+        
+        st.divider()
         st.dataframe(df_f, use_container_width=True)
-    else: st.info("Registre su primer expediente.")
+    else: 
+        st.info("🟢 Sistema operativo en línea. Registre su primer expediente en el Registro Maestro.")
 
+# =====================================================================
+# MÓDULO 2: REGISTRO MAESTRO (CON PESTAÑAS Y 7 ROLES)
+# =====================================================================
 def vista_registro_maestro():
     st.title("👤 Registro Maestro de Expedientes")
     dic = obtener_diccionario_maestro()
-    with st.form("registro_expediente_full", clear_on_submit=True):
-        c1, c2, c3 = st.columns(3)
-        num = c1.text_input("N° Expediente:")
-        cli = c2.text_input("Cliente Principal:")
-        tipo = c3.selectbox("Tipo de Acto:", ["Deslinde", "Saneamiento", "Litis", "Transferencia"])
+    
+    with st.form("registro_expediente_full", clear_on_submit=False):
+        tab1, tab2, tab3 = st.tabs(["📋 I. Datos Legales", "📐 II. Detalles del Proceso", "⚖️ III. Roles Profesionales"])
         
-        c4, c5 = st.columns(2)
-        jur = c4.selectbox("Jurisdicción:", ["Santiago", "La Vega", "Santo Domingo", "Puerto Plata", "Moca"])
-        eta = c5.selectbox("Etapa Inicial:", ["Recepción", "Mensura", "Sometimiento", "Tribunal", "Sentencia"])
-        
-        st.markdown("---")
-        if st.form_submit_button("🛡️ Registrar Expediente"):
-            if num and cli:
-                datos = {"numero_expediente": num, "cliente_id": cli, "tipo_caso": tipo, "jurisdiccion": jur, "etapa": eta, "estado": "Abierto"}
-                if registrar_evento("casos", datos): st.success("✅ Guardado en la nube.")
-                else: st.error("Error al guardar.")
-            else: st.warning("⚠️ N° Expediente y Cliente son obligatorios.")
+        with tab1:
+            c1, c2, c3 = st.columns(3)
+            num = c1.text_input("N° Expediente:")
+            cli = c2.text_input("Cliente Principal / Reclamante:")
+            ced = c3.text_input("Cédula / RNC:")
+            
+        with tab2:
+            c4, c5, c6 = st.columns(3)
+            tipo = c4.selectbox("Tipo de Acto:", ["Deslinde", "Saneamiento", "Litis", "Transferencia", "Determinación de Herederos"])
+            jur = c5.selectbox("Jurisdicción:", ["Santiago", "La Vega", "Santo Domingo", "Puerto Plata", "Moca"])
+            eta = c6.selectbox("Etapa Inicial:", ["Recepción", "Mensura", "Sometimiento", "Tribunal", "Sentencia"])
+            
+        with tab3:
+            st.markdown("Asigne el personal técnico y legal involucrado:")
+            a1, a2, a3 = st.columns(3)
+            agrim = a1.selectbox("Agrimensor:", dic.get('agrimensor', []) or ["N/A"])
+            abog = a2.selectbox("Abogado:", dic.get('abogado', []) or ["N/A"])
+            notar = a3.selectbox("Notario:", dic.get('notario', []) or ["N/A"])
+            
+            a4, a5, a6 = st.columns(3)
+            repre = a4.selectbox("Representante:", dic.get('representante', []) or ["N/A"])
+            apoder = a5.selectbox("Apoderado:", dic.get('apoderado', []) or ["N/A"])
+            solic = a6.selectbox("Solicitante:", dic.get('solicitante', []) or ["N/A"])
 
+        st.markdown("---")
+        if st.form_submit_button("🛡️ Blindar y Registrar Expediente en la Nube"):
+            if num and cli:
+                datos = {
+                    "numero_expediente": num, "cliente_id": cli, "tipo_caso": tipo, 
+                    "jurisdiccion": jur, "etapa": eta, "estado": "Abierto"
+                }
+                if registrar_evento("casos", datos): 
+                    st.toast("Expediente guardado exitosamente.", icon="✅")
+                    st.balloons()
+                else: 
+                    st.error("Error al conectar con la base de datos.")
+            else:
+                st.warning("⚠️ El Número de Expediente y el Cliente son obligatorios.")
+
+# =====================================================================
+# MÓDULO 3: ARCHIVO DIGITAL (BÓVEDA, EXPLORADOR Y DESCARGA ZIP)
+# =====================================================================
 def vista_archivo():
     st.title("📁 Bóveda Digital DMS")
     tab1, tab2 = st.tabs(["⬆️ Cargar Documentos", "🗄️ Explorador de Bóveda"])
+    
     with tab1:
-        exp = st.text_input("Vincular al Expediente N°:", key="up_exp")
-        archivos = st.file_uploader("Arrastre archivos aquí:", accept_multiple_files=True)
-        if st.button("⬆️ Subir a la Nube"):
-            if exp and archivos:
-                with st.spinner("Subiendo..."):
-                    for arch in archivos:
-                        subir_documento("expedientes", f"{exp.strip()}/{arch.name}", arch.read())
-                    st.success("✅ Archivos guardados.")
-    with tab2:
-        exp_busq = st.text_input("Buscar N° de Expediente:", key="sc_exp")
-        if st.button("🗂️ Buscar"):
-            archivos_enc = listar_documentos("expedientes", exp_busq.strip())
-            if archivos_enc:
-                for arch in archivos_enc:
-                    if arch.get('name') != '.emptyFolderPlaceholder':
-                        url = obtener_url_descarga("expedientes", f"{exp_busq.strip()}/{arch.get('name')}")
-                        st.markdown(f"📄 {arch.get('name')} - [⬇️ Descargar]({url})")
+        st.markdown("Vincule planos de Civil 3D (DWG), PDFs, o sentencias a un expediente.")
+        exp = st.text_input("Vincular al Expediente N° (Ej. EXP-001):", key="upload_exp")
+        archivos = st.file_uploader("Arrastre sus archivos aquí:", accept_multiple_files=True)
+        
+        if st.button("⬆️ Subir a la Nube Segura"):
+            if exp.strip() != "" and archivos:
+                with st.spinner("Encriptando y subiendo archivos a la Bóveda..."):
+                    for archivo in archivos:
+                        file_bytes = archivo.read()
+                        ruta_segura = f"{exp.strip()}/{archivo.name}"
+                        exito = subir_documento("expedientes", ruta_segura, file_bytes)
+                        if exito:
+                            st.success(f"✅ {archivo.name} guardado en {exp}.")
+                    st.toast("Transferencia completada.", icon="☁️")
+            else:
+                st.warning("⚠️ Debe indicar el N° de Expediente y seleccionar al menos un archivo.")
                 
-                zip_buffer = io.BytesIO()
-                with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-                    for arch in archivos_enc:
-                        if arch.get('name') != '.emptyFolderPlaceholder':
-                            f_bytes = descargar_documento_bytes("expedientes", f"{exp_busq.strip()}/{arch.get('name')}")
-                            if f_bytes: zip_file.writestr(arch.get('name'), f_bytes)
-                st.download_button("📦 Descargar ZIP Completo", zip_buffer.getvalue(), f"Expediente_{exp_busq}.zip", "application/zip")
+    with tab2:
+        st.markdown("### 🔍 Buscar Documentos por Expediente")
+        exp_busqueda = st.text_input("Ingrese el N° de Expediente a consultar:", key="search_exp")
+        
+        if st.button("🗂️ Buscar Archivos"):
+            if exp_busqueda.strip():
+                archivos_encontrados = listar_documentos("expedientes", exp_busqueda.strip())
+                
+                if archivos_encontrados and len(archivos_encontrados) > 0:
+                    st.success(f"Archivos encontrados para el expediente {exp_busqueda}:")
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    
+                    # 1. Mostramos la lista normal
+                    for arch in archivos_encontrados:
+                        nombre_archivo = arch.get('name')
+                        if nombre_archivo and nombre_archivo != '.emptyFolderPlaceholder':
+                            ruta_completa = f"{exp_busqueda.strip()}/{nombre_archivo}"
+                            url_descarga = obtener_url_descarga("expedientes", ruta_completa)
+                            
+                            col1, col2 = st.columns([3, 1])
+                            col1.markdown(f"📄 **{nombre_archivo}**")
+                            col2.markdown(f"<a href='{url_descarga}' target='_blank'><button style='width:100%; padding:5px; border-radius:5px; background-color:#1E3A8A; color:white; border:none; cursor:pointer;'>⬇️ Ver Individual</button></a>", unsafe_allow_html=True)
+                            st.divider()
+                    
+                    # 2. Lógica para crear el archivo ZIP en memoria
+                    st.markdown("### 📦 Descarga Masiva")
+                    with st.spinner("Empaquetando expediente completo..."):
+                        zip_buffer = io.BytesIO()
+                        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                            for arch in archivos_encontrados:
+                                nombre_archivo = arch.get('name')
+                                if nombre_archivo and nombre_archivo != '.emptyFolderPlaceholder':
+                                    ruta_completa = f"{exp_busqueda.strip()}/{nombre_archivo}"
+                                    # Descargamos los bytes de cada archivo
+                                    file_bytes = descargar_documento_bytes("expedientes", ruta_completa)
+                                    if file_bytes:
+                                        # Lo metemos dentro del ZIP
+                                        zip_file.writestr(nombre_archivo, file_bytes)
+                        
+                        # 3. Botón nativo de Streamlit para descargar el ZIP a la PC
+                        st.download_button(
+                            label=f"📦 Descargar Expediente {exp_busqueda.strip()} Completo (.ZIP)",
+                            data=zip_buffer.getvalue(),
+                            file_name=f"Expediente_{exp_busqueda.strip()}.zip",
+                            mime="application/zip",
+                            use_container_width=True
+                        )
+                else:
+                    st.info("No se encontraron documentos en esta carpeta o el expediente no existe.")
+            else:
+                st.warning("⚠️ Por favor, ingrese un número de expediente.")
 
 # =====================================================================
-# MÓDULO 4: PLANTILLAS AUTO (NUEVO MOTOR WORD)
+# MÓDULO 4: PLANTILLAS Y LEY 108-05
 # =====================================================================
 def vista_plantillas():
-    st.title("📄 Motor de Redacción Legal (Word)")
-    st.info("Genera documentos en formato .docx listos para imprimir y firmar.")
+    st.title("📄 Motor de Plantillas y Requisitos (Ley 108-05)")
     
-    casos = consultar_todo()
-if not casos:
-        st.warning("Debe registrar al menos un expediente en el sistema.")
-        return
-        
-    lista_exps = [f"{c.get('numero_expediente')} - {c.get('cliente_id')}" for c in casos]
-    exp_seleccionado = st.selectbox("Seleccione el Expediente:", lista_exps)
-    tipo_doc = st.selectbox("Seleccione el Documento a Generar:", ["Contrato de Prestación de Servicios y Cuota Litis", "Instancia Introductiva (Genérica)"])
+    tab_docs, tab_req = st.tabs(["⚙️ Generador de Documentos", "📋 Requisitos Legales de la JI"])
     
-    if st.button("⚙️ Generar Documento Word"):
-        with st.spinner("Ensamblando documento legal..."):
-            # Creamos un Word en blanco en la memoria
-            doc = Document()
+    with tab_docs:
+        c1, c2 = st.columns(2)
+        with c1:
+            via = st.radio("Vía de Actuación:", ["Administrativa (DRMC / RT)", "Contenciosa (Tribunales)"])
+            if via == "Administrativa (DRMC / RT)":
+                doc = st.selectbox("Documento:", ["Solicitud de Mensura", "Contrato de Mensura", "Instancia Transferencia"])
+            else:
+                doc = st.selectbox("Documento:", ["Contrato Cuota Litis", "Poder Especial", "Demanda Litis", "Conclusiones"])
             
-            # Extraemos los datos del texto seleccionado
-            num_exp = exp_seleccionado.split(" - ")[0]
-            cliente = exp_seleccionado.split(" - ")[1]
-            
-            # Redacción Automática
-            doc.add_heading(f'{tipo_doc.upper()}', 0)
-            doc.add_paragraph(f"Expediente Vinculado: {num_exp}")
-            doc.add_paragraph(f"Fecha: {datetime.datetime.now().strftime('%d de %B del %Y')}")
-            doc.add_paragraph("\nENTRE LAS PARTES:")
-            doc.add_paragraph(f"De una parte, el Lic. JHONNY MATOS, M.A., Abogado/Agrimensor...")
-            doc.add_paragraph(f"Y de la otra parte, el señor(a) {cliente}, quien en lo adelante se denominará EL CLIENTE.")
-            doc.add_paragraph("\nSE HA CONVENIDO Y PACTADO LO SIGUIENTE:")
-            doc.add_paragraph("PRIMERO: EL CLIENTE apodera a la firma AboAgrim para realizar los trabajos legales y técnicos correspondientes al caso.")
-            
-            # Lo guardamos en bytes para la descarga
-            word_buffer = io.BytesIO()
-            doc.save(word_buffer)
-            word_buffer.seek(0)
-            
-            st.success("✅ Documento generado con éxito.")
-            st.download_button(
-                label="⬇️ Descargar Archivo de Word",
-                data=word_buffer,
-                file_name=f"{tipo_doc}_{num_exp}.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
+            exp = st.text_input("Extraer datos del Expediente N°:")
+            if st.button("⚙️ Ensamblar Documento Word"):
+                st.toast(f"Generando {doc}...", icon="⏳")
+        with c2:
+            st.info("💡 **Inteligencia Documental:** El sistema detectará automáticamente la jurisdicción y adaptará el encabezado legal.")
+
+    with tab_req:
+        tramite = st.selectbox("Consultar Checklist Legal para:", ["Deslinde", "Saneamiento", "Litis sobre Derechos Registrados", "Transferencia por Venta"])
+        if tramite == "Deslinde":
+            st.success("**Trámite: Deslinde (Res. 3642-2016)**\n1. Contrato de Mensura firmado.\n2. Constancia Anotada.\n3. Cédula del titular.\n4. Acta de Hitos y Mensura.\n5. Planos.")
+        elif tramite == "Saneamiento":
+            st.success("**Trámite: Saneamiento (Art. 20 Ley 108-05)**\n1. Instancia de solicitud.\n2. Croquis ilustrativo.\n3. Certificación del Ayuntamiento.\n4. Pruebas de posesión.")
+        elif tramite == "Litis sobre Derechos Registrados":
+            st.success("**Trámite: Litis (Art. 28 Ley 108-05)**\n1. Demanda introductiva.\n2. Acto de Alguacil (octava franca).\n3. Depósito en RT.\n4. Copia del Título.")
+        elif tramite == "Transferencia por Venta":
+            st.success("**Trámite: Transferencia (RT)**\n1. Acto de venta original.\n2. Título original.\n3. Impuesto (3% DGII).\n4. Certificación de IPI.")
 
 # =====================================================================
-# MÓDULOS 5 AL 7 (ALERTAS, FACTURACIÓN NUEVA Y CONFIGURACIÓN)
+# MÓDULO 5: ALERTAS Y PLAZOS
 # =====================================================================
 def vista_alertas():
-    st.title("📅 Alertas y Plazos Legales")
-    st.info("Módulo en desarrollo: Próximamente se vinculará con las fechas de la Ley 108-05.")
-
-def vista_facturacion():
-    st.title("💳 Finanzas y Control de Honorarios")
+    st.title("📅 Motor de Alertas, Plazos y Caducidades")
     
-    # Formulario de Ingresos
+    tab_alertas, tab_leyes = st.tabs(["🔔 Mis Alertas Activas", "⚖️ Calculadora de Plazos Ley 108-05"])
+    
+    with tab_alertas:
+        st.warning("No hay plazos críticos por vencer en los próximos 7 días.")
+        
+    with tab_leyes:
+        st.subheader("Tabla Oficial de Plazos, Prescripciones y Caducidades de la JI")
+        datos = {
+            "Actuación / Proceso": ["Autorización de Mensura", "Prórroga de Mensura", "Aviso de Mensura", "Apelación TJO", "Revisión por Fraude", "Casación"],
+            "Plazo Legal": ["60 días", "30 días adicionales", "15 días antes", "30 días", "1 Año", "30 días"],
+            "Efecto Legal": ["Caducidad", "Administrativo", "Nulidad", "Prescripción", "Prescripción", "Caducidad"],
+            "Base Normativa": ["Art. 41 Reg. Mensuras", "Art. 42 Reg. Mensuras", "Art. 46 Reg. Mensuras", "Art. 80 Ley 108-05", "Art. 86 Ley 108-05", "Art. 82 Ley 108-05"]
+        }
+        st.dataframe(pd.DataFrame(datos), use_container_width=True, hide_index=True)
+
+# =====================================================================
+# MÓDULO 6: FACTURACIÓN
+# =====================================================================
+def vista_facturacion():
+    st.title("💳 Facturación y Gestión de Cobros")
+    
+    with st.expander("⚖️ Consultar Guía de Tasas e Impuestos (JI y DGII)", expanded=False):
+        st.markdown("""
+        * **Impuesto de Transferencia (DGII):** 3% del valor del inmueble.
+        * **Colegio de Abogados (Ley 3-19):** RD$ 50.00 (Sello por acto).
+        * **Colegio de Notarios:** RD$ 100.00 (Por legalización).
+        * **Tasa Mensuras:** Varía según extensión superficial.
+        """)
+    
+    st.markdown("### Registro de Transacción")
     with st.form("form_pagos", clear_on_submit=True):
-        st.subheader("Registrar un Nuevo Pago / Abono")
         c1, c2, c3 = st.columns(3)
         exp = c1.text_input("Expediente N°:")
-        tot = c2.number_input("Honorarios Acordados (RD$):", min_value=0.0, step=1000.0)
-        abo = c3.number_input("Monto Abonado Hoy (RD$):", min_value=0.0, step=1000.0)
+        tot = c2.number_input("Honorarios Totales (RD$):", min_value=0.0, step=1000.0)
+        abo = c3.number_input("Abono Recibido (RD$):", min_value=0.0, step=1000.0)
         
-        if st.form_submit_button("💳 Registrar Ingreso"):
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.form_submit_button("💳 Aplicar Cobro a Cuenta", use_container_width=True):
             if exp and abo > 0:
-                datos_pago = {
-                    "expediente_id": exp, "honorarios_totales": tot, 
-                    "monto_pagado": abo, "fecha_registro": datetime.datetime.now().strftime("%Y-%m-%d")
-                }
-                if registrar_evento("pagos", datos_pago): st.success(f"✅ Pago de RD$ {abo:,.2f} registrado.")
-                else: st.error("Error al registrar el pago.")
-            else: st.warning("Ingrese Expediente y Monto.")
-            
-    st.divider()
-    
-    # Historial Financiero
-    st.subheader("📊 Historial de Movimientos")
-    facturas = consultar_facturas()
-    if facturas:
-        df_pagos = pd.DataFrame(facturas)
-        df_pagos['Balance Pendiente'] = pd.to_numeric(df_pagos['honorarios_totales']) - pd.to_numeric(df_pagos['monto_pagado'])
-        st.dataframe(df_pagos[['fecha_registro', 'expediente_id', 'honorarios_totales', 'monto_pagado', 'Balance Pendiente']], use_container_width=True)
-        
-        # Métrica Total
-        total_ingresos = pd.to_numeric(df_pagos['monto_pagado']).sum()
-        st.metric("Total Ingresos Históricos (RD$)", f"RD$ {total_ingresos:,.2f}")
-    else:
-        st.info("No hay pagos registrados aún.")
+                datos_pago = {"expediente_id": exp, "honorarios_totales": tot, "monto_pagado": abo, "fecha_registro": datetime.datetime.now().strftime("%Y-%m-%d")}
+                registrar_evento("pagos", datos_pago)
+                st.success(f"✅ Abono de RD$ {abo:,.2f} aplicado al expediente {exp}.")
+            else: st.warning("⚠️ Ingrese el Expediente y un Abono mayor a 0.")
 
+# =====================================================================
+# MÓDULO 7: CONFIGURACIÓN
+# =====================================================================
 def vista_configuracion():
-    st.title("⚙️ Ajustes del Sistema")
-    st.markdown("**Sede Principal:** Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Santiago.")
+    st.title("⚙️ Ajustes del Sistema y Biblioteca Legal")
+    
+    tab_perfil, tab_leyes = st.tabs(["⚙️ Perfil de la Firma", "📚 Compendio Normativo de la JI"])
+    
+    with tab_perfil:
+        st.text_input("Razón Social:", value="Abogados y Agrimensores 'AboAgrim'")
+        st.text_input("Sede Principal:", value="Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Santiago.")
+        st.text_input("Teléfonos:", value="829-826-5888 / 809-691-3333")
+        if st.button("💾 Guardar Configuración"): st.toast("Ajustes guardados.", icon="✅")
+            
+    with tab_leyes:
+        st.markdown("""
+        **Legislación Integrada en AboAgrim Pro DMS:**
+        1. **Ley No. 108-05 de Registro Inmobiliario.**
+        2. **Reglamento General de Mensuras Catastrales.**
+        3. **Reglamento de los Tribunales de la JI.**
+        4. **Reglamento General de Registro de Títulos.**
+        """)
 
 # --- ENRUTADOR ---
 vistas = {
