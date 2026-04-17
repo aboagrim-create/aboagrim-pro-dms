@@ -96,51 +96,107 @@ def vista_mando():
 # =====================================================================
 # MÓDULO 2: REGISTRO MAESTRO (CON PESTAÑAS Y 7 ROLES)
 # =====================================================================
-def vista_registro_maestro():
-    st.title("👤 Registro Maestro de Expedientes")
-    dic = obtener_diccionario_maestro()
-    
-    with st.form("registro_expediente_full", clear_on_submit=False):
-        tab1, tab2, tab3 = st.tabs(["📋 I. Datos Legales", "📐 II. Detalles del Proceso", "⚖️ III. Roles Profesionales"])
-        
-        with tab1:
-            c1, c2, c3 = st.columns(3)
-            num = c1.text_input("N° Expediente:")
-            cli = c2.text_input("Cliente Principal / Reclamante:")
-            ced = c3.text_input("Cédula / RNC:")
-            
-        with tab2:
-            c4, c5, c6 = st.columns(3)
-            tipo = c4.selectbox("Tipo de Acto:", ["Deslinde", "Saneamiento", "Litis", "Transferencia", "Determinación de Herederos"])
-            jur = c5.selectbox("Jurisdicción:", ["Santiago", "La Vega", "Santo Domingo", "Puerto Plata", "Moca"])
-            eta = c6.selectbox("Etapa Inicial:", ["Recepción", "Mensura", "Sometimiento", "Tribunal", "Sentencia"])
-            
-        with tab3:
-            st.markdown("Asigne el personal técnico y legal involucrado:")
-            a1, a2, a3 = st.columns(3)
-            agrim = a1.selectbox("Agrimensor:", dic.get('agrimensor', []) or ["N/A"])
-            abog = a2.selectbox("Abogado:", dic.get('abogado', []) or ["N/A"])
-            notar = a3.selectbox("Notario:", dic.get('notario', []) or ["N/A"])
-            
-            a4, a5, a6 = st.columns(3)
-            repre = a4.selectbox("Representante:", dic.get('representante', []) or ["N/A"])
-            apoder = a5.selectbox("Apoderado:", dic.get('apoderado', []) or ["N/A"])
-            solic = a6.selectbox("Solicitante:", dic.get('solicitante', []) or ["N/A"])
+import streamlit as st
+import datetime
 
+def vista_registro_maestro():
+    st.title("📝 Registro Maestro de Expedientes")
+    st.markdown("Llene los datos del cliente, el inmueble y el proceso. Esta información alimentará automáticamente todas las plantillas de Word.")
+
+    # Usamos st.form para que la página no se recargue con cada tecla que presione
+    with st.form("form_nuevo_expediente", clear_on_submit=False):
+        
+        # --- SECCIÓN 1: DATOS DEL CLIENTE ---
+        st.subheader("👤 1. Generales del Cliente / Solicitante")
+        c1, c2, c3 = st.columns(3)
+        cliente_nombre = c1.text_input("Nombre Completo del Cliente", placeholder="Ej. Juan Pérez")
+        cedula = c2.text_input("Cédula de Identidad", placeholder="000-0000000-0")
+        estado_civil = c3.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a", "Unión Libre"])
+        
+        c4, c5 = st.columns([1, 2])
+        profesion = c4.text_input("Profesión / Ocupación")
+        nacionalidad = c5.text_input("Nacionalidad", value="Dominicana")
+        
+        domicilio_eleccion = st.text_input("Domicilio / Dirección (Completa)")
+
+
+        # --- SECCIÓN 2: DATOS DEL INMUEBLE ---
+        st.subheader("🗺️ 2. Datos del Inmueble (Catastrales)")
+        i1, i2, i3 = st.columns(3)
+        parcela = i1.text_input("Parcela / Solar", placeholder="Ej. 15-A")
+        dc = i2.text_input("Distrito Catastral (DC)", placeholder="Ej. 01")
+        matricula = i3.text_input("Matrícula / Certificado de Título")
+        
+        i4, i5 = st.columns(2)
+        designacion_catastral = i4.text_input("Designación Catastral (Posicional)")
+        area = i5.text_input("Superficie / Área", placeholder="Ej. 500.50 m²")
+
+        i6, i7 = st.columns(2)
+        provincia = i6.text_input("Provincia", value="Santiago")
+        municipio = i7.text_input("Municipio", value="Santiago de los Caballeros")
+
+
+        # --- SECCIÓN 3: DATOS DEL PROCESO Y HONORARIOS ---
+        st.subheader("⚖️ 3. Datos del Proceso e Institución")
+        p1, p2 = st.columns(2)
+        tipo_proceso = p1.selectbox("Tipo de Trabajo / Proceso", [
+            "Deslinde", 
+            "Saneamiento", 
+            "Litis sobre Derechos Registrados", 
+            "Subdivisión", 
+            "Transferencia",
+            "Determinación de Herederos"
+        ])
+        organo_ji = p2.selectbox("Órgano de la Jurisdicción", [
+            "Mensuras Catastrales", 
+            "Registro de Títulos", 
+            "Tribunal de Tierras de Jurisdicción Original",
+            "Tribunal Superior de Tierras"
+        ])
+
+        p3, p4 = st.columns(2)
+        honorarios_letras = p3.text_input("Monto de Honorarios (En Letras)", placeholder="Ej. Cien Mil Pesos Dominicanos")
+        condiciones_pago = p4.text_input("Condiciones / Cuotas de Pago", placeholder="Ej. 50% al inicio y 50% a la aprobación")
+
+        # --- BOTÓN DE GUARDADO ---
         st.markdown("---")
-        if st.form_submit_button("🛡️ Blindar y Registrar Expediente en la Nube"):
-            if num and cli:
-                datos = {
-                    "numero_expediente": num, "cliente_id": cli, "tipo_caso": tipo, 
-                    "jurisdiccion": jur, "etapa": eta, "estado": "Abierto"
-                }
-                if registrar_evento("casos", datos): 
-                    st.toast("Expediente guardado exitosamente.", icon="✅")
-                    st.balloons()
-                else: 
-                    st.error("Error al conectar con la base de datos.")
+        submit_btn = st.form_submit_button("💾 Guardar Expediente en la Base de Datos")
+
+        # --- LÓGICA AL PRESIONAR EL BOTÓN ---
+        if submit_btn:
+            if not cliente_nombre or not cedula:
+                st.error("⚠️ El Nombre y la Cédula son obligatorios para abrir un expediente.")
             else:
-                st.warning("⚠️ El Número de Expediente y el Cliente son obligatorios.")
+                # Aquí empaquetamos todos los datos con los NOMBRES EXACTOS de sus etiquetas del Word
+                datos_para_guardar = {
+                    "cliente_nombre": cliente_nombre,
+                    "cedula": cedula,
+                    "estado_civil": estado_civil,
+                    "profesion": profesion,
+                    "nacionalidad": nacionalidad,
+                    "domicilio_eleccion": domicilio_eleccion,
+                    
+                    "parcela": parcela,
+                    "dc": dc,
+                    "matricula": matricula,
+                    "designacion_catastral": designacion_catastral,
+                    "area": area,
+                    "provincia": provincia,
+                    "municipio": municipio,
+                    
+                    "tipo_proceso": tipo_proceso,
+                    "organo_ji": organo_ji,
+                    "honorarios_letras": honorarios_letras,
+                    "condiciones_pago": condiciones_pago,
+                    "hoy": datetime.datetime.now().strftime("%d/%m/%Y")
+                }
+                
+                # st.write(datos_para_guardar) # (Opcional) Descomente esta línea para ver los datos en pantalla
+                
+                st.success(f"✅ ¡Expediente de {cliente_nombre} registrado correctamente!")
+                st.info("💡 Ahora puede ir a la pestaña 'Plantillas Auto' -> 'Generar por Lote' para crear los contratos de este cliente.")
+                
+                # NOTA: En el próximo paso conectaremos este diccionario ('datos_para_guardar') con su base de datos en Supabase.
 
 # =====================================================================
 # MÓDULO 3: ARCHIVO DIGITAL (BÓVEDA, EXPLORADOR Y DESCARGA ZIP)
