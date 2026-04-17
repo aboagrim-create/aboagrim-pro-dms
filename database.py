@@ -40,7 +40,9 @@ def registrar_evento(tabla, datos):
     try:
         db.table(tabla).insert(datos).execute()
         return True
-    except: return False
+    except Exception as e:
+        st.error(f"Error técnico devuelto por la Base de Datos: {str(e)}")
+        return False
 
 def autenticar_usuario(email, password):
     try:
@@ -63,15 +65,15 @@ def consultar_alertas(solo_pendientes=False):
 def consultar_facturas():
     try: return [DiccionarioSeguro(d) for d in db.table("pagos").select("*").execute().data]
     except: return []
+
 # ---------------------------------------------------------------------
-# 7. GESTIÓN DOCUMENTAL (STORAGE)
+# 7. GESTIÓN DOCUMENTAL (STORAGE PARA LA BÓVEDA DIGITAL)
 # ---------------------------------------------------------------------
 def subir_documento(bucket, ruta_archivo, file_bytes):
     """
     Sube un archivo físico a la bóveda de Supabase Storage.
     """
     try:
-        # El parámetro file_options define el tipo de contenido automáticamente
         db.storage.from_(bucket).upload(
             file=ruta_archivo, 
             data=file_bytes, 
