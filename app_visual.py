@@ -31,15 +31,15 @@ if not st.session_state['autenticado']:
     """, unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 1.5, 1])
-    with col2:
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        st.markdown("<div class='login-box'>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; color: white;'>⚖️ AboAgrim Pro</h2>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align: center; color: #94A3B8;'>Acceso Restringido DMS</p>", unsafe_allow_html=True)
-        
-     with st.form("Login_Seguro"):
-            u = st.text_input("Correo Institucional:").strip().lower()
-            p = st.text_input("Contraseña:", type="password")
+with col2:
+            st.markdown("<br><br>", unsafe_allow_html=True)
+            st.markdown("<div class='login-box'>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center; color: white;'>⚖️ AboAgrim Pro</h2>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: #94A3B8;'>Acceso Restringido DMS</p>", unsafe_allow_html=True)
+            
+            with st.form("Login_Seguro"):
+                u = st.text_input("Correo Institucional:").strip().lower()
+                p = st.text_input("Contraseña:", type="password")
             if st.form_submit_button("Entrar al Sistema", use_container_width=True):
                 if u and p:
                     exito, user = autenticar_usuario(u, p)
