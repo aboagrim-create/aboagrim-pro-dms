@@ -99,3 +99,9 @@ def obtener_url_descarga(bucket, ruta_archivo):
         return db.storage.from_(bucket).get_public_url(ruta_archivo)
     except:
         return ""
+def descargar_documento_bytes(bucket, ruta_archivo):
+    """Descarga los datos puros de un archivo para poder comprimirlo en un ZIP."""
+    try:
+        return db.storage.from_(bucket).download(ruta_archivo)
+    except Exception as e:
+        return None
