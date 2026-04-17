@@ -162,7 +162,7 @@ def vista_registro_maestro():
                 st.warning("⚠️ El Número de Expediente y el Cliente son obligatorios.")
 
 # =====================================================================
-# MÓDULO 3: ARCHIVO DIGITAL (BÓVEDA Y EXPLORADOR)
+# MÓDULO 3: ARCHIVO DIGITAL (BÓVEDA, EXPLORADOR Y DESCARGA ZIP)
 # =====================================================================
 def vista_archivo():
     st.title("📁 Bóveda Digital DMS")
@@ -192,25 +192,47 @@ def vista_archivo():
         
         if st.button("🗂️ Buscar Archivos"):
             if exp_busqueda.strip():
-                # Llamamos al motor para buscar la carpeta en Supabase
                 archivos_encontrados = listar_documentos("expedientes", exp_busqueda.strip())
                 
                 if archivos_encontrados and len(archivos_encontrados) > 0:
                     st.success(f"Archivos encontrados para el expediente {exp_busqueda}:")
                     st.markdown("<br>", unsafe_allow_html=True)
                     
+                    # 1. Mostramos la lista normal
                     for arch in archivos_encontrados:
                         nombre_archivo = arch.get('name')
-                        # Evitamos mostrar archivos invisibles o temporales
                         if nombre_archivo and nombre_archivo != '.emptyFolderPlaceholder':
                             ruta_completa = f"{exp_busqueda.strip()}/{nombre_archivo}"
                             url_descarga = obtener_url_descarga("expedientes", ruta_completa)
                             
                             col1, col2 = st.columns([3, 1])
                             col1.markdown(f"📄 **{nombre_archivo}**")
-                            # Botón de descarga con estilo
-                            col2.markdown(f"<a href='{url_descarga}' target='_blank'><button style='width:100%; padding:5px; border-radius:5px; background-color:#1E3A8A; color:white; border:none; cursor:pointer;'>⬇️ Ver / Descargar</button></a>", unsafe_allow_html=True)
+                            col2.markdown(f"<a href='{url_descarga}' target='_blank'><button style='width:100%; padding:5px; border-radius:5px; background-color:#1E3A8A; color:white; border:none; cursor:pointer;'>⬇️ Ver Individual</button></a>", unsafe_allow_html=True)
                             st.divider()
+                    
+                    # 2. Lógica para crear el archivo ZIP en memoria
+                    st.markdown("### 📦 Descarga Masiva")
+                    with st.spinner("Empaquetando expediente completo..."):
+                        zip_buffer = io.BytesIO()
+                        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                            for arch in archivos_encontrados:
+                                nombre_archivo = arch.get('name')
+                                if nombre_archivo and nombre_archivo != '.emptyFolderPlaceholder':
+                                    ruta_completa = f"{exp_busqueda.strip()}/{nombre_archivo}"
+                                    # Descargamos los bytes de cada archivo
+                                    file_bytes = descargar_documento_bytes("expedientes", ruta_completa)
+                                    if file_bytes:
+                                        # Lo metemos dentro del ZIP
+                                        zip_file.writestr(nombre_archivo, file_bytes)
+                        
+                        # 3. Botón nativo de Streamlit para descargar el ZIP a la PC
+                        st.download_button(
+                            label=f"📦 Descargar Expediente {exp_busqueda.strip()} Completo (.ZIP)",
+                            data=zip_buffer.getvalue(),
+                            file_name=f"Expediente_{exp_busqueda.strip()}.zip",
+                            mime="application/zip",
+                            use_container_width=True
+                        )
                 else:
                     st.info("No se encontraron documentos en esta carpeta o el expediente no existe.")
             else:
