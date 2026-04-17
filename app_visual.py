@@ -344,11 +344,18 @@ def vista_alertas():
         alertas = consultar_alertas(solo_pendientes=True)
         if alertas:
             df_al = pd.DataFrame(alertas)
-            hoy = datetime.datetime.now().date()
             
-            # Formateamos las fechas y calculamos cuántos días faltan
-            df_al['fecha_vencimiento'] = pd.to_datetime(df_al['fecha_vencimiento']).dt.date
+            # 1. Convertimos la columna a formato de Fecha oficial
+            df_al['fecha_vencimiento'] = pd.to_datetime(df_al['fecha_vencimiento'])
+            
+            # 2. Definimos el día de hoy
+            hoy = pd.to_datetime("today").normalize()
+            
+            # 3. Calculamos los días restantes
             df_al['Días Restantes'] = (df_al['fecha_vencimiento'] - hoy).dt.days
+            
+            # 4. Ponemos la fecha bonita para la tabla (sin horas)
+            df_al['fecha_vencimiento'] = df_al['fecha_vencimiento'].dt.date
             
             # Reorganizamos la tabla para que se vea profesional
             st.dataframe(
