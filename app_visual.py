@@ -227,7 +227,7 @@ def vista_plantillas():
     
     tab_gen, tab_mng = st.tabs(["🚀 Generar por Lote", "📁 Gestionar Modelos Maestros"])
     
-with tab_mng:
+    with tab_mng:
         st.subheader("Biblioteca de Plantillas (Uso General)")
         archivo_nuevo = st.file_uploader("Subir nuevo modelo Word (.docx)", type=['docx'], key="subidor_plantillas")
         
@@ -268,7 +268,6 @@ with tab_mng:
         modelos_disponibles = listar_modelos()
         seleccionadas = []
         
-        # Crear cuadrícula de checkboxes para las plantillas
         cols = st.columns(2)
         for i, mod in enumerate(modelos_disponibles):
             if cols[i % 2].checkbox(mod, key=f"chk_{mod}"):
@@ -282,23 +281,16 @@ with tab_mng:
                     zip_buffer = io.BytesIO()
                     with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
                         for mod_name in seleccionadas:
-                            # 1. Descargar modelo
                             modelo_bytes = db.storage.from_('plantillas').download(mod_name)
                             doc = Document(io.BytesIO(modelo_bytes))
-                            
-                            # 2. (Aquí podrías agregar la lógica de reemplazo de variables {{nombre}})
-                            # Por ahora, generamos el archivo con el nombre del cliente
                             doc.add_paragraph(f"\nDocumento vinculado al expediente: {exp_sel}")
                             
                             out_buffer = io.BytesIO()
                             doc.save(out_buffer)
                             out_buffer.seek(0)
                             
-                            # 3. Guardar en el Bucket de Expedientes
                             nombre_archivo = f"{mod_name.replace('.docx', '')}_{exp_sel.split('|')[0].strip()}.docx"
                             subir_a_expediente(out_buffer.getvalue(), nombre_archivo, exp_sel.split('|')[0].strip())
-                            
-                            # 4. Agregar al ZIP para descarga inmediata
                             zip_file.writestr(nombre_archivo, out_buffer.getvalue())
                     
                     st.success(f"✅ Se han generado {len(seleccionadas)} documentos y se archivaron en la nube.")
