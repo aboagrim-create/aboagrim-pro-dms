@@ -244,11 +244,6 @@ with tab_mng:
                     st.rerun()
                 except Exception as e:
                     st.error(f"Error de conexión: {e}")
-                    st.error("⚠️ La nube rechazó la conexión.")
-                    st.info("Verifique que en Supabase el bucket 'plantillas' tenga la política 'ALL' activa.")
-
-        modelos = listar_modelos()
-        if modelos:
             st.write("Modelos disponibles:")
             for m in modelos:
                 c1, c2 = st.columns([3, 1])
