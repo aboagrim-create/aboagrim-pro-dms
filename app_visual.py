@@ -223,44 +223,77 @@ def vista_archivo():
 # MÓDULO 4: PLANTILLAS Y LEY 108-05
 # =====================================================================
 def vista_plantillas():
-    st.title("📄 Motor de Redacción Legal (Word)")
-    st.info("Genera documentos en formato .docx listos para imprimir y firmar.")
+    st.title("📄 Generador Masivo de Documentación")
     
-    casos = consultar_todo()
-    if not casos:
-        st.warning("Debe registrar al menos un expediente en el sistema.")
-        return
+    tab_gen, tab_mng = st.tabs(["🚀 Generar por Lote", "📁 Gestionar Modelos Maestros"])
+    
+    with tab_mng:
+        st.subheader("Biblioteca de Plantillas (Uso General)")
+        archivo_nuevo = st.file_uploader("Subir nuevo modelo Word (.docx)", type=['docx'])
+        if st.button("⬆️ Cargar a la Biblioteca"):
+            if archivo_nuevo:
+                db.storage.from_('plantillas').upload(archivo_nuevo.name, archivo_nuevo.getvalue())
+                st.success(f"Modelo {archivo_nuevo.name} guardado en el servidor.")
+                st.rerun()
+
+        modelos = listar_modelos()
+        if modelos:
+            st.write("Modelos disponibles:")
+            for m in modelos:
+                c1, c2 = st.columns([3, 1])
+                c1.text(f"📄 {m}")
+                if c2.button("🗑️", key=m):
+                    db.storage.from_('plantillas').remove([m])
+                    st.rerun()
+
+    with tab_gen:
+        st.subheader("Generación de Expediente")
+        casos = consultar_todo()
+        if not casos:
+            st.warning("No hay expedientes registrados."); return
         
-    lista_exps = [f"{c.get('numero_expediente')} - {c.get('cliente_id')}" for c in casos]
-    exp_seleccionado = st.selectbox("Seleccione el Expediente:", lista_exps)
-    tipo_doc = st.selectbox("Seleccione el Documento a Generar:", ["Contrato de Prestación de Servicios y Cuota Litis", "Instancia Introductiva (Genérica)"])
-    
-    if st.button("⚙️ Generar Documento Word"):
-        with st.spinner("Ensamblando documento legal..."):
-            doc = Document()
-            num_exp = exp_seleccionado.split(" - ")[0]
-            cliente = exp_seleccionado.split(" - ")[1]
-            
-            doc.add_heading(f'{tipo_doc.upper()}', 0)
-            doc.add_paragraph(f"Expediente Vinculado: {num_exp}")
-            doc.add_paragraph(f"Fecha: {datetime.datetime.now().strftime('%d de %B del %Y')}")
-            doc.add_paragraph("\nENTRE LAS PARTES:")
-            doc.add_paragraph(f"De una parte, el Lic. JHONNY MATOS, M.A., Abogado/Agrimensor...")
-            doc.add_paragraph(f"Y de la otra parte, el señor(a) {cliente}, quien en lo adelante se denominará EL CLIENTE.")
-            doc.add_paragraph("\nSE HA CONVENIDO Y PACTADO LO SIGUIENTE:")
-            doc.add_paragraph("PRIMERO: EL CLIENTE apodera a la firma AboAgrim para realizar los trabajos legales y técnicos correspondientes al caso.")
-            
-            word_buffer = io.BytesIO()
-            doc.save(word_buffer)
-            word_buffer.seek(0)
-            
-            st.success("✅ Documento generado con éxito.")
-            st.download_button(
-                label="⬇️ Descargar Archivo de Word",
-                data=word_buffer,
-                file_name=f"{tipo_doc}_{num_exp}.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
+        exp_sel = st.selectbox("Seleccione el Expediente del Cliente:", 
+                               [f"{c.get('numero_expediente')} | {c.get('cliente_id')}" for c in casos])
+        
+        st.write("Seleccione las plantillas a llenar (hasta 10):")
+        modelos_disponibles = listar_modelos()
+        seleccionadas = []
+        
+        # Crear cuadrícula de checkboxes para las plantillas
+        cols = st.columns(2)
+        for i, mod in enumerate(modelos_disponibles):
+            if cols[i % 2].checkbox(mod, key=f"chk_{mod}"):
+                seleccionadas.append(mod)
+        
+        if st.button("📂 Generar Documentos y Archivar en Expediente"):
+            if not seleccionadas:
+                st.error("Seleccione al menos una plantilla.")
+            else:
+                with st.spinner("Procesando lote de documentos..."):
+                    zip_buffer = io.BytesIO()
+                    with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+                        for mod_name in seleccionadas:
+                            # 1. Descargar modelo
+                            modelo_bytes = db.storage.from_('plantillas').download(mod_name)
+                            doc = Document(io.BytesIO(modelo_bytes))
+                            
+                            # 2. (Aquí podrías agregar la lógica de reemplazo de variables {{nombre}})
+                            # Por ahora, generamos el archivo con el nombre del cliente
+                            doc.add_paragraph(f"\nDocumento vinculado al expediente: {exp_sel}")
+                            
+                            out_buffer = io.BytesIO()
+                            doc.save(out_buffer)
+                            out_buffer.seek(0)
+                            
+                            # 3. Guardar en el Bucket de Expedientes
+                            nombre_archivo = f"{mod_name.replace('.docx', '')}_{exp_sel.split('|')[0].strip()}.docx"
+                            subir_a_expediente(out_buffer.getvalue(), nombre_archivo, exp_sel.split('|')[0].strip())
+                            
+                            # 4. Agregar al ZIP para descarga inmediata
+                            zip_file.writestr(nombre_archivo, out_buffer.getvalue())
+                    
+                    st.success(f"✅ Se han generado {len(seleccionadas)} documentos y se archivaron en la nube.")
+                    st.download_button("⬇️ Descargar Paquete ZIP", zip_buffer.getvalue(), "expediente_completo.zip")
 
 # =====================================================================
 # MÓDULO 5: ALERTAS Y PLAZOS
