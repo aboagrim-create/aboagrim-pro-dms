@@ -421,3 +421,12 @@ def vista_configuracion():
                         st.error("Error: Verifica que el correo tenga formato válido o que no exista ya en el sistema.")
                 else:
                     st.warning("⚠️ Ingrese un correo válido y una contraseña de al menos 6 caracteres.")
+
+# --- ENRUTADOR ---
+vistas = {
+    "🏠 Mando Central": vista_mando, "👤 Registro Maestro": vista_registro_maestro, 
+    "📁 Archivo Digital": vista_archivo, "📄 Plantillas Auto": vista_plantillas, 
+    "📅 Alertas y Plazos": vista_alertas, "💳 Facturación": vista_facturacion, 
+    "⚙️ Configuración": vista_configuracion
+}
+vistas[menu]()
