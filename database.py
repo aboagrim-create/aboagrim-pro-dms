@@ -49,6 +49,14 @@ def autenticar_usuario(email, password):
         res = db.auth.sign_in_with_password({"email": email, "password": password})
         return (True, res.user) if res.session else (False, None)
     except: return (False, None)
+def registrar_nuevo_usuario(email, password):
+    """Permite al administrador crear cuentas para el equipo."""
+    try:
+        res = db.auth.sign_up({"email": email, "password": password})
+        return True if res.user else False
+    except Exception as e:
+        st.error(f"Error al crear usuario: {str(e)}")
+        return False        
 
 # --- FUNCIONES DE APOYO PARA MÓDULOS ---
 def consultar_plantillas():
