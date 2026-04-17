@@ -244,6 +244,8 @@ with tab_mng:
                     st.rerun()
                 except Exception as e:
                     st.error(f"Error de conexión: {e}")
+modelos = listar_modelos()
+        if modelos:
             st.write("Modelos disponibles:")
             for m in modelos:
                 c1, c2 = st.columns([3, 1])
