@@ -10,7 +10,106 @@ import zipfile   # <--- NUEVO
 import io        # <--- NUEVO
 from docx import Document
 from database import *
+import streamlit as st
+import datetime
 
+def vista_registro_maestro():
+    st.title("📝 Registro Maestro de Expedientes")
+    st.markdown("Llene los datos del cliente, el inmueble y el proceso. Esta información alimentará automáticamente todas las plantillas de Word.")
+
+    with st.form("form_nuevo_expediente", clear_on_submit=False):
+        
+        # --- SECCIÓN 1: DATOS DEL CLIENTE ---
+        st.subheader("👤 1. Generales del Cliente / Solicitante")
+        c1, c2, c3 = st.columns(3)
+        cliente_nombre = c1.text_input("Nombre Completo del Cliente", placeholder="Ej. Juan Pérez")
+        cedula = c2.text_input("Cédula de Identidad", placeholder="000-0000000-0")
+        estado_civil = c3.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a", "Unión Libre"])
+        
+        c4, c5 = st.columns([1, 2])
+        profesion = c4.text_input("Profesión / Ocupación")
+        nacionalidad = c5.text_input("Nacionalidad", value="Dominicana")
+        
+        domicilio_eleccion = st.text_input("Domicilio / Dirección (Completa)")
+
+        # --- SECCIÓN 2: DATOS DEL INMUEBLE ---
+        st.subheader("🗺️ 2. Datos del Inmueble (Catastrales)")
+        i1, i2, i3 = st.columns(3)
+        parcela = i1.text_input("Parcela / Solar", placeholder="Ej. 15-A")
+        dc = i2.text_input("Distrito Catastral (DC)", placeholder="Ej. 01")
+        matricula = i3.text_input("Matrícula / Certificado de Título")
+        
+        i4, i5 = st.columns(2)
+        designacion_catastral = i4.text_input("Designación Catastral (Posicional)")
+        area = i5.text_input("Superficie / Área", placeholder="Ej. 500.50 m²")
+
+        i6, i7 = st.columns(2)
+        provincia = i6.text_input("Provincia", value="Santiago")
+        municipio = i7.text_input("Municipio", value="Santiago de los Caballeros")
+
+        # --- SECCIÓN 3: REQUISITO / DOCUMENTO A REDACTAR ---
+        st.subheader("📄 3. Requisito / Documento a Redactar")
+        st.markdown("El nombre que seleccione aquí se insertará en la plantilla Word donde esté la etiqueta `{{ nombre_documento }}`.")
+        
+        nombre_documento = st.selectbox(
+            "Nombre del Documento a usar como requisito:", 
+            [
+                "Contrato de Cuota Litis",
+                "Instancia de Solicitud de Mensura",
+                "Poder Especial de Representación",
+                "Acto de Venta y Transferencia",
+                "Instancia de Saneamiento",
+                "Acto de Notoriedad Pública",
+                "Contrato de Prestación de Servicios Profesionales",
+                "Instancia de Demanda en Litis sobre Derechos Registrados"
+            ]
+        )
+
+        # --- SECCIÓN 4: DATOS DEL PROCESO Y HONORARIOS ---
+        st.subheader("⚖️ 4. Datos del Proceso e Institución")
+        p1, p2 = st.columns(2)
+        tipo_proceso = p1.selectbox("Tipo de Trabajo / Proceso", ["Deslinde", "Saneamiento", "Litis sobre Derechos Registrados", "Subdivisión", "Transferencia", "Determinación de Herederos"])
+        organo_ji = p2.selectbox("Órgano de la Jurisdicción", ["Mensuras Catastrales", "Registro de Títulos", "Tribunal de Tierras de Jurisdicción Original", "Tribunal Superior de Tierras"])
+
+        p3, p4 = st.columns(2)
+        honorarios_letras = p3.text_input("Monto de Honorarios (En Letras)", placeholder="Ej. Cien Mil Pesos Dominicanos")
+        condiciones_pago = p4.text_input("Condiciones / Cuotas de Pago", placeholder="Ej. 50% al inicio y 50% a la aprobación")
+
+        # --- BOTÓN DE GUARDADO ---
+        st.markdown("---")
+        submit_btn = st.form_submit_button("💾 Guardar Expediente")
+
+        if submit_btn:
+            if not cliente_nombre or not cedula:
+                st.error("⚠️ El Nombre y la Cédula son obligatorios para abrir un expediente.")
+            else:
+                # Aquí empaquetamos TODOS los datos
+                datos_para_guardar = {
+                    "cliente_nombre": cliente_nombre,
+                    "cedula": cedula,
+                    "estado_civil": estado_civil,
+                    "profesion": profesion,
+                    "nacionalidad": nacionalidad,
+                    "domicilio_eleccion": domicilio_eleccion,
+                    
+                    "parcela": parcela,
+                    "dc": dc,
+                    "matricula": matricula,
+                    "designacion_catastral": designacion_catastral,
+                    "area": area,
+                    "provincia": provincia,
+                    "municipio": municipio,
+                    
+                    "nombre_documento": nombre_documento, # <- La variable mágica
+                    
+                    "tipo_proceso": tipo_proceso,
+                    "organo_ji": organo_ji,
+                    "honorarios_letras": honorarios_letras,
+                    "condiciones_pago": condiciones_pago,
+                    "hoy": datetime.datetime.now().strftime("%d/%m/%Y")
+                }
+                
+                st.success(f"✅ ¡Expediente de {cliente_nombre} registrado correctamente! Generando requisito: {nombre_documento}")
 # --- CONFIGURACIÓN DE MARCA Y SISTEMA ---
 st.set_page_config(page_title="AboAgrim Pro DMS", layout="wide", initial_sidebar_state="expanded")
 
