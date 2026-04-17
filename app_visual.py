@@ -117,7 +117,7 @@ def vista_plantillas():
     st.info("Genera documentos en formato .docx listos para imprimir y firmar.")
     
     casos = consultar_todo()
-    if no casos:
+if not casos:
         st.warning("Debe registrar al menos un expediente en el sistema.")
         return
         
