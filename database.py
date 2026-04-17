@@ -63,3 +63,21 @@ def consultar_alertas(solo_pendientes=False):
 def consultar_facturas():
     try: return [DiccionarioSeguro(d) for d in db.table("pagos").select("*").execute().data]
     except: return []
+# ---------------------------------------------------------------------
+# 7. GESTIÓN DOCUMENTAL (STORAGE)
+# ---------------------------------------------------------------------
+def subir_documento(bucket, ruta_archivo, file_bytes):
+    """
+    Sube un archivo físico a la bóveda de Supabase Storage.
+    """
+    try:
+        # El parámetro file_options define el tipo de contenido automáticamente
+        db.storage.from_(bucket).upload(
+            file=ruta_archivo, 
+            data=file_bytes, 
+            file_options={"upsert": "true"}
+        )
+        return True
+    except Exception as e:
+        st.error(f"Error de Storage: {str(e)}")
+        return False
