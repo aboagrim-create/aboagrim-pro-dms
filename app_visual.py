@@ -30,27 +30,23 @@ if not st.session_state['autenticado']:
         </style>
     """, unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns([1, 1.5, 1])
-with col2:
-            st.markdown("<br><br>", unsafe_allow_html=True)
-            st.markdown("<div class='login-box'>", unsafe_allow_html=True)
-            st.markdown("<h2 style='text-align: center; color: white;'>⚖️ AboAgrim Pro</h2>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: #94A3B8;'>Acceso Restringido DMS</p>", unsafe_allow_html=True)
-            
-            with st.form("Login_Seguro"):
-                u = st.text_input("Correo Institucional:").strip().lower()
-                p = st.text_input("Contraseña:", type="password")
+col1, col2, col3 = st.columns([1, 1.5, 1])
+    with col2:
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>⚖️ AboAgrim Pro</h2>", unsafe_allow_html=True)
+        
+        with st.form("Login_Seguro"):
+            u = st.text_input("Correo Institucional:").strip().lower()
+            p = st.text_input("Contraseña:", type="password")
             if st.form_submit_button("Entrar al Sistema", use_container_width=True):
-                if u and p:
-                    exito, user = autenticar_usuario(u, p)
-                    if exito:
-                        st.session_state['autenticado'] = True
-                        st.session_state['user'] = u
-                        st.rerun()
-                    else: st.error("❌ Credenciales incorrectas.")
-                else: st.warning("⚠️ Complete ambos campos.")
-        st.markdown("</div>", unsafe_allow_html=True)
-    st.stop() # Detiene la ejecución si no hay login
+                exito, user = autenticar_usuario(u, p)
+                if exito:
+                    st.session_state['autenticado'] = True
+                    st.session_state['user'] = u
+                    st.rerun()
+                else:
+                    st.error("❌ Credenciales incorrectas.")
+        st.stop()
 
 # --- INTERFAZ PRINCIPAL (BARRA LATERAL) ---
 st.sidebar.markdown(f"### AboAgrim Pro\n**Lic. Jhonny Matos, M.A.**\n`Usuario: {st.session_state['user']}`")
