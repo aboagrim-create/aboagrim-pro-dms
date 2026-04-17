@@ -113,3 +113,19 @@ def descargar_documento_bytes(bucket, ruta_archivo):
         return db.storage.from_(bucket).download(ruta_archivo)
     except Exception as e:
         return None
+def listar_modelos():
+    """Trae la lista de plantillas .docx guardadas en el bucket."""
+    try:
+        res = db.storage.from_('plantillas').list()
+        return [f['name'] for f in res if f['name'].endswith('.docx')]
+    except:
+        return []
+
+def subir_a_expediente(file_data, file_name, carpeta_cliente):
+    """Guarda el documento generado en la carpeta del cliente en el bucket."""
+    path = f"{carpeta_cliente}/{file_name}"
+    try:
+        db.storage.from_('expedientes').upload(path, file_data, {"content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"})
+        return True
+    except:
+        return False
