@@ -15,100 +15,77 @@ from database import *
 
 # Línea 14: Así debe empezar la función
 def vista_registro_maestro():
-    st.title("👤 Registro Maestro Pro")
-    st.markdown("### *Gestión de Expedientes AboAgrim*")
-    
-    # Formulario principal
-    with st.form("form_maestro_total"):
+    st.title("👤 Registro Maestro Multifuncional")
+    st.markdown("### *Gestión Dinámica de Intervinientes e Inmuebles*")
+
+    with st.form("form_maestro_dinamico"):
         
-        # --- SECCIÓN 1: IDENTIDAD Y CONTACTO ---
-        st.header("📋 Datos del Cliente")
-        col1, col2, col3 = st.columns([2, 1, 1])
-        with col1:
-            nombre = st.text_input("Nombre Completo / Razón Social", placeholder="Ej: Lic. Jhonny Matos")
-        with col2:
-            identificacion = st.text_input("Cédula / RNC")
-        with col3:
-            tipo_cliente = st.selectbox("Tipo de Cliente", ["Persona Física", "Persona Jurídica", "Sucesión", "Copropiedad"])
-            
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            estado_civil = st.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Unión Libre", "Divorciado/a"])
-        with c2:
-            tel = st.text_input("📞 WhatsApp / Teléfono")
-        with c3:
-            email = st.text_input("📧 Correo Electrónico")
-
-        # --- SECCIÓN 2: DATOS TÉCNICOS Y CATASTRALES ---
-        st.header("🏗️ Información del Inmueble")
-        t1, t2, t3 = st.columns(3)
-        with t1:
-            parcela = st.text_input("Número de Parcela")
-            dc = st.text_input("Distrito Catastral (D.C.)")
-        with t2:
-            matricula = st.text_input("Certificado de Título / Matrícula")
-            designacion_pos = st.text_input("Designación Posicional")
-        with t3:
-            superficie = st.number_input("Área en m² (Según Título)", min_value=0.0, step=0.01)
-            provincia = st.text_input("Provincia / Municipio")
-            
-        direccion = st.text_area("📍 Ubicación Exacta y Referencias de Llegada")
-
-        # --- SECCIÓN 3: GESTIÓN JURÍDICA Y PROFESIONAL ---
-        st.header("⚖️ Estatus del Proceso")
-        g1, g2, g3 = st.columns(3)
-        with g1:
-            tipo_acto = st.selectbox("Tipo de Acto Técnico", [
-                "Deslinde", "Refundición", "Subdivisión", "Mensura Catastral", 
-                "Determinación de Herederos", "Condominio", "Actualización de Mensura"
-            ])
-        with g2:
-            agrimensor = st.text_input("Agrimensor (Nombre y CODIA)")
-        with g3:
-            estatus_proceso = st.selectbox("Estado Actual", [
-                "En Mensura", "En Revisión Técnica", "En Registro", "En Tribunal", "Finalizado"
-            ])
-
-        # --- SECCIÓN 4: CHECKLIST Y PAGOS (BOTONES Y CASILLAS) ---
-        st.divider()
-        col_check, col_pago = st.columns(2)
+        # --- SECCIÓN 1: CLIENTES (Múltiples) ---
+        st.header("👥 Clientes / Solicitantes")
+        num_clientes = st.number_input("¿Cuántos clientes desea registrar?", min_value=1, max_value=10, value=1)
         
-        with col_check:
-            st.write("**✅ Documentación Recibida:**")
-            check1 = st.checkbox("Copia de Título Original")
-            check2 = st.checkbox("Copia de Cédulas (Vendedor/Comprador)")
-            check3 = st.checkbox("Poder Cuota-Litis / Contrato")
-            check4 = st.checkbox("Certificación de Cargas y Gravámenes")
-            
-        with col_pago:
-            st.write("**💳 Gestión Financiera:**")
-            metodo_pago = st.radio("Método de Pago Preferido", ["Efectivo", "Transferencia", "Cuota-Litis"], horizontal=True)
-            honorarios = st.number_input("Total Honorarios (RD$)", min_value=0.0)
-            avance = st.number_input("Avance Recibido (RD$)", min_value=0.0)
+        for i in range(num_clientes):
+            with st.expander(f"👤 Datos del Cliente #{i+1}", expanded=(i==0)):
+                c1, c2, c3 = st.columns([2, 1, 1])
+                nombre = c1.text_input(f"Nombre / Razón Social #{i+1}")
+                cedula = c2.text_input(f"Cédula / RNC #{i+1}")
+                tipo = c3.selectbox(f"Tipo #{i+1}", ["Física", "Jurídica", "Sucesión"], key=f"t_cli_{i}")
+                
+                d1, d2, d3 = st.columns(3)
+                mail = d1.text_input(f"Correo Electrónico #{i+1}")
+                tel = d2.text_input(f"Teléfono / WhatsApp #{i+1}")
+                est_civil = d3.selectbox(f"Estado Civil #{i+1}", ["Soltero/a", "Casado/a", "Unión Libre"], key=f"ec_{i}")
+                
+                st.text_input(f"📍 Dirección Domiciliaria #{i+1}")
 
-        # --- BOTÓN DE ACCIÓN FINAL ---
+        # --- SECCIÓN 2: INMUEBLES (Múltiples) ---
+        st.header("🏗️ Inmuebles / Parcelas")
+        num_inmuebles = st.number_input("¿Cuántos inmuebles vinculados?", min_value=1, max_value=5, value=1)
+        
+        for j in range(num_inmuebles):
+            with st.expander(f"📍 Detalle de Inmueble #{j+1}", expanded=False):
+                i1, i2, i3 = st.columns(3)
+                parc = i1.text_input(f"Parcela #{j+1}")
+                dc = i2.text_input(f"D.C. #{j+1}")
+                mat = i3.text_input(f"Matrícula #{j+1}")
+                
+                i4, i5 = st.columns(2)
+                sup = i4.number_input(f"Superficie m² #{j+1}", min_value=0.0)
+                desig = i5.text_input(f"Designación Posicional #{j+1}")
+
+        # --- SECCIÓN 3: PROFESIONALES (Agrimensores y Abogados) ---
+        st.header("⚖️ Equipo Profesional")
+        
+        col_pro1, col_pro2 = st.columns(2)
+        
+        with col_pro1:
+            with st.expander("👷 Agrimensores Asociados"):
+                num_agri = st.number_input("Cantidad de Agrimensores", min_value=1, max_value=3)
+                for a in range(num_agri):
+                    st.text_input(f"Nombre Agrimensor {a+1}")
+                    st.text_input(f"CODIA {a+1}")
+                    st.divider()
+
+        with col_pro2:
+            with st.expander("👨‍⚖️ Abogados Encargados"):
+                num_abog = st.number_input("Cantidad de Abogados", min_value=1, max_value=3)
+                for b in range(num_abog):
+                    st.text_input(f"Nombre Abogado {b+1}")
+                    st.text_input(f"Exequátur {b+1}")
+                    st.divider()
+
+        # --- SECCIÓN 4: GENERALES Y NOTAS ---
+        st.header("📝 Observaciones Generales")
+        st.text_area("Notas adicionales del expediente (Conflictos, linderos, etc.)")
+
+        # --- BOTONES DE ACCIÓN ---
         st.divider()
-        col_btn, _ = st.columns([1, 3])
-        submit = col_btn.form_submit_button("💾 GUARDAR REGISTRO")
+        c_btn, _ = st.columns([1, 4])
+        submit = c_btn.form_submit_button("💾 GUARDAR TODO")
 
         if submit:
-            if nombre and identificacion:
-                st.success(f"✅ Expediente de **{nombre}** registrado con éxito.")
-                st.balloons()
-            else:
-                st.error("⚠️ Error: El nombre y la identificación son obligatorios.")
-
-    # --- VISTA PREVIA PROFESIONAL ---
-    st.markdown("### 🔍 Historial de Registros")
-    # Tabla dinámica para ver los datos ingresados
-    data = {
-        "Expediente": ["P-2026-001"],
-        "Cliente": [nombre if nombre else "---"],
-        "Parcela": [parcela if parcela else "---"],
-        "Acto": [tipo_acto],
-        "Estatus": [estatus_proceso]
-    }
-    st.table(data)
+            st.success("✅ Estructura de expediente guardada. Datos listos para sincronizar.")
+            st.balloons()
 
 # Asegúrese de que no haya nada repetido debajo de este bloque.
 # =====================================================================
