@@ -12,109 +12,44 @@ from docx import Document
 from database import *
 
 def vista_registro_maestro():
-    st.title("📝 Registro Maestro de Expedientes")
-    st.info("Complete la información para alimentar las plantillas de la Jurisdicción Inmobiliaria (JI).")
+    st.title("📝 Registro Maestro Pro")
+    
+    with st.form("registro_maestro_extendido"):
+        # --- SECCIÓN: CONTACTO DETALLADO ---
+        st.subheader("📞 Información de Contacto y Referencias")
+        c1, c2, c3 = st.columns(3)
+        email_cliente = c1.text_input("Correo Electrónico")
+        telefono_cliente = c2.text_input("Teléfono / WhatsApp")
+        referencia_ubicacion = c3.text_input("Referencia del Inmueble (Ej: Próximo al destacamento)")
 
-    # --- DATOS PRE-CONFIGURADOS (Tus Credenciales) ---
-    credenciales_oficina = {
-        "jhonny_matos_titulos": "Lic. Jhonny Matos. M.A., Presidente",
-        "exequatur_legal": "12345-XX", 
-        "exequatur_agrimensor": "6789-YY",
-        "direccion_oficina": "Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Santiago, Dom. Rep."
-    }
-
-    with st.form("registro_maestro_dinamico", clear_on_submit=False):
+        # --- SECCIÓN: MÚLTIPLES INMUEBLES / PROFESIONALES ---
+        st.subheader("🏗️ Inmuebles y Profesionales Adicionales")
+        col_inm, col_prof = st.columns(2)
         
-        # --- MÓDULO 1: GENERALES DE LEY (CLIENTE) ---
-        st.subheader("👤 I. Generales del Cliente / Partes")
-        col1, col2, col3 = st.columns(3)
+        with col_inm:
+            st.write("**Inmuebles Vinculados**")
+            inmuebles_adicionales = st.multiselect(
+                "Agregar más parcelas al proceso:",
+                ["Parcela A-1", "Parcela A-2", "Solar 5", "Solar 10-B"],
+                help="Puede seleccionar varias si es un proceso de refundición o subdivisión."
+            )
         
-        cliente_nombre = col1.text_input("Nombre Completo / Razón Social", placeholder="Ej: Juan Pérez")
-        cedula = col2.text_input("Cédula / RNC", placeholder="000-0000000-0")
-        nacionalidad = col3.text_input("Nacionalidad", value="Dominicana")
-        
-        c4, c5, c6 = st.columns(3)
-        profesion = c4.text_input("Profesión / Ocupación")
-        estado_civil = c5.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a", "Unión Libre"])
-        nombre_representado = c6.text_input("Nombre Representado", help="Si actúa en nombre de un tercero o empresa")
-        
-        domicilio_cliente = st.text_input("Domicilio Real del Cliente")
+        with col_prof:
+            st.write("**Equipo de Trabajo**")
+            abogados_asoc = st.multiselect("Abogados Colaboradores:", ["Lic. Pérez", "Dra. Martínez", "Dr. Almonte"])
+            agrimensores_asoc = st.multiselect("Agrimensores Adicionales:", ["Ing. Rodríguez", "Agrim. Santos"])
 
-        # Lógica Dinámica para Cónyuge
-        if estado_civil == "Casado/a":
-            st.warning("🔒 Requisito Legal: Se requieren datos del cónyuge para actos de disposición.")
-            cc1, cc2 = st.columns(2)
-            nombre_conyuge = cc1.text_input("Nombre del Cónyuge")
-            cedula_conyuge = cc2.text_input("Cédula del Cónyuge")
-            regimen_matrimonial = st.selectbox("Régimen Matrimonial", ["Comunidad de Bienes", "Separación de Bienes", "Participación"])
-        else:
-            nombre_conyuge, cedula_conyuge, regimen_matrimonial = "", "", ""
+        # --- SECCIÓN: GENERALES DE LEY (EXTENDIDAS) ---
+        st.subheader("👤 Datos del Cliente")
+        g1, g2 = st.columns(2)
+        nombre_cliente = g1.text_input("Nombre Completo")
+        cedula_cliente = g2.text_input("Cédula (000-0000000-0)")
+        direccion_fisica = st.text_area("Dirección Residencial Completa")
 
-        st.markdown("---")
-
-        # --- MÓDULO 2: DATOS TÉCNICOS DEL INMUEBLE ---
-        st.subheader("🗺️ II. Datos del Inmueble (Técnicos y Catastrales)")
-        i1, i2, i3 = st.columns(3)
-        parcela = i1.text_input("Parcela / Solar")
-        dc = i2.text_input("Distrito Catastral (DC)")
-        matricula = i3.text_input("Matrícula / Certificado de Título")
-        
-        i4, i5, i6 = st.columns(3)
-        superficie = i4.text_input("Superficie (m²)", placeholder="Ej: 500.50 m²")
-        designacion_posicional = i5.text_input("Designación Posicional (Nueva)")
-        ubicacion_inmueble = i6.text_input("Provincia/Municipio", value="Santiago, R.D.")
-        
-        with st.expander("➕ Linderos y Detalles Técnicos (Opcional)"):
-            st.text_area("Colindancias (Norte, Sur, Este, Oeste)")
-            st.text_input("Coordenadas UTM")
-            st.text_input("Mejoras Existentes")
-
-        st.markdown("---")
-
-        # --- MÓDULO 3: JURISDICCIÓN Y PROCESO ---
-        st.subheader("⚖️ III. Estructura Jurisdicción Inmobiliaria (JI)")
-        j1, j2 = st.columns(2)
-        tipo_proceso = j1.selectbox("Tipo de Proceso / Actuación", [
-            "Deslinde", "Saneamiento", "Subdivisión", "Litis sobre Derechos Registrados", 
-            "Transferencia", "Determinación de Herederos"
-        ])
-        
-        organo_ji = j2.selectbox("Órgano de la JI", [
-            "Mensuras Catastrales (DGMIC)", "Registro de Títulos (RT)", 
-            "Tribunal de Tierras (Jurisdicción Original)", "Tribunal Superior de Tierras"
-        ])
-
-        j3, j4 = st.columns(2)
-        direccion_regional = j3.text_input("Dirección Regional", value="Departamento Norte")
-        num_expediente_ji = j4.text_input("Número de Expediente JI", placeholder="Ej: 2026-0005")
-
-        st.markdown("---")
-
-        # --- MÓDULO 4: REQUISITO Y HONORARIOS ---
-        st.subheader("📄 IV. Requisito y Cláusulas Económicas")
-        nombre_documento = st.selectbox("Seleccione el Documento a Redactar:", [
-            "Contrato de Cuota Litis", "Instancia de Inicio de Proceso", 
-            "Acto de Venta y Transferencia", "Poder Especial de Representación",
-            "Acto de Notoriedad Pública", "Instancia de Demanda (Litis)"
-        ])
-
-        h1, h2, h3 = st.columns(3)
-        porcentaje_litis = h1.text_input("Porcentaje Litis (%)", value="30%")
-        monto_pesos = h2.text_input("Monto Fijo (RD$)")
-        monto_letras = h3.text_input("Monto en Letras", placeholder="Cien mil pesos...")
-
-        condiciones_pago = st.text_area("Condiciones de Pago")
-
-        # --- BOTÓN DE ACCIÓN ---
-        st.markdown("---")
-        submit_btn = st.form_submit_button("💾 Guardar y Vincular Expediente (Upsert)")
-
-        if submit_btn:
-            if not cliente_nombre or not cedula:
-                st.error("⚠️ Datos faltantes: Se requiere Nombre y Cédula del cliente.")
-            else:
-                st.success(f"✅ Registro Maestro Actualizado para: {cliente_nombre}")
-                st.balloons()
+        # Botón Upsert
+        submit = st.form_submit_button("💾 Guardar y Sincronizar Expediente")
+        if submit:
+            st.success(f"✅ Expediente de {nombre_cliente} actualizado con éxito.")
 # =====================================================================
 # MÓDULO 1: MANDO CENTRAL
 # =====================================================================
@@ -253,7 +188,16 @@ def vista_plantillas():
     st.title("📄 Generador Masivo de Documentación")
     
     tab_gen, tab_mng = st.tabs(["🚀 Generar por Lote", "📁 Gestionar Modelos Maestros"])
-    
+
+# Dentro de la lógica de generación en vista_plantillas():
+st.subheader("📂 Destino de Archivación")
+carpeta_destino = st.selectbox(
+    "Seleccione carpeta de destino en la nube:",
+    ["📁 Expedientes Activos", "📁 Archivo Pasivo", "📁 Borradores", "📁 Mensuras Catastrales"]
+)
+
+if st.button("📂 Generar y Archivar"):
+    st.info(f"Procesando... El archivo se guardará en: **{carpeta_destino}**")
     with tab_mng:
         st.subheader("Biblioteca de Plantillas (Uso General)")
         archivo_nuevo = st.file_uploader("Subir nuevo modelo Word (.docx)", type=['docx'], key="subidor_plantillas")
@@ -395,126 +339,59 @@ def vista_alertas():
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
 def vista_facturacion():
-    st.title("💳 Finanzas y Control de Honorarios")
+    st.title("💳 Gestión de Honorarios")
     
-    with st.form("form_pagos", clear_on_submit=True):
-        st.subheader("Registrar un Nuevo Pago / Abono")
-        c1, c2, c3 = st.columns(3)
-        exp = c1.text_input("Expediente N°:")
-        tot = c2.number_input("Honorarios Acordados (RD$):", min_value=0.0, step=1000.0)
-        abo = c3.number_input("Monto Abonado Hoy (RD$):", min_value=0.0, step=1000.0)
-        
-        if st.form_submit_button("💳 Registrar Ingreso"):
-            if exp and abo > 0:
-                datos_pago = {
-                    "expediente_id": exp, "honorarios_totales": tot, 
-                    "monto_pagado": abo, "fecha_registro": datetime.datetime.now().strftime("%Y-%m-%d")
-                }
-                if registrar_evento("pagos", datos_pago): st.success(f"✅ Pago de RD$ {abo:,.2f} registrado.")
-                else: st.error("Error al registrar el pago.")
-            else: st.warning("Ingrese Expediente y Monto.")
-            
-    st.divider()
-    
-    st.subheader("📊 Historial de Movimientos")
-    facturas = consultar_facturas()
-    if facturas:
-        df_pagos = pd.DataFrame(facturas)
-        df_pagos['Balance Pendiente'] = pd.to_numeric(df_pagos['honorarios_totales']) - pd.to_numeric(df_pagos['monto_pagado'])
-        st.dataframe(df_pagos[['fecha_registro', 'expediente_id', 'honorarios_totales', 'monto_pagado', 'Balance Pendiente']], use_container_width=True)
-        
-        total_ingresos = pd.to_numeric(df_pagos['monto_pagado']).sum()
-        st.metric("Total Ingresos Históricos (RD$)", f"RD$ {total_ingresos:,.2f}")
-    else:
-        st.info("No hay pagos registrados aún.")
+    col_a, col_b = st.columns(2)
+    monto = col_a.number_input("Monto a Facturar (RD$)", min_value=0)
+    cliente_tel = col_b.text_input("Número de WhatsApp del Cliente (Ej: 1809...)", value="1809")
 
+    st.markdown("---")
+    c1, c2, c3 = st.columns(3)
+    
+    if c1.button("🖨️ Imprimir Factura"):
+        st.write("Generando PDF para impresión...")
+        
+    # Botón dinámico de WhatsApp
+    mensaje = f"Hola, le habla el Lic. Jhonny Matos. Le informamos que su factura por RD${monto} está lista para pago."
+    url_wa = f"https://wa.me/{cliente_tel}?text={mensaje.replace(' ', '%20')}"
+    
+    c2.link_button("📲 Enviar por WhatsApp", url_wa)
+    
+    if c3.button("📧 Enviar por Correo"):
+        st.success("Correo enviado al cliente.")
 # =====================================================================
 # MÓDULO 7: CONFIGURACIÓN
 # =====================================================================
 def vista_configuracion():
-    st.title("⚙️ Ajustes del Sistema y Accesos")
+    st.title("⚙️ Configuración Global de AboAgrim")
     
-    tab_perfil, tab_leyes, tab_usuarios = st.tabs(["⚙️ Perfil de la Firma", "📚 Compendio Normativo", "👥 Gestión de Accesos"])
-    
-    with tab_perfil:
-        st.text_input("Razón Social:", value="Abogados y Agrimensores 'AboAgrim'")
-        st.text_input("Sede Principal:", value="Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Santiago.")
-        st.text_input("Teléfonos:", value="829-826-5888 / 809-691-3333")
-        if st.button("💾 Guardar Configuración"): st.toast("Ajustes guardados.", icon="✅")
-            
-    with tab_leyes:
-        st.markdown("""
-        **Legislación Integrada en AboAgrim Pro DMS:**
-        1. **Ley No. 108-05 de Registro Inmobiliario.**
-        2. **Reglamento General de Mensuras Catastrales.**
-        3. **Reglamento de los Tribunales de la JI.**
-        4. **Reglamento General de Registro de Títulos.**
-        """)
-
-    with tab_usuarios:
-        st.subheader("Crear Cuenta para Nuevo Miembro del Equipo")
-        st.info("Al registrar un correo aquí, le otorgarás acceso inmediato al sistema a tu personal.")
+    with st.expander("💼 Datos de la Oficina"):
+        st.text_input("Nombre de la Firma", value="AboAgrim Pro")
+        st.text_input("Dirección", value="Calle Boy Scout 83, Santiago")
+        st.text_input("RNC", value="1-XX-XXXXX-X")
         
-        with st.form("form_nuevo_usuario", clear_on_submit=True):
-            c1, c2 = st.columns(2)
-            nuevo_email = c1.text_input("Correo del empleado / asociado:")
-            nuevo_pass = c2.text_input("Contraseña Temporal (Min. 6 caracteres):", type="password")
-            
-            if st.form_submit_button("🔐 Autorizar y Crear Usuario"):
-                if nuevo_email and len(nuevo_pass) >= 6:
-                    if registrar_nuevo_usuario(nuevo_email, nuevo_pass):
-                        st.success(f"✅ Acceso concedido. El usuario {nuevo_email} ya puede iniciar sesión.")
-                        st.balloons()
-                    else:
-                        st.error("Error: Verifica que el correo tenga formato válido o que no exista ya en el sistema.")
-                else:
-                    st.warning("⚠️ Ingrese un correo válido y una contraseña de al menos 6 caracteres.")
-
+    with st.expander("⚖️ Credenciales Profesionales"):
+        st.text_input("Exequatur Abogado", value="XXXX-XX")
+        st.text_input("Registro Agrimensor (CODIA)", value="YYYYY")
+        
+    with st.expander("☁️ Conexión Supabase / API"):
+        st.text_input("URL del Proyecto", type="password")
+        st.text_input("API Key", type="password")
+        
+    st.button("✅ Guardar Configuración")
 def vista_archivo_digital():
     st.title("📁 Archivo Digital Central")
-    st.info("Módulo de almacenamiento y consulta de expedientes de la oficina.")
     
-    b1, b2 = st.columns([3, 1])
-    busqueda = b1.text_input("🔍 Buscar expediente por Nombre, Cédula o Parcela:")
+    col_f1, col_f2 = st.columns([2, 1])
+    tipo_doc = col_f2.selectbox("Filtrar por tipo:", ["Todos", "Planos", "Contratos", "Cédulas", "Sentencias"])
+    busqueda = col_f1.text_input("🔍 Buscar en el archivo (Nombre, Parcela o ID)...")
+
+    # Tabla de archivos simulando la nube
+    st.markdown("### Expedientes en la Nube")
+    data = [
+        {"Fecha": "15/04/2026", "Expediente": "2026-001", "Cliente": "Juan Pérez", "Estatus": "Aprobado"},
+        {"Fecha": "10/04/2026", "Expediente": "2026-002", "Cliente": "Maria Sosa", "Estatus": "En Mensuras"}
+    ]
+    st.table(data)
     
-    if b2.button("Buscar en Nube"):
-        if busqueda:
-            st.warning("Conectando con el repositorio digital...")
-            # Aquí luego conectaremos su base de datos para buscar los PDF
-        else:
-            st.error("Ingrese un término de búsqueda.")
-
-# ==========================================
-# MENÚ LATERAL Y NAVEGACIÓN DEL SISTEMA
-# ==========================================
-with st.sidebar:
-    menu = st.radio(
-        "Navegación",
-        [
-            "🏠 Mando Central",
-            "👤 Registro Maestro",
-            "📁 Archivo Digital",
-            "📄 Plantillas Auto",
-            "📅 Alertas y Plazos",
-            "💳 Facturación",
-            "⚙️ Configuración"
-        ]
-    )
-    st.markdown("---")
-    if st.button("🚪 Cerrar Sesión"):
-        st.success("Sesión cerrada (Simulación)")
-
-# Diccionario que conecta los botones con las pantallas
-vistas = {
-    "🏠 Mando Central": vista_mando,
-    "👤 Registro Maestro": vista_registro_maestro,
-    "📁 Archivo Digital": vista_archivo_digital,
-    "📄 Plantillas Auto": vista_plantillas,
-    "📅 Alertas y Plazos": vista_alertas,
-    "💳 Facturación": vista_facturacion,
-    "⚙️ Configuración": vista_configuracion
-}
-
-# Ejecutor principal de la pantalla
-if menu in vistas:
-    vistas[menu]()
+    st.button("🔄 Sincronizar con Supabase")
