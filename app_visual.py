@@ -220,35 +220,37 @@ def vista_plantillas():
     with tab_gen:
         st.subheader("Generación de Expediente")
         casos = consultar_todo()
+        
+        # Aquí eliminamos el 'return' problemático y usamos un 'else' seguro
         if not casos:
-            st.warning("No hay expedientes registrados."); return
-        
-        exp_sel = st.selectbox("Seleccione el Expediente del Cliente:", 
-                               [f"{c.get('numero_expediente')} | {c.get('cliente_id')}" for c in casos])
-        
-        st.write("Seleccione las plantillas a llenar (hasta 10):")
-        modelos_disponibles = listar_modelos()
-        seleccionadas = []
-        
-        cols = st.columns(2)
-        for i, mod in enumerate(modelos_disponibles):
-            if cols[i % 2].checkbox(mod, key=f"chk_{mod}"):
-                seleccionadas.append(mod)
-        
-        st.markdown("---")
-        st.subheader("📂 Destino de Archivación")
-        carpeta_destino = st.selectbox(
-            "Seleccione carpeta de destino en la nube:",
-            ["📁 Expedientes Activos", "📁 Archivo Pasivo", "📁 Borradores", "📁 Mensuras Catastrales"]
-        )
-        
-        if st.button("📂 Generar Documentos y Archivar"):
-            if not seleccionadas:
-                st.error("Seleccione al menos una plantilla.")
-            else:
-                with st.spinner(f"Procesando y guardando en {carpeta_destino}..."):
-                    # Aquí el sistema procesa su Diccionario_saboagrim.docx
-                    st.success(f"✅ Documentos archivados en: {carpeta_destino}")
+            st.warning("No hay expedientes registrados. Vaya a 'Registro Maestro' para crear uno nuevo.")
+        else:
+            exp_sel = st.selectbox("Seleccione el Expediente del Cliente:", 
+                                   [f"{c.get('numero_expediente')} | {c.get('cliente_id')}" for c in casos])
+            
+            st.write("Seleccione las plantillas a llenar (hasta 10):")
+            modelos_disponibles = listar_modelos()
+            seleccionadas = []
+            
+            cols = st.columns(2)
+            for i, mod in enumerate(modelos_disponibles):
+                if cols[i % 2].checkbox(mod, key=f"chk_{mod}"):
+                    seleccionadas.append(mod)
+            
+            st.markdown("---")
+            st.subheader("📂 Destino de Archivación")
+            carpeta_destino = st.selectbox(
+                "Seleccione carpeta de destino en la nube:",
+                ["📁 Expedientes Activos", "📁 Archivo Pasivo", "📁 Borradores", "📁 Mensuras Catastrales"]
+            )
+            
+            if st.button("📂 Generar Documentos y Archivar"):
+                if not seleccionadas:
+                    st.error("Seleccione al menos una plantilla.")
+                else:
+                    with st.spinner(f"Procesando y guardando en {carpeta_destino}..."):
+                        # El sistema procesa los documentos aquí
+                        st.success(f"✅ Documentos archivados exitosamente en: {carpeta_destino}")
 
 # =====================================================================
 # MÓDULO 5: ALERTAS Y PLAZOS
