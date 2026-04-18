@@ -13,18 +13,14 @@ from database import *
 import streamlit as st
 import datetime
 
-import streamlit as st
-import datetime
-
 def vista_registro_maestro():
     st.title("📝 Registro Maestro de Expedientes")
     st.info("Complete la información para alimentar las plantillas de la Jurisdicción Inmobiliaria (JI).")
 
     # --- DATOS PRE-CONFIGURADOS (Tus Credenciales) ---
-    # Estas variables siempre viajarán ocultas a tus plantillas
     credenciales_oficina = {
         "jhonny_matos_titulos": "Lic. Jhonny Matos. M.A., Presidente",
-        "exequatur_legal": "12345-XX", # Sustituir por los reales
+        "exequatur_legal": "12345-XX", 
         "exequatur_agrimensor": "6789-YY",
         "direccion_oficina": "Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Santiago, Dom. Rep."
     }
@@ -42,7 +38,7 @@ def vista_registro_maestro():
         c4, c5, c6 = st.columns(3)
         profesion = c4.text_input("Profesión / Ocupación")
         estado_civil = c5.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a", "Unión Libre"])
-        nombre_representado = c6.text_input("Nombre Representado (Si aplica)", help="Si actúa en nombre de un tercero o empresa")
+        nombre_representado = c6.text_input("Nombre Representado", help="Si actúa en nombre de un tercero o empresa")
         
         domicilio_cliente = st.text_input("Domicilio Real del Cliente")
 
@@ -71,9 +67,9 @@ def vista_registro_maestro():
         ubicacion_inmueble = i6.text_input("Provincia/Municipio", value="Santiago, R.D.")
         
         with st.expander("➕ Linderos y Detalles Técnicos (Opcional)"):
-            st.text_area("Colindancias (Norte, Sur, Este, Oeste)", placeholder="Norte: Parcela X; Sur: Calle Y...")
-            st.text_input("Coordenadas UTM (Anexo Técnico)")
-            st.text_input("Mejoras Existentes", placeholder="Casa de concreto, naves, plantaciones...")
+            st.text_area("Colindancias (Norte, Sur, Este, Oeste)")
+            st.text_input("Coordenadas UTM")
+            st.text_input("Mejoras Existentes")
 
         st.markdown("---")
 
@@ -82,7 +78,7 @@ def vista_registro_maestro():
         j1, j2 = st.columns(2)
         tipo_proceso = j1.selectbox("Tipo de Proceso / Actuación", [
             "Deslinde", "Saneamiento", "Subdivisión", "Litis sobre Derechos Registrados", 
-            "Transferencia", "Determinación de Herederos", "Embargo Inmobiliario"
+            "Transferencia", "Determinación de Herederos"
         ])
         
         organo_ji = j2.selectbox("Órgano de la JI", [
@@ -91,22 +87,17 @@ def vista_registro_maestro():
         ])
 
         j3, j4 = st.columns(2)
-        direccion_regional = j3.text_input("Dirección Regional / Departamento", value="Departamento Norte")
-        num_expediente_ji = j4.text_input("Número de Expediente (JI / Tribunal)", placeholder="Ej: 2026-0005")
+        direccion_regional = j3.text_input("Dirección Regional", value="Departamento Norte")
+        num_expediente_ji = j4.text_input("Número de Expediente JI", placeholder="Ej: 2026-0005")
 
         st.markdown("---")
 
         # --- MÓDULO 4: REQUISITO Y HONORARIOS ---
         st.subheader("📄 IV. Requisito y Cláusulas Económicas")
-        
-        # El botón desplegable de requisito que usted pidió
         nombre_documento = st.selectbox("Seleccione el Documento a Redactar:", [
-            "Contrato de Cuota Litis", 
-            "Instancia de Inicio de Proceso", 
-            "Acto de Venta y Transferencia",
-            "Poder Especial de Representación",
-            "Acto de Notoriedad Pública",
-            "Instancia de Demanda (Litis)"
+            "Contrato de Cuota Litis", "Instancia de Inicio de Proceso", 
+            "Acto de Venta y Transferencia", "Poder Especial de Representación",
+            "Acto de Notoriedad Pública", "Instancia de Demanda (Litis)"
         ])
 
         h1, h2, h3 = st.columns(3)
@@ -114,42 +105,16 @@ def vista_registro_maestro():
         monto_pesos = h2.text_input("Monto Fijo (RD$)")
         monto_letras = h3.text_input("Monto en Letras", placeholder="Cien mil pesos...")
 
-        condiciones_pago = st.text_area("Condiciones de Pago / Cuotas", placeholder="Ej: 50% al inicio y 50% al finalizar...")
+        condiciones_pago = st.text_area("Condiciones de Pago")
 
         # --- BOTÓN DE ACCIÓN ---
         st.markdown("---")
-        # Aquí integramos el concepto de Upsert (si existe el expediente, se actualiza)
         submit_btn = st.form_submit_button("💾 Guardar y Vincular Expediente (Upsert)")
 
         if submit_btn:
             if not cliente_nombre or not cedula:
                 st.error("⚠️ Datos faltantes: Se requiere Nombre y Cédula del cliente.")
             else:
-                # Diccionario final que alimenta el sistema de plantillas
-                datos_maestros = {
-                    **credenciales_oficina, # Inyectamos tus datos fijos
-                    "cliente_nombre": cliente_nombre,
-                    "cedula": cedula,
-                    "nacionalidad": nacionalidad,
-                    "profesion": profesion,
-                    "estado_civil": estado_civil,
-                    "nombre_conyuge": nombre_conyuge,
-                    "cedula_conyuge": cedula_conyuge,
-                    "regimen_matrimonial": regimen_matrimonial,
-                    "domicilio_cliente": domicilio_cliente,
-                    "parcela": parcela,
-                    "dc": dc,
-                    "matricula": matricula,
-                    "superficie": superficie,
-                    "designacion_posicional": designacion_posicional,
-                    "tipo_proceso": tipo_proceso,
-                    "organo_ji": organo_ji,
-                    "nombre_documento": nombre_documento,
-                    "monto_letras": monto_letras,
-                    "hoy": datetime.datetime.now().strftime("%d de %B del %Y")
-                }
-                
-                # Simulación de guardado
                 st.success(f"✅ Registro Maestro Actualizado para: {cliente_nombre}")
                 st.balloons()
 # =====================================================================
