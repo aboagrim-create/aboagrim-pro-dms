@@ -470,6 +470,20 @@ def vista_configuracion():
                 else:
                     st.warning("⚠️ Ingrese un correo válido y una contraseña de al menos 6 caracteres.")
 
+def vista_archivo_digital():
+    st.title("📁 Archivo Digital Central")
+    st.info("Módulo de almacenamiento y consulta de expedientes de la oficina.")
+    
+    b1, b2 = st.columns([3, 1])
+    busqueda = b1.text_input("🔍 Buscar expediente por Nombre, Cédula o Parcela:")
+    
+    if b2.button("Buscar en Nube"):
+        if busqueda:
+            st.warning("Conectando con el repositorio digital...")
+            # Aquí luego conectaremos su base de datos para buscar los PDF
+        else:
+            st.error("Ingrese un término de búsqueda.")
+
 # ==========================================
 # MENÚ LATERAL Y NAVEGACIÓN DEL SISTEMA
 # ==========================================
