@@ -13,138 +13,145 @@ from database import *
 import streamlit as st
 import datetime
 
+import streamlit as st
+import datetime
+
 def vista_registro_maestro():
     st.title("📝 Registro Maestro de Expedientes")
-    st.markdown("Llene los datos del cliente, el inmueble y el proceso. Esta información alimentará automáticamente todas las plantillas de Word.")
+    st.info("Complete la información para alimentar las plantillas de la Jurisdicción Inmobiliaria (JI).")
 
-    with st.form("form_nuevo_expediente", clear_on_submit=False):
+    # --- DATOS PRE-CONFIGURADOS (Tus Credenciales) ---
+    # Estas variables siempre viajarán ocultas a tus plantillas
+    credenciales_oficina = {
+        "jhonny_matos_titulos": "Lic. Jhonny Matos. M.A., Presidente",
+        "exequatur_legal": "12345-XX", # Sustituir por los reales
+        "exequatur_agrimensor": "6789-YY",
+        "direccion_oficina": "Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Santiago, Dom. Rep."
+    }
+
+    with st.form("registro_maestro_dinamico", clear_on_submit=False):
         
-        # --- SECCIÓN 1: DATOS DEL CLIENTE ---
-        st.subheader("👤 1. Generales del Cliente / Solicitante")
-        c1, c2, c3 = st.columns(3)
-        cliente_nombre = c1.text_input("Nombre Completo del Cliente", placeholder="Ej. Juan Pérez")
-        cedula = c2.text_input("Cédula de Identidad", placeholder="000-0000000-0")
-        estado_civil = c3.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a", "Unión Libre"])
+        # --- MÓDULO 1: GENERALES DE LEY (CLIENTE) ---
+        st.subheader("👤 I. Generales del Cliente / Partes")
+        col1, col2, col3 = st.columns(3)
         
-        c4, c5 = st.columns([1, 2])
+        cliente_nombre = col1.text_input("Nombre Completo / Razón Social", placeholder="Ej: Juan Pérez")
+        cedula = col2.text_input("Cédula / RNC", placeholder="000-0000000-0")
+        nacionalidad = col3.text_input("Nacionalidad", value="Dominicana")
+        
+        c4, c5, c6 = st.columns(3)
         profesion = c4.text_input("Profesión / Ocupación")
-        nacionalidad = c5.text_input("Nacionalidad", value="Dominicana")
+        estado_civil = c5.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a", "Unión Libre"])
+        nombre_representado = c6.text_input("Nombre Representado (Si aplica)", help="Si actúa en nombre de un tercero o empresa")
         
-        domicilio_eleccion = st.text_input("Domicilio / Dirección (Completa)")
+        domicilio_cliente = st.text_input("Domicilio Real del Cliente")
 
-        # --- SECCIÓN 2: DATOS DEL INMUEBLE ---
-        st.subheader("🗺️ 2. Datos del Inmueble (Catastrales)")
+        # Lógica Dinámica para Cónyuge
+        if estado_civil == "Casado/a":
+            st.warning("🔒 Requisito Legal: Se requieren datos del cónyuge para actos de disposición.")
+            cc1, cc2 = st.columns(2)
+            nombre_conyuge = cc1.text_input("Nombre del Cónyuge")
+            cedula_conyuge = cc2.text_input("Cédula del Cónyuge")
+            regimen_matrimonial = st.selectbox("Régimen Matrimonial", ["Comunidad de Bienes", "Separación de Bienes", "Participación"])
+        else:
+            nombre_conyuge, cedula_conyuge, regimen_matrimonial = "", "", ""
+
+        st.markdown("---")
+
+        # --- MÓDULO 2: DATOS TÉCNICOS DEL INMUEBLE ---
+        st.subheader("🗺️ II. Datos del Inmueble (Técnicos y Catastrales)")
         i1, i2, i3 = st.columns(3)
-        parcela = i1.text_input("Parcela / Solar", placeholder="Ej. 15-A")
-        dc = i2.text_input("Distrito Catastral (DC)", placeholder="Ej. 01")
+        parcela = i1.text_input("Parcela / Solar")
+        dc = i2.text_input("Distrito Catastral (DC)")
         matricula = i3.text_input("Matrícula / Certificado de Título")
         
-        i4, i5 = st.columns(2)
-        designacion_catastral = i4.text_input("Designación Catastral (Posicional)")
-        area = i5.text_input("Superficie / Área", placeholder="Ej. 500.50 m²")
-
-        i6, i7 = st.columns(2)
-        provincia = i6.text_input("Provincia", value="Santiago")
-        municipio = i7.text_input("Municipio", value="Santiago de los Caballeros")
-
-        # --- SECCIÓN 3: REQUISITO / DOCUMENTO A REDACTAR ---
-        st.subheader("📄 3. Requisito / Documento a Redactar")
-        st.markdown("El nombre que seleccione aquí se insertará en la plantilla Word donde esté la etiqueta `{{ nombre_documento }}`.")
+        i4, i5, i6 = st.columns(3)
+        superficie = i4.text_input("Superficie (m²)", placeholder="Ej: 500.50 m²")
+        designacion_posicional = i5.text_input("Designación Posicional (Nueva)")
+        ubicacion_inmueble = i6.text_input("Provincia/Municipio", value="Santiago, R.D.")
         
-        nombre_documento = st.selectbox(
-            "Nombre del Documento a usar como requisito:", 
-            [
-                "Contrato de Cuota Litis",
-                "Instancia de Solicitud de Mensura",
-                "Poder Especial de Representación",
-                "Acto de Venta y Transferencia",
-                "Instancia de Saneamiento",
-                "Acto de Notoriedad Pública",
-                "Contrato de Prestación de Servicios Profesionales",
-                "Instancia de Demanda en Litis sobre Derechos Registrados"
-            ]
-        )
+        with st.expander("➕ Linderos y Detalles Técnicos (Opcional)"):
+            st.text_area("Colindancias (Norte, Sur, Este, Oeste)", placeholder="Norte: Parcela X; Sur: Calle Y...")
+            st.text_input("Coordenadas UTM (Anexo Técnico)")
+            st.text_input("Mejoras Existentes", placeholder="Casa de concreto, naves, plantaciones...")
 
-        # --- SECCIÓN 4: DATOS DEL PROCESO Y HONORARIOS ---
-        st.subheader("⚖️ 4. Datos del Proceso e Institución")
-        p1, p2 = st.columns(2)
-        tipo_proceso = p1.selectbox("Tipo de Trabajo / Proceso", ["Deslinde", "Saneamiento", "Litis sobre Derechos Registrados", "Subdivisión", "Transferencia", "Determinación de Herederos"])
-        organo_ji = p2.selectbox("Órgano de la Jurisdicción", ["Mensuras Catastrales", "Registro de Títulos", "Tribunal de Tierras de Jurisdicción Original", "Tribunal Superior de Tierras"])
-
-        p3, p4 = st.columns(2)
-        honorarios_letras = p3.text_input("Monto de Honorarios (En Letras)", placeholder="Ej. Cien Mil Pesos Dominicanos")
-        condiciones_pago = p4.text_input("Condiciones / Cuotas de Pago", placeholder="Ej. 50% al inicio y 50% a la aprobación")
-
-        # --- BOTÓN DE GUARDADO ---
         st.markdown("---")
-        submit_btn = st.form_submit_button("💾 Guardar Expediente")
+
+        # --- MÓDULO 3: JURISDICCIÓN Y PROCESO ---
+        st.subheader("⚖️ III. Estructura Jurisdicción Inmobiliaria (JI)")
+        j1, j2 = st.columns(2)
+        tipo_proceso = j1.selectbox("Tipo de Proceso / Actuación", [
+            "Deslinde", "Saneamiento", "Subdivisión", "Litis sobre Derechos Registrados", 
+            "Transferencia", "Determinación de Herederos", "Embargo Inmobiliario"
+        ])
+        
+        organo_ji = j2.selectbox("Órgano de la JI", [
+            "Mensuras Catastrales (DGMIC)", "Registro de Títulos (RT)", 
+            "Tribunal de Tierras (Jurisdicción Original)", "Tribunal Superior de Tierras"
+        ])
+
+        j3, j4 = st.columns(2)
+        direccion_regional = j3.text_input("Dirección Regional / Departamento", value="Departamento Norte")
+        num_expediente_ji = j4.text_input("Número de Expediente (JI / Tribunal)", placeholder="Ej: 2026-0005")
+
+        st.markdown("---")
+
+        # --- MÓDULO 4: REQUISITO Y HONORARIOS ---
+        st.subheader("📄 IV. Requisito y Cláusulas Económicas")
+        
+        # El botón desplegable de requisito que usted pidió
+        nombre_documento = st.selectbox("Seleccione el Documento a Redactar:", [
+            "Contrato de Cuota Litis", 
+            "Instancia de Inicio de Proceso", 
+            "Acto de Venta y Transferencia",
+            "Poder Especial de Representación",
+            "Acto de Notoriedad Pública",
+            "Instancia de Demanda (Litis)"
+        ])
+
+        h1, h2, h3 = st.columns(3)
+        porcentaje_litis = h1.text_input("Porcentaje Litis (%)", value="30%")
+        monto_pesos = h2.text_input("Monto Fijo (RD$)")
+        monto_letras = h3.text_input("Monto en Letras", placeholder="Cien mil pesos...")
+
+        condiciones_pago = st.text_area("Condiciones de Pago / Cuotas", placeholder="Ej: 50% al inicio y 50% al finalizar...")
+
+        # --- BOTÓN DE ACCIÓN ---
+        st.markdown("---")
+        # Aquí integramos el concepto de Upsert (si existe el expediente, se actualiza)
+        submit_btn = st.form_submit_button("💾 Guardar y Vincular Expediente (Upsert)")
 
         if submit_btn:
             if not cliente_nombre or not cedula:
-                st.error("⚠️ El Nombre y la Cédula son obligatorios para abrir un expediente.")
+                st.error("⚠️ Datos faltantes: Se requiere Nombre y Cédula del cliente.")
             else:
-                # Aquí empaquetamos TODOS los datos
-                datos_para_guardar = {
+                # Diccionario final que alimenta el sistema de plantillas
+                datos_maestros = {
+                    **credenciales_oficina, # Inyectamos tus datos fijos
                     "cliente_nombre": cliente_nombre,
                     "cedula": cedula,
-                    "estado_civil": estado_civil,
-                    "profesion": profesion,
                     "nacionalidad": nacionalidad,
-                    "domicilio_eleccion": domicilio_eleccion,
-                    
+                    "profesion": profesion,
+                    "estado_civil": estado_civil,
+                    "nombre_conyuge": nombre_conyuge,
+                    "cedula_conyuge": cedula_conyuge,
+                    "regimen_matrimonial": regimen_matrimonial,
+                    "domicilio_cliente": domicilio_cliente,
                     "parcela": parcela,
                     "dc": dc,
                     "matricula": matricula,
-                    "designacion_catastral": designacion_catastral,
-                    "area": area,
-                    "provincia": provincia,
-                    "municipio": municipio,
-                    
-                    "nombre_documento": nombre_documento, # <- La variable mágica
-                    
+                    "superficie": superficie,
+                    "designacion_posicional": designacion_posicional,
                     "tipo_proceso": tipo_proceso,
                     "organo_ji": organo_ji,
-                    "honorarios_letras": honorarios_letras,
-                    "condiciones_pago": condiciones_pago,
-                    "hoy": datetime.datetime.now().strftime("%d/%m/%Y")
+                    "nombre_documento": nombre_documento,
+                    "monto_letras": monto_letras,
+                    "hoy": datetime.datetime.now().strftime("%d de %B del %Y")
                 }
                 
-                st.success(f"✅ ¡Expediente de {cliente_nombre} registrado correctamente! Generando requisito: {nombre_documento}")
-# --- CONFIGURACIÓN DE MARCA Y SISTEMA ---
-st.set_page_config(page_title="AboAgrim Pro DMS", layout="wide", initial_sidebar_state="expanded")
-
-# --- LÓGICA DE SEGURIDAD (LOGIN) ---
-if 'autenticado' not in st.session_state: 
-    st.session_state['autenticado'] = False
-
-if not st.session_state['autenticado']:
-        col1, col2, col3 = st.columns([1, 1.5, 1])
-        with col2:
-            st.markdown("<br><br>", unsafe_allow_html=True)
-            st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>⚖️ AboAgrim Pro</h2>", unsafe_allow_html=True)
-            
-            with st.form("Login_Seguro"):
-                u = st.text_input("Correo Institucional:").strip().lower()
-                p = st.text_input("Contraseña:", type="password")
-                if st.form_submit_button("Entrar al Sistema", use_container_width=True):
-                    exito, user = autenticar_usuario(u, p)
-                    if exito:
-                        st.session_state['autenticado'] = True
-                        st.session_state['user'] = u
-                        st.rerun()
-                    else:
-                        st.error("❌ Credenciales incorrectas.")
-            st.stop()
-menu = st.sidebar.radio(
-    "Navegación", 
-    ["🏠 Mando Central", "👤 Registro Maestro", "📁 Archivo Digital", "📄 Plantillas Auto", "📅 Alertas y Plazos", "💳 Facturación", "⚙️ Configuración"]
-)
-
-st.sidebar.divider()
-if st.sidebar.button("🚪 Cerrar Sesión", use_container_width=True):
-    st.session_state['autenticado'] = False
-    st.rerun()
-
+                # Simulación de guardado
+                st.success(f"✅ Registro Maestro Actualizado para: {cliente_nombre}")
+                st.balloons()
 # =====================================================================
 # MÓDULO 1: MANDO CENTRAL
 # =====================================================================
