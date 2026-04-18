@@ -16,98 +16,99 @@ from database import *
 # Línea 14: Así debe empezar la función
 def vista_registro_maestro():
     st.title("👤 Registro Maestro Pro")
-    st.markdown("### *Gestión Integral de Expedientes Técnico-Legales*")
+    st.markdown("### *Gestión de Expedientes AboAgrim*")
     
-    # Mensaje de estado dinámico
-    st.info("Sistema conectado a Supabase Cloud. Todos los cambios se sincronizan en tiempo real.")
-
-    # Formulario con diseño moderno
-    with st.form("registro_maestro_v3", clear_on_submit=False):
+    # Formulario principal
+    with st.form("form_maestro_total"):
         
-        # --- BLOQUE 1: IDENTIDAD DEL CLIENTE ---
-        st.markdown("#### 📑 Datos del Solicitante")
-        col1, col2 = st.columns(2)
+        # --- SECCIÓN 1: IDENTIDAD Y CONTACTO ---
+        st.header("📋 Datos del Cliente")
+        col1, col2, col3 = st.columns([2, 1, 1])
         with col1:
-            nombre = st.text_input("Nombre Completo o Razón Social", placeholder="Ej: Juan Pérez o Inmobiliaria S.A.")
-            cedula = st.text_input("Cédula / RNC", placeholder="001-0000000-0")
+            nombre = st.text_input("Nombre Completo / Razón Social", placeholder="Ej: Lic. Jhonny Matos")
         with col2:
-            tipo_persona = st.selectbox("Tipo de Persona", ["Física", "Jurídica", "Sucesión", "Copropiedad"])
-            estado_civil = st.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Unión Libre", "Divorciado/a"])
-
+            identificacion = st.text_input("Cédula / RNC")
+        with col3:
+            tipo_cliente = st.selectbox("Tipo de Cliente", ["Persona Física", "Persona Jurídica", "Sucesión", "Copropiedad"])
+            
         c1, c2, c3 = st.columns(3)
         with c1:
-            tel = st.text_input("📱 WhatsApp / Tel", placeholder="809-000-0000")
+            estado_civil = st.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Unión Libre", "Divorciado/a"])
         with c2:
-            mail = st.text_input("📧 Correo Electrónico")
+            tel = st.text_input("📞 WhatsApp / Teléfono")
         with c3:
-            nacionalidad = st.text_input("🇩🇴 Nacionalidad", value="Dominicana")
+            email = st.text_input("📧 Correo Electrónico")
 
-        # --- BLOQUE 2: DETALLES DEL INMUEBLE (AGRIMENSURA) ---
-        st.markdown("---")
-        st.markdown("#### 🏗️ Información Técnica y Catastral")
-        
+        # --- SECCIÓN 2: DATOS TÉCNICOS Y CATASTRALES ---
+        st.header("🏗️ Información del Inmueble")
         t1, t2, t3 = st.columns(3)
         with t1:
             parcela = st.text_input("Número de Parcela")
             dc = st.text_input("Distrito Catastral (D.C.)")
         with t2:
-            matricula = st.text_input("Matrícula / Certificado")
-            designacion = st.text_input("Designación Posicional")
+            matricula = st.text_input("Certificado de Título / Matrícula")
+            designacion_pos = st.text_input("Designación Posicional")
         with t3:
-            superficie = st.number_input("Área en m² (Título)", min_value=0.0, step=0.01)
-            municipio = st.text_input("Municipio / Provincia")
+            superficie = st.number_input("Área en m² (Según Título)", min_value=0.0, step=0.01)
+            provincia = st.text_input("Provincia / Municipio")
+            
+        direccion = st.text_area("📍 Ubicación Exacta y Referencias de Llegada")
 
-        ubicacion = st.text_area("📍 Dirección Exacta y Puntos de Referencia")
-
-        # --- BLOQUE 3: EXPEDIENTE Y PROFESIONALES ---
-        st.markdown("---")
-        st.markdown("#### ⚖️ Gestión Jurídica y Estatus")
-        
-        e1, e2, e3 = st.columns(3)
-        with e1:
-            tipo_proceso = st.selectbox("Tipo de Acto Técnico", [
+        # --- SECCIÓN 3: GESTIÓN JURÍDICA Y PROFESIONAL ---
+        st.header("⚖️ Estatus del Proceso")
+        g1, g2, g3 = st.columns(3)
+        with g1:
+            tipo_acto = st.selectbox("Tipo de Acto Técnico", [
                 "Deslinde", "Refundición", "Subdivisión", "Mensura Catastral", 
-                "Determinación de Herederos", "Condominio", "Actualización"
+                "Determinación de Herederos", "Condominio", "Actualización de Mensura"
             ])
-        with e2:
-            estatus_pago = st.selectbox("Estado de Honorarios", ["Pendiente", "Pago Parcial", "Saldado", "Cuota-Litis"])
-        with e3:
-            prioridad = st.select_slider("Prioridad del Caso", options=["Baja", "Normal", "Urgente"])
+        with g2:
+            agrimensor = st.text_input("Agrimensor (Nombre y CODIA)")
+        with g3:
+            estatus_proceso = st.selectbox("Estado Actual", [
+                "En Mensura", "En Revisión Técnica", "En Registro", "En Tribunal", "Finalizado"
+            ])
 
-        # --- BLOQUE 4: CHECKLIST DE DOCUMENTOS (LAS CASILLAS) ---
-        st.write("**✅ Documentación en Archivo:**")
-        d1, d2, d3, d4 = st.columns(4)
-        doc_titulo = d1.checkbox("Copia de Título")
-        doc_cedula = d2.checkbox("Copia Cédula")
-        doc_poder = d3.checkbox("Poder Cuota-Litis")
-        doc_plano = d4.checkbox("Plano Anterior")
-
-        # --- BOTONES DE ACCIÓN ---
-        st.markdown("---")
-        col_btn_1, col_btn_2, col_btn_3 = st.columns([1, 1, 3])
+        # --- SECCIÓN 4: CHECKLIST Y PAGOS (BOTONES Y CASILLAS) ---
+        st.divider()
+        col_check, col_pago = st.columns(2)
         
-        with col_btn_1:
-            btn_guardar = st.form_submit_button("💾 GUARDAR")
-        with col_btn_2:
-            btn_limpiar = st.form_submit_button("🧹 LIMPIAR")
+        with col_check:
+            st.write("**✅ Documentación Recibida:**")
+            check1 = st.checkbox("Copia de Título Original")
+            check2 = st.checkbox("Copia de Cédulas (Vendedor/Comprador)")
+            check3 = st.checkbox("Poder Cuota-Litis / Contrato")
+            check4 = st.checkbox("Certificación de Cargas y Gravámenes")
+            
+        with col_pago:
+            st.write("**💳 Gestión Financiera:**")
+            metodo_pago = st.radio("Método de Pago Preferido", ["Efectivo", "Transferencia", "Cuota-Litis"], horizontal=True)
+            honorarios = st.number_input("Total Honorarios (RD$)", min_value=0.0)
+            avance = st.number_input("Avance Recibido (RD$)", min_value=0.0)
 
-        if btn_guardar:
-            if nombre and cedula:
-                st.success(f"¡Excelente! El expediente de **{nombre}** ha sido registrado.")
+        # --- BOTÓN DE ACCIÓN FINAL ---
+        st.divider()
+        col_btn, _ = st.columns([1, 3])
+        submit = col_btn.form_submit_button("💾 GUARDAR REGISTRO")
+
+        if submit:
+            if nombre and identificacion:
+                st.success(f"✅ Expediente de **{nombre}** registrado con éxito.")
                 st.balloons()
             else:
-                st.error("Atención: El Nombre y la Cédula son obligatorios.")
+                st.error("⚠️ Error: El nombre y la identificación son obligatorios.")
 
-    # --- TABLA PROFESIONAL DE CONSULTA ---
-    st.markdown("### 🔍 Vista de Expedientes Recientes")
-    # Esto crea una tabla elegante debajo del formulario
-    data_resumen = {
-        "Expediente": ["2026-001"],
-        "Cliente": [nombre if nombre else "Esperando datos..."],
-        "Parcela": [parcela if parcela else "-"],
-        "Estatus": [tipo_proceso]
+    # --- VISTA PREVIA PROFESIONAL ---
+    st.markdown("### 🔍 Historial de Registros")
+    # Tabla dinámica para ver los datos ingresados
+    data = {
+        "Expediente": ["P-2026-001"],
+        "Cliente": [nombre if nombre else "---"],
+        "Parcela": [parcela if parcela else "---"],
+        "Acto": [tipo_acto],
+        "Estatus": [estatus_proceso]
     }
-    st.dataframe(data_resumen, use_container_width=True)
+    st.table(data)
 
 # Asegúrese de que no haya nada repetido debajo de este bloque.
 # =====================================================================
