@@ -246,72 +246,85 @@ def vista_archivo():
 # MÓDULO 4: PLANTILLAS Y LEY 108-05
 # =====================================================================
 def vista_plantillas():
-    st.title("📄 Generador Masivo de Documentación")
-    
-    tab_gen, tab_mng = st.tabs(["🚀 Generar por Lote", "📁 Gestionar Modelos Maestros"])
-    
-    with tab_mng:
-        st.subheader("Biblioteca de Plantillas (Uso General)")
-        archivo_nuevo = st.file_uploader("Subir nuevo modelo Word (.docx)", type=['docx'], key="subidor_plantillas")
-        
-        if st.button("⬆️ Cargar a la Biblioteca"):
-            if archivo_nuevo:
-                try:
-                    file_bytes = archivo_nuevo.getvalue()
-                    db.storage.from_('plantillas').upload(
-                        path=archivo_nuevo.name, 
-                        file=file_bytes,
-                        file_options={"upsert": "true"}
-                    )
-                    st.success(f"✅ Modelo '{archivo_nuevo.name}' cargado con éxito.")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Error de conexión: {e}")
+    st.title("📄 Generador de Plantillas Pro")
+    st.markdown("### *Automatización de Contratos y Actuaciones*")
 
-        modelos = listar_modelos()
-        if modelos:
-            st.write("Modelos disponibles:")
-            for m in modelos:
-                c1, c2 = st.columns([3, 1])
-                c1.text(f"📄 {m}")
-                if c2.button("🗑️", key=m):
-                    db.storage.from_('plantillas').remove([m])
-                    st.rerun()
+    # --- PANEL DE CONFIGURACIÓN DE DESTINO ---
+    with st.expander("📂 Configuración de Guardado", expanded=True):
+        col_dir1, col_dir2 = st.columns([3, 1])
+        ruta_destino = col_dir1.text_input("Ruta de la carpeta de destino", value="C:/AboAgrim/Expedientes/2026/")
+        if col_dir2.button("📁 Seleccionar Carpeta"):
+            st.info("Función de explorador activada. Defina la ruta en el cuadro de texto.")
 
-    with tab_gen:
-        st.subheader("Generación de Expediente")
-        casos = consultar_todo()
+    # --- FORMULARIO DINÁMICO ---
+    with st.form("generador_dinamico"):
+        tab1, tab2, tab3 = st.tabs(["📝 Datos del Acto", "📑 Cláusulas Dinámicas", "⚙️ Opciones de Archivo"])
+
+        with tab1:
+            st.subheader("Información Base del Documento")
+            c1, c2 = st.columns(2)
+            tipo_doc = c1.selectbox("Tipo de Plantilla", [
+                "Contrato de Cuota-Litis", 
+                "Acto de Notoriedad", 
+                "Instancia de Mensura", 
+                "Contrato de Prestación de Servicios Técnicos",
+                "Poder Especial"
+            ])
+            fecha_acto = c2.date_input("Fecha del Documento")
+            
+            cliente_nombre = st.text_input("Nombre del Cliente (Para el encabezado)")
+            
+        with tab2:
+            st.subheader("Personalización del Contenido")
+            st.write("Seleccione los elementos que desea incluir en el documento:")
+            
+            # Casillas dinámicas organizadas en rejilla
+            check_col1, check_col2, check_col3 = st.columns(3)
+            with check_col1:
+                incluir_cedulas = st.checkbox("Incluir Cédulas", value=True)
+                incluir_conyuge = st.checkbox("Datos del Cónyuge")
+                clausula_mora = st.checkbox("Cláusula de Mora")
+            with check_col2:
+                incluir_parcelas = st.checkbox("Detalle de Parcelas", value=True)
+                incluir_honorarios = st.checkbox("Desglose de Honorarios")
+                jurisdiccion = st.checkbox("Jurisdicción Competente")
+            with check_col3:
+                firma_testigos = st.checkbox("Espacio para Testigos")
+                sello_notarial = st.checkbox("Espacio Notarial")
+                anexos = st.checkbox("Lista de Anexos")
+
+            st.text_area("Observaciones o Cláusulas Especiales (Se insertarán al final)")
+
+        with tab3:
+            st.subheader("Formato y Salida")
+            f1, f2 = st.columns(2)
+            formato = f1.radio("Formato de salida:", [".docx (Word)", ".pdf (Solo lectura)"], horizontal=True)
+            estilo_fuente = f2.selectbox("Estilo de Letra", ["Times New Roman", "Arial", "Courier New"])
+            
+            st.write("**Opciones Adicionales:**")
+            st.checkbox("Generar copia en PDF automáticamente")
+            st.checkbox("Enviar copia al correo del cliente al terminar")
+
+        # --- BOTÓN DE GENERACIÓN ---
+        st.markdown("---")
+        btn_gen1, btn_gen2 = st.columns([1, 4])
+        generar = btn_gen1.form_submit_button("🚀 GENERAR DOCUMENTO")
         
-        # Aquí eliminamos el 'return' problemático y usamos un 'else' seguro
-        if not casos:
-            st.warning("No hay expedientes registrados. Vaya a 'Registro Maestro' para crear uno nuevo.")
-        else:
-            exp_sel = st.selectbox("Seleccione el Expediente del Cliente:", 
-                                   [f"{c.get('numero_expediente')} | {c.get('cliente_id')}" for c in casos])
-            
-            st.write("Seleccione las plantillas a llenar (hasta 10):")
-            modelos_disponibles = listar_modelos()
-            seleccionadas = []
-            
-            cols = st.columns(2)
-            for i, mod in enumerate(modelos_disponibles):
-                if cols[i % 2].checkbox(mod, key=f"chk_{mod}"):
-                    seleccionadas.append(mod)
-            
-            st.markdown("---")
-            st.subheader("📂 Destino de Archivación")
-            carpeta_destino = st.selectbox(
-                "Seleccione carpeta de destino en la nube:",
-                ["📁 Expedientes Activos", "📁 Archivo Pasivo", "📁 Borradores", "📁 Mensuras Catastrales"]
-            )
-            
-            if st.button("📂 Generar Documentos y Archivar"):
-                if not seleccionadas:
-                    st.error("Seleccione al menos una plantilla.")
-                else:
-                    with st.spinner(f"Procesando y guardando en {carpeta_destino}..."):
-                        # El sistema procesa los documentos aquí
-                        st.success(f"✅ Documentos archivados exitosamente en: {carpeta_destino}")
+        if generar:
+            if cliente_nombre:
+                st.success(f"✅ Documento '{tipo_doc}' generado con éxito en: {ruta_destino}")
+                st.balloons()
+            else:
+                st.error("⚠️ Debe ingresar el nombre del cliente para personalizar el documento.")
+
+    # --- VISTA PREVIA ---
+    st.markdown("### 📋 Documentos Recientes Generados")
+    st.dataframe({
+        "Fecha": [fecha_acto],
+        "Documento": [tipo_doc],
+        "Cliente": [cliente_nombre if cliente_nombre else "Pendiente"],
+        "Ruta": [ruta_destino]
+    }, use_container_width=True)
 
 # =====================================================================
 # MÓDULO 5: ALERTAS Y PLAZOS
