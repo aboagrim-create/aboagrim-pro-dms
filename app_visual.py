@@ -13,7 +13,7 @@ from database import *
 
 st.title("📝 Registro Maestro Pro")
     
-    with st.form("registro_maestro_extendido"):
+ with st.form("registro_maestro_extendido"):
         # --- SECCIÓN: CONTACTO DETALLADO ---
         st.subheader("📞 Información de Contacto y Referencias")
         c1, c2, c3 = st.columns(3)
