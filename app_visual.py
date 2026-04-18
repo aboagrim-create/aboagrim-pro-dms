@@ -12,7 +12,14 @@ from docx import Document
 from database import *
 
 st.title("📝 Registro Maestro Pro")
+def vista_registro_maestro():
+    st.title("👤 Registro Maestro Pro")
     
+    with st.form("registro_maestro_extendido"):
+        # Todo esto debe estar bien alineado a la derecha
+        st.subheader("📞 Información de Contacto y Referencias")
+        c1, c2, c3 = st.columns(3)
+        # ... resto del código ...
  with st.form("registro_maestro_extendido"):
         # --- SECCIÓN: CONTACTO DETALLADO ---
         st.subheader("📞 Información de Contacto y Referencias")
