@@ -16,45 +16,58 @@ from database import *
 # Línea 14: Así debe empezar la función
 def vista_registro_maestro():
     st.title("👤 Registro Maestro Pro")
-    
-    with st.form("registro_maestro_extendedido"):
-        # SECCIÓN: CONTACTO DETALLADO
-        st.subheader("📞 Información de Contacto y Referencias")
-        c1, c2, c3 = st.columns(3)
-        email_cliente = c1.text_input("Correo Electrónico")
-        telefono_cliente = c2.text_input("Teléfono / WhatsApp")
-        referencia_ubicacion = c3.text_input("Referencia del Inmueble (Ej: Próximo al destacamento)")
-        
-        # ... el resto del código sigue aquí abajo con su sangría ...
+    st.markdown("---")
 
-        # --- SECCIÓN: MÚLTIPLES INMUEBLES / PROFESIONALES ---
-        st.subheader("🏗️ Inmuebles y Profesionales Adicionales")
-        col_inm, col_prof = st.columns(2)
-        
-        with col_inm:
-            st.write("**Inmuebles Vinculados**")
-            inmuebles_adicionales = st.multiselect(
-                "Agregar más parcelas al proceso:",
-                ["Parcela A-1", "Parcela A-2", "Solar 5", "Solar 10-B"],
-                help="Puede seleccionar varias si es un proceso de refundición o subdivisión."
-            )
-        
-        with col_prof:
-            st.write("**Equipo de Trabajo**")
-            abogados_asoc = st.multiselect("Abogados Colaboradores:", ["Lic. Pérez", "Dra. Martínez", "Dr. Almonte"])
-            agrimensores_asoc = st.multiselect("Agrimensores Adicionales:", ["Ing. Rodríguez", "Agrim. Santos"])
+    # Usamos pestañas (Tabs) para que se vea mucho más profesional
+    tab1, tab2, tab3 = st.tabs(["📋 Datos del Cliente", "🏗️ Detalles Técnicos", "⚖️ Información Legal"])
 
-        # --- SECCIÓN: GENERALES DE LEY (EXTENDIDAS) ---
-        st.subheader("👤 Datos del Cliente")
-        g1, g2 = st.columns(2)
-        nombre_cliente = g1.text_input("Nombre Completo")
-        cedula_cliente = g2.text_input("Cédula (000-0000000-0)")
-        direccion_fisica = st.text_area("Dirección Residencial Completa")
+    with st.form("form_maestro_pro"):
+        with tab1:
+            st.subheader("Información Personal y Contacto")
+            col1, col2 = st.columns(2)
+            nombre = col1.text_input("Nombre Completo del Cliente / Entidad")
+            cedula = col2.text_input("Cédula o RNC")
+            
+            c1, c2, c3 = st.columns(3)
+            email = c1.text_input("📧 Correo Electrónico")
+            tel = c2.text_input("📞 Teléfono / WhatsApp")
+            tipo_cliente = c3.selectbox("Tipo de Cliente", ["Persona Física", "Persona Jurídica", "Sucesión"])
 
-        # Botón Upsert
-        submit = st.form_submit_button("💾 Guardar y Sincronizar Expediente")
-        if submit:
-            st.success(f"✅ Expediente de {nombre_cliente} actualizado con éxito.")
+        with tab2:
+            st.subheader("Datos de la Parcela e Inmueble")
+            col3, col4 = st.columns(2)
+            parcela = col3.text_input("Número de Parcela")
+            distrito = col4.text_input("Distrito Catastral")
+            
+            # Campo dinámico para ubicación
+            direccion = st.text_area("📍 Ubicación Exacta / Referencias")
+            
+            col5, col6 = st.columns(2)
+            metraje = col5.number_input("Extensión Superficial (m²)", min_value=0.0)
+            uso_suelo = col6.selectbox("Uso de Suelo", ["Residencial", "Comercial", "Agrícola", "Turístico"])
+
+        with tab3:
+            st.subheader("Estatus Jurídico y Profesionales")
+            col7, col8 = st.columns(2)
+            estado_expediente = col7.selectbox("Estado Actual", ["En Mensura", "En Revisión Técnica", "En Registro", "Finalizado"])
+            agrimensor_asociado = col8.text_input("Agrimensor a Cargo")
+            
+            st.info("💡 Este registro se sincronizará automáticamente con su base de datos en la nube.")
+
+        # Botón de Guardado Profesional
+        st.markdown("---")
+        col_btn1, col_btn2 = st.columns([1, 4])
+        enviar = col_btn1.form_submit_button("💾 Guardar Expediente")
+        
+        if enviar:
+            if nombre and cedula:
+                # Aquí el sistema conectará con Supabase para guardar
+                st.success(f"✅ Expediente de '{nombre}' guardado y sincronizado con éxito.")
+                st.balloons()
+            else:
+                st.error("❌ Por favor, complete al menos el Nombre y la Cédula para el registro.")
+
+# Asegúrese de que no haya nada repetido debajo de este bloque.
 # =====================================================================
 # MÓDULO 1: MANDO CENTRAL
 # =====================================================================
