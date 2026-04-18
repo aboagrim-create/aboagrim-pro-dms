@@ -470,11 +470,37 @@ def vista_configuracion():
                 else:
                     st.warning("⚠️ Ingrese un correo válido y una contraseña de al menos 6 caracteres.")
 
-# --- ENRUTADOR ---
+# ==========================================
+# MENÚ LATERAL Y NAVEGACIÓN DEL SISTEMA
+# ==========================================
+with st.sidebar:
+    menu = st.radio(
+        "Navegación",
+        [
+            "🏠 Mando Central",
+            "👤 Registro Maestro",
+            "📁 Archivo Digital",
+            "📄 Plantillas Auto",
+            "📅 Alertas y Plazos",
+            "💳 Facturación",
+            "⚙️ Configuración"
+        ]
+    )
+    st.markdown("---")
+    if st.button("🚪 Cerrar Sesión"):
+        st.success("Sesión cerrada (Simulación)")
+
+# Diccionario que conecta los botones con las pantallas
 vistas = {
-    "🏠 Mando Central": vista_mando, "👤 Registro Maestro": vista_registro_maestro, 
-    "📁 Archivo Digital": vista_archivo, "📄 Plantillas Auto": vista_plantillas, 
-    "📅 Alertas y Plazos": vista_alertas, "💳 Facturación": vista_facturacion, 
+    "🏠 Mando Central": vista_mando,
+    "👤 Registro Maestro": vista_registro_maestro,
+    "📁 Archivo Digital": vista_archivo_digital,
+    "📄 Plantillas Auto": vista_plantillas,
+    "📅 Alertas y Plazos": vista_alertas,
+    "💳 Facturación": vista_facturacion,
     "⚙️ Configuración": vista_configuracion
 }
-vistas[menu]()
+
+# Ejecutor principal de la pantalla
+if menu in vistas:
+    vistas[menu]()
