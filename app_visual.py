@@ -10,8 +10,6 @@ import zipfile   # <--- NUEVO
 import io        # <--- NUEVO
 from docx import Document
 from database import *
-import streamlit as st
-import datetime
 
 def vista_registro_maestro():
     st.title("📝 Registro Maestro de Expedientes")
