@@ -11,8 +11,7 @@ import io        # <--- NUEVO
 from docx import Document
 from database import *
 
-def vista_registro_maestro():
-    st.title("📝 Registro Maestro Pro")
+st.title("📝 Registro Maestro Pro")
     
     with st.form("registro_maestro_extendido"):
         # --- SECCIÓN: CONTACTO DETALLADO ---
@@ -21,6 +20,7 @@ def vista_registro_maestro():
         email_cliente = c1.text_input("Correo Electrónico")
         telefono_cliente = c2.text_input("Teléfono / WhatsApp")
         referencia_ubicacion = c3.text_input("Referencia del Inmueble (Ej: Próximo al destacamento)")
+
 
         # --- SECCIÓN: MÚLTIPLES INMUEBLES / PROFESIONALES ---
         st.subheader("🏗️ Inmuebles y Profesionales Adicionales")
