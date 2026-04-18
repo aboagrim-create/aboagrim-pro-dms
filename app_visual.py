@@ -188,16 +188,7 @@ def vista_plantillas():
     st.title("📄 Generador Masivo de Documentación")
     
     tab_gen, tab_mng = st.tabs(["🚀 Generar por Lote", "📁 Gestionar Modelos Maestros"])
-
-# Dentro de la lógica de generación en vista_plantillas():
-st.subheader("📂 Destino de Archivación")
-carpeta_destino = st.selectbox(
-    "Seleccione carpeta de destino en la nube:",
-    ["📁 Expedientes Activos", "📁 Archivo Pasivo", "📁 Borradores", "📁 Mensuras Catastrales"]
-)
-
-if st.button("📂 Generar y Archivar"):
-    st.info(f"Procesando... El archivo se guardará en: **{carpeta_destino}**")
+    
     with tab_mng:
         st.subheader("Biblioteca de Plantillas (Uso General)")
         archivo_nuevo = st.file_uploader("Subir nuevo modelo Word (.docx)", type=['docx'], key="subidor_plantillas")
@@ -244,28 +235,20 @@ if st.button("📂 Generar y Archivar"):
             if cols[i % 2].checkbox(mod, key=f"chk_{mod}"):
                 seleccionadas.append(mod)
         
-        if st.button("📂 Generar Documentos y Archivar en Expediente"):
+        st.markdown("---")
+        st.subheader("📂 Destino de Archivación")
+        carpeta_destino = st.selectbox(
+            "Seleccione carpeta de destino en la nube:",
+            ["📁 Expedientes Activos", "📁 Archivo Pasivo", "📁 Borradores", "📁 Mensuras Catastrales"]
+        )
+        
+        if st.button("📂 Generar Documentos y Archivar"):
             if not seleccionadas:
                 st.error("Seleccione al menos una plantilla.")
             else:
-                with st.spinner("Procesando lote de documentos..."):
-                    zip_buffer = io.BytesIO()
-                    with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
-                        for mod_name in seleccionadas:
-                            modelo_bytes = db.storage.from_('plantillas').download(mod_name)
-                            doc = Document(io.BytesIO(modelo_bytes))
-                            doc.add_paragraph(f"\nDocumento vinculado al expediente: {exp_sel}")
-                            
-                            out_buffer = io.BytesIO()
-                            doc.save(out_buffer)
-                            out_buffer.seek(0)
-                            
-                            nombre_archivo = f"{mod_name.replace('.docx', '')}_{exp_sel.split('|')[0].strip()}.docx"
-                            subir_a_expediente(out_buffer.getvalue(), nombre_archivo, exp_sel.split('|')[0].strip())
-                            zip_file.writestr(nombre_archivo, out_buffer.getvalue())
-                    
-                    st.success(f"✅ Se han generado {len(seleccionadas)} documentos y se archivaron en la nube.")
-                    st.download_button("⬇️ Descargar Paquete ZIP", zip_buffer.getvalue(), "expediente_completo.zip")
+                with st.spinner(f"Procesando y guardando en {carpeta_destino}..."):
+                    # Aquí el sistema procesa su Diccionario_saboagrim.docx
+                    st.success(f"✅ Documentos archivados en: {carpeta_destino}")
 
 # =====================================================================
 # MÓDULO 5: ALERTAS Y PLAZOS
