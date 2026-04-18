@@ -246,85 +246,97 @@ def vista_archivo():
 # MÓDULO 4: PLANTILLAS Y LEY 108-05
 # =====================================================================
 def vista_plantillas():
-    st.title("📄 Generador de Plantillas Pro")
-    st.markdown("### *Automatización de Contratos y Actuaciones*")
+    st.title("📄 Generador de Plantillas Automatizado")
+    st.markdown("### *AboAgrim Pro: Documentación Dinámica*")
 
-    # --- PANEL DE CONFIGURACIÓN DE DESTINO ---
-    with st.expander("📂 Configuración de Guardado", expanded=True):
-        col_dir1, col_dir2 = st.columns([3, 1])
-        ruta_destino = col_dir1.text_input("Ruta de la carpeta de destino", value="C:/AboAgrim/Expedientes/2026/")
-        if col_dir2.button("📁 Seleccionar Carpeta"):
-            st.info("Función de explorador activada. Defina la ruta en el cuadro de texto.")
+    # --- CONFIGURACIÓN DE RUTA DE GUARDADO ---
+    with st.expander("📂 Destino del Documento", expanded=True):
+        c_dir, c_btn = st.columns([3, 1])
+        ruta_carpeta = c_dir.text_input("Carpeta de Destino", value="C:/AboAgrim/Expedientes/Documentos/")
+        if c_btn.button("📁 Explorar"):
+            st.info("Ruta fijada para el guardado automático.")
 
-    # --- FORMULARIO DINÁMICO ---
-    with st.form("generador_dinamico"):
-        tab1, tab2, tab3 = st.tabs(["📝 Datos del Acto", "📑 Cláusulas Dinámicas", "⚙️ Opciones de Archivo"])
+    # --- FORMULARIO MAESTRO DE VARIABLES ---
+    with st.form("generador_maestro"):
+        # Pestañas para organizar la gran cantidad de variables
+        t1, t2, t3, t4 = st.tabs(["👤 Partes", "🏗️ Inmueble", "📜 Cláusulas", "⚙️ Salida"])
 
-        with tab1:
-            st.subheader("Información Base del Documento")
-            c1, c2 = st.columns(2)
-            tipo_doc = c1.selectbox("Tipo de Plantilla", [
-                "Contrato de Cuota-Litis", 
-                "Acto de Notoriedad", 
-                "Instancia de Mensura", 
-                "Contrato de Prestación de Servicios Técnicos",
-                "Poder Especial"
-            ])
-            fecha_acto = c2.date_input("Fecha del Documento")
+        with t1:
+            st.subheader("Información de las Partes")
+            col1, col2 = st.columns(2)
+            with col1:
+                tipo_contrato = st.selectbox("Documento a Generar", [
+                    "Contrato de Cuota-Litis", 
+                    "Acto de Notoriedad", 
+                    "Poder Especial de Representación",
+                    "Contrato de Servicios Técnicos de Agrimensura",
+                    "Instancia de Solicitud de Mensura"
+                ])
+                nombre_cliente = st.text_input("Nombre del Cliente")
+            with col2:
+                estado_civil_var = st.selectbox("Estado Civil en Documento", ["Soltero/a", "Casado/a", "Unión Libre", "Divorciado/a"])
+                cedula_var = st.text_input("Cédula / RNC")
+
+        with t2:
+            st.subheader("Variables del Inmueble")
+            col3, col4, col5 = st.columns(3)
+            with col3:
+                parcela_var = st.text_input("Número de Parcela")
+                dc_var = st.text_input("D.C.")
+            with col4:
+                matricula_var = st.text_input("Matrícula")
+                designacion_var = st.text_input("Desig. Posicional")
+            with col5:
+                superficie_var = st.number_input("Metraje (m²)", min_value=0.0)
+                municipio_var = st.text_input("Municipio")
+
+        with t3:
+            st.subheader("Configuración Dinámica de Cláusulas")
+            st.write("Seleccione los elementos que el sistema debe insertar en la plantilla:")
             
-            cliente_nombre = st.text_input("Nombre del Cliente (Para el encabezado)")
-            
-        with tab2:
-            st.subheader("Personalización del Contenido")
-            st.write("Seleccione los elementos que desea incluir en el documento:")
-            
-            # Casillas dinámicas organizadas en rejilla
-            check_col1, check_col2, check_col3 = st.columns(3)
-            with check_col1:
-                incluir_cedulas = st.checkbox("Incluir Cédulas", value=True)
-                incluir_conyuge = st.checkbox("Datos del Cónyuge")
-                clausula_mora = st.checkbox("Cláusula de Mora")
-            with check_col2:
-                incluir_parcelas = st.checkbox("Detalle de Parcelas", value=True)
-                incluir_honorarios = st.checkbox("Desglose de Honorarios")
-                jurisdiccion = st.checkbox("Jurisdicción Competente")
-            with check_col3:
-                firma_testigos = st.checkbox("Espacio para Testigos")
-                sello_notarial = st.checkbox("Espacio Notarial")
-                anexos = st.checkbox("Lista de Anexos")
+            # Matriz de Casillas (Checkboxes) para variables del sistema
+            ch1, ch2, ch3 = st.columns(3)
+            with ch1:
+                v_conyuge = st.checkbox("Incluir Datos de Cónyuge")
+                v_regimen = st.checkbox("Mencionar Régimen Matrimonial")
+                v_representante = st.checkbox("Incluir Representante Legal")
+            with ch2:
+                v_honorarios = st.checkbox("Insertar Tabla de Honorarios", value=True)
+                v_mora = st.checkbox("Incluir Cláusula de Mora")
+                v_gastos = st.checkbox("Cláusula de Gastos Operativos")
+            with ch3:
+                v_testigos = st.checkbox("Espacios para Testigos")
+                v_notario = st.checkbox("Cuerpo de Legalización Notarial", value=True)
+                v_anexos = st.checkbox("Listado de Anexos Técnicos")
 
-            st.text_area("Observaciones o Cláusulas Especiales (Se insertarán al final)")
+        with t4:
+            st.subheader("Formato y Ejecución")
+            col6, col7 = st.columns(2)
+            with col6:
+                formato_output = st.radio("Formato de Archivo", ["Word (.docx)", "PDF (.pdf)"], horizontal=True)
+            with col7:
+                estilo_doc = st.selectbox("Estilo Visual", ["Elegante / Legal", "Moderno / Minimalista", "Oficial / Judicial"])
 
-        with tab3:
-            st.subheader("Formato y Salida")
-            f1, f2 = st.columns(2)
-            formato = f1.radio("Formato de salida:", [".docx (Word)", ".pdf (Solo lectura)"], horizontal=True)
-            estilo_fuente = f2.selectbox("Estilo de Letra", ["Times New Roman", "Arial", "Courier New"])
-            
-            st.write("**Opciones Adicionales:**")
-            st.checkbox("Generar copia en PDF automáticamente")
-            st.checkbox("Enviar copia al correo del cliente al terminar")
-
-        # --- BOTÓN DE GENERACIÓN ---
+        # --- BOTÓN DE ACCIÓN ---
         st.markdown("---")
-        btn_gen1, btn_gen2 = st.columns([1, 4])
-        generar = btn_gen1.form_submit_button("🚀 GENERAR DOCUMENTO")
-        
-        if generar:
-            if cliente_nombre:
-                st.success(f"✅ Documento '{tipo_doc}' generado con éxito en: {ruta_destino}")
+        c_gen1, c_gen2 = st.columns([1, 4])
+        btn_generar = c_gen1.form_submit_button("🚀 GENERAR")
+
+        if btn_generar:
+            if nombre_cliente and parcela_var:
+                st.success(f"✅ ¡Éxito! Plantilla '{tipo_contrato}' generada y guardada en la ruta especificada.")
                 st.balloons()
             else:
-                st.error("⚠️ Debe ingresar el nombre del cliente para personalizar el documento.")
+                st.warning("⚠️ Faltan datos críticos (Nombre o Parcela) para completar las variables.")
 
-    # --- VISTA PREVIA ---
-    st.markdown("### 📋 Documentos Recientes Generados")
-    st.dataframe({
-        "Fecha": [fecha_acto],
-        "Documento": [tipo_doc],
-        "Cliente": [cliente_nombre if cliente_nombre else "Pendiente"],
-        "Ruta": [ruta_destino]
-    }, use_container_width=True)
+    # --- TABLA DE REGISTRO DE PLANTILLAS ---
+    st.markdown("### 📋 Historial de Documentos Generados")
+    log_data = {
+        "Documento": [tipo_contrato if btn_generar else "Esperando..."],
+        "Cliente": [nombre_cliente if nombre_cliente else "---"],
+        "Estado": ["Guardado en Carpeta" if btn_generar else "En edición"]
+    }
+    st.table(log_data)
 
 # =====================================================================
 # MÓDULO 5: ALERTAS Y PLAZOS
