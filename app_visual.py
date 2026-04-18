@@ -9,25 +9,23 @@ import datetime
 import zipfile   # <--- NUEVO
 import io        # <--- NUEVO
 from docx import Document
+# ... arriba están los import ...
+
 from database import *
 
-st.title("📝 Registro Maestro Pro")
+# Línea 14: Así debe empezar la función
 def vista_registro_maestro():
     st.title("👤 Registro Maestro Pro")
     
-    with st.form("registro_maestro_extendido"):
-        # Todo esto debe estar bien alineado a la derecha
-        st.subheader("📞 Información de Contacto y Referencias")
-        c1, c2, c3 = st.columns(3)
-        # ... resto del código ...
- with st.form("registro_maestro_extendido"):
-        # --- SECCIÓN: CONTACTO DETALLADO ---
+    with st.form("registro_maestro_extendedido"):
+        # SECCIÓN: CONTACTO DETALLADO
         st.subheader("📞 Información de Contacto y Referencias")
         c1, c2, c3 = st.columns(3)
         email_cliente = c1.text_input("Correo Electrónico")
         telefono_cliente = c2.text_input("Teléfono / WhatsApp")
         referencia_ubicacion = c3.text_input("Referencia del Inmueble (Ej: Próximo al destacamento)")
-
+        
+        # ... el resto del código sigue aquí abajo con su sangría ...
 
         # --- SECCIÓN: MÚLTIPLES INMUEBLES / PROFESIONALES ---
         st.subheader("🏗️ Inmuebles y Profesionales Adicionales")
