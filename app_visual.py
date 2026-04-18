@@ -16,56 +16,76 @@ from database import *
 # Línea 14: Así debe empezar la función
 def vista_registro_maestro():
     st.title("👤 Registro Maestro Pro")
-    st.markdown("---")
+    st.info("Complete los datos para generar el expediente técnico-legal.")
 
-    # Usamos pestañas (Tabs) para que se vea mucho más profesional
-    tab1, tab2, tab3 = st.tabs(["📋 Datos del Cliente", "🏗️ Detalles Técnicos", "⚖️ Información Legal"])
-
-    with st.form("form_maestro_pro"):
-        with tab1:
-            st.subheader("Información Personal y Contacto")
-            col1, col2 = st.columns(2)
-            nombre = col1.text_input("Nombre Completo del Cliente / Entidad")
-            cedula = col2.text_input("Cédula o RNC")
-            
-            c1, c2, c3 = st.columns(3)
-            email = c1.text_input("📧 Correo Electrónico")
-            tel = c2.text_input("📞 Teléfono / WhatsApp")
-            tipo_cliente = c3.selectbox("Tipo de Cliente", ["Persona Física", "Persona Jurídica", "Sucesión"])
-
-        with tab2:
-            st.subheader("Datos de la Parcela e Inmueble")
-            col3, col4 = st.columns(2)
-            parcela = col3.text_input("Número de Parcela")
-            distrito = col4.text_input("Distrito Catastral")
-            
-            # Campo dinámico para ubicación
-            direccion = st.text_area("📍 Ubicación Exacta / Referencias")
-            
-            col5, col6 = st.columns(2)
-            metraje = col5.number_input("Extensión Superficial (m²)", min_value=0.0)
-            uso_suelo = col6.selectbox("Uso de Suelo", ["Residencial", "Comercial", "Agrícola", "Turístico"])
-
-        with tab3:
-            st.subheader("Estatus Jurídico y Profesionales")
-            col7, col8 = st.columns(2)
-            estado_expediente = col7.selectbox("Estado Actual", ["En Mensura", "En Revisión Técnica", "En Registro", "Finalizado"])
-            agrimensor_asociado = col8.text_input("Agrimensor a Cargo")
-            
-            st.info("💡 Este registro se sincronizará automáticamente con su base de datos en la nube.")
-
-        # Botón de Guardado Profesional
-        st.markdown("---")
-        col_btn1, col_btn2 = st.columns([1, 4])
-        enviar = col_btn1.form_submit_button("💾 Guardar Expediente")
+    # Iniciamos el formulario dinámico
+    with st.form("registro_maestro_total", clear_on_submit=False):
         
-        if enviar:
-            if nombre and cedula:
-                # Aquí el sistema conectará con Supabase para guardar
-                st.success(f"✅ Expediente de '{nombre}' guardado y sincronizado con éxito.")
+        # --- BLOQUE 1: DATOS DEL CLIENTE ---
+        st.subheader("📋 Información del Solicitante")
+        c1, c2 = st.columns(2)
+        nombre_cliente = c1.text_input("Nombre Completo / Razón Social")
+        cedula_rnc = c2.text_input("Cédula o RNC")
+        
+        c3, c4, c5 = st.columns(3)
+        telefono = c3.text_input("Teléfono / WhatsApp")
+        email = c4.text_input("Correo Electrónico")
+        estado_civil = c5.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Unión Libre", "Divorciado/a"])
+
+        # --- BLOQUE 2: DATOS TÉCNICOS (AGRIMENSURA) ---
+        st.divider()
+        st.subheader("🏗️ Detalles del Inmueble")
+        t1, t2, t3 = st.columns(3)
+        num_parcela = t1.text_input("Número de Parcela")
+        distrito_catastral = t2.text_input("Distrito Catastral")
+        matricula = t3.text_input("Número de Matrícula / Certificado")
+
+        t4, t5 = st.columns(2)
+        area_terreno = t4.number_input("Área según Título (m²)", min_value=0.0, step=0.1)
+        designacion_posicional = t5.text_input("Designación Posicional (Si aplica)")
+        
+        direccion_fisica = st.text_area("📍 Ubicación y Referencias del Terreno")
+
+        # --- BLOQUE 3: GESTIÓN Y PROFESIONALES ---
+        st.divider()
+        st.subheader("⚖️ Gestión del Proceso")
+        g1, g2, g3 = st.columns(3)
+        tipo_proceso = g1.selectbox("Tipo de Acto", [
+            "Deslinde", "Refundición", "Subdivisión", "Determinación de Herederos", 
+            "Mensura Catastral", "Actualización de Mensura", "Otro"
+        ])
+        agrimensor_firma = g2.text_input("Agrimensor Responsable (Codia)")
+        abogado_firma = g3.text_input("Abogado Encargado")
+
+        st.write("**Documentación Recibida:**")
+        doc1, doc2, doc3, doc4 = st.columns(4)
+        copia_titulo = doc1.checkbox("Copia de Título")
+        copia_cedula = doc2.checkbox("Copia de Cédula")
+        plano_aprobado = doc3.checkbox("Planos")
+        contrato_firmado = doc4.checkbox("Contrato cuota-litis")
+
+        # --- BOTÓN DE ACCIÓN ---
+        st.divider()
+        col_btn1, col_btn2 = st.columns([1, 5])
+        submit = col_btn1.form_submit_button("💾 Guardar Todo")
+        
+        if submit:
+            if nombre_cliente and cedula_rnc:
+                # Aquí iría la lógica de guardado a Supabase
+                st.success(f"✅ Expediente de **{nombre_cliente}** guardado correctamente.")
                 st.balloons()
             else:
-                st.error("❌ Por favor, complete al menos el Nombre y la Cédula para el registro.")
+                st.warning("⚠️ El Nombre y la Cédula son obligatorios para el registro.")
+
+    # --- TABLA DE CONSULTA RÁPIDA (ABAJO DEL FORMULARIO) ---
+    st.markdown("### 🔍 Vista Previa de Registros")
+    # Simulación de datos para que la casilla no esté vacía
+    data_preview = {
+        "Cliente": [nombre_cliente if nombre_cliente else "Pendiente"],
+        "Parcela": [num_parcela if num_parcela else "-"],
+        "Acto": [tipo_proceso]
+    }
+    st.table(data_preview)
 
 # Asegúrese de que no haya nada repetido debajo de este bloque.
 # =====================================================================
