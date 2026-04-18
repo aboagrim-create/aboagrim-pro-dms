@@ -378,5 +378,39 @@ def vista_archivo_digital():
         {"Fecha": "10/04/2026", "Expediente": "2026-002", "Cliente": "Maria Sosa", "Estatus": "En Mensuras"}
     ]
     st.table(data)
+# ==========================================
+# MENÚ LATERAL Y NAVEGACIÓN DEL SISTEMA
+# ==========================================
+with st.sidebar:
+    menu = st.radio(
+        "Navegación",
+        [
+            "🏠 Mando Central",
+            "👤 Registro Maestro",
+            "📁 Archivo Digital",
+            "📄 Plantillas Auto",
+            "📅 Alertas y Plazos",
+            "💳 Facturación",
+            "⚙️ Configuración"
+        ]
+    )
+    st.markdown("---")
+    if st.button("🚪 Cerrar Sesión"):
+        st.success("Sesión cerrada")
+
+# Diccionario que conecta los botones con sus funciones
+vistas = {
+    "🏠 Mando Central": vista_mando,
+    "👤 Registro Maestro": vista_registro_maestro,
+    "📁 Archivo Digital": vista_archivo_digital,
+    "📄 Plantillas Auto": vista_plantillas,
+    "📅 Alertas y Plazos": vista_alertas,
+    "💳 Facturación": vista_facturacion,
+    "⚙️ Configuración": vista_configuracion
+}
+
+# El motor que ejecuta la pantalla seleccionada
+if menu in vistas:
+    vistas[menu]()
     
     st.button("🔄 Sincronizar con Supabase")
