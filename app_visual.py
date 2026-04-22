@@ -454,8 +454,6 @@ vistas = {
 # El motor que ejecuta la pantalla seleccionada
 if menu in vistas:
     vistas[menu]()
-    
-from tkinter import messagebox
 
 # Supongamos que esta es su función de conexión (ajuste según su db.py)
 # from database import ejecutar_query 
