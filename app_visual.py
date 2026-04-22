@@ -469,19 +469,22 @@ def vista_registro_maestro():
 
 # El motor que ejecuta la pantalla seleccionada
 # Diccionario que conecta los botones con sus funciones
-    vistas = {
-        "🏠 Mando Central": vista_mando,
-        "👤 Registro Maestro": vista_registro_maestro,
-        "📁 Archivo Digital": vista_archivo_digital,
-        "📄 Plantillas Auto": vista_plantillas,
-        "📅 Alertas y Plazos": vista_alertas,
-        "💳 Facturación": vista_facturacion,
-        "⚙️ Configuración": vista_configuracion
-    }
+# =======================================================
+# CEREBRO DEL SISTEMA (CERO ESPACIOS A LA IZQUIERDA)
+# =======================================================
 
-    # El motor que ejecuta la pantalla seleccionada
-    if menu in vistas:
-        vistas[menu]()
+# Diccionario que conecta los botones con sus funciones
+vistas = {
+    "🏠 Mando Central": vista_mando,
+    "👤 Registro Maestro": vista_registro_maestro,
+    "📁 Archivo Digital": vista_archivo_digital,
+    "📄 Plantillas Auto": vista_plantillas,
+    "📅 Alertas y Plazos": vista_alertas,
+    "💳 Facturación": vista_facturacion,
+    "⚙️ Configuración": vista_configuracion
+}
+
+# El motor que ejecuta la pantalla seleccionada
 if menu in vistas:
     vistas[menu]()
 
