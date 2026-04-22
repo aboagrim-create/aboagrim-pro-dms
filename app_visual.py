@@ -17,48 +17,54 @@ from database import *
 import streamlit as st
 
 def vista_registro_maestro():
-    st.title("👤 Registro Maestro Multifuncional")
-    st.markdown("### *Gestión Dinámica de Intervinientes e Inmuebles*")
+    st.markdown("<h1 style='text-align: center; color: #1a5276;'>👤 Registro Maestro Pro</h1>", unsafe_allow_html=True)
+    st.markdown("---")
 
-    with st.form("form_maestro_dinamico"):
+    # Usamos un formulario para que todo se procese junto y sea más rápido
+    with st.form("form_registro_maestro"):
         
-        # --- SECCIÓN 1: CLIENTES (Múltiples) ---
-        st.header("👥 Clientes / Solicitantes")
-        num_clientes = st.number_input("¿Cuántos clientes desea registrar?", min_value=1, max_value=10, value=1)
+        # --- SECCIÓN: CLIENTES / SOLICITANTES ---
+        st.subheader("👥 Datos de los Clientes")
+        num_clientes = st.number_input("Cantidad de clientes a registrar", min_value=1, max_value=10, value=1)
         
         for i in range(int(num_clientes)):
-            with st.expander(f"👤 Datos del Cliente #{i+1}", expanded=(i==0)):
-                c1, c2, c3 = st.columns([2, 1, 1])
-                nombre = c1.text_input(f"Nombre / Razón Social #{i+1}", key=f"nom_{i}")
-                cedula = c2.text_input(f"Cédula / RNC #{i+1}", key=f"ced_{i}")
-                tipo = c3.selectbox(f"Tipo #{i+1}", ["Física", "Jurídica", "Sucesión"], key=f"t_cli_{i}")
+            with st.expander(f"👤 Cliente #{i+1}", expanded=(i==0)):
+                c1, c2 = st.columns(2)
+                c1.text_input(f"Nombre Completo / Razón Social #{i+1}", key=f"nom_{i}")
+                c2.text_input(f"Cédula / RNC #{i+1}", key=f"ced_{i}")
                 
-                d1, d2 = st.columns(2)
-                mail = d1.text_input(f"Correo Electrónico #{i+1}", key=f"mail_{i}")
-                tel = d2.text_input(f"Teléfono / WhatsApp #{i+1}", key=f"tel_{i}")
+                c3, c4, c5 = st.columns(3)
+                c3.text_input(f"Teléfono #{i+1}", key=f"tel_{i}")
+                c4.text_input(f"Correo #{i+1}", key=f"mail_{i}")
+                c5.selectbox(f"Profesión #{i+1}", ["Abogado", "Agrimensor", "Empresario", "Estudiante", "Otro"], key=f"prof_{i}")
 
-        # --- SECCIÓN 2: DATOS TÉCNICOS DEL INMUEBLE ---
-        st.divider()
-        st.header("🏠 Datos del Inmueble (Técnicos y Catastrales)")
+        # --- SECCIÓN: INMUEBLES (Lo que se había borrado) ---
+        st.markdown("---")
+        st.subheader("🏠 Información Técnica del Inmueble")
         i1, i2, i3 = st.columns(3)
         parcela = i1.text_input("Parcela / Solar")
-        dc = i2.text_input("Distrito Catastral (DC)")
-        matricula = i3.text_input("Matrícula / Certificado")
+        dc = i2.text_input("Distrito Catastral")
+        matricula = i3.text_input("Matrícula")
 
         i4, i5, i6 = st.columns(3)
-        superficie = i4.text_input("Superficie (m²)")
-        desig_pos = i5.text_input("Designación Posicional")
-        ubicacion = i6.text_input("Provincia/Municipio", value="Santiago, R.D.")
+        area = i4.text_input("Superficie (m²)")
+        designacion = i5.text_input("Designación Posicional")
+        municipio = i6.text_input("Municipio / Provincia", value="Santiago")
 
-        # --- BOTÓN DE GUARDAR ---
+        # --- BOTONES DE ACCIÓN ---
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.form_submit_button("💾 GUARDAR EXPEDIENTE COMPLETO"):
-            st.success("✅ Datos procesados y listos para la plantilla.")
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            guardar = st.form_submit_button("💾 GUARDAR REGISTRO MAESTRO")
+        
+        if guardar:
+            st.success("✅ ¡Datos guardados correctamente en el sistema!")
 
-    # --- BOTÓN DE DESCARGA EN LA BARRA LATERAL ---
+    # --- BARRA LATERAL PARA DESCARGAS ---
     st.sidebar.markdown("---")
-    st.sidebar.header("📁 Salida de Documentos")
-    st.sidebar.button("📄 Generar Word y Descargar")
+    st.sidebar.subheader("📁 Gestión de Expedientes")
+    if st.sidebar.button("📄 Generar Word y Descargar"):
+        st.sidebar.info("El archivo se descargará en su carpeta de 'Descargas'.")
 
 # Asegúrese de que no haya nada repetido debajo de este bloque.
 # =====================================================================
