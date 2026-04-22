@@ -571,25 +571,42 @@ def vista_registro_maestro():
         if st.form_submit_button("💾 GUARDAR EXPEDIENTE"):
             st.success("✅ ¡Datos guardados exitosamente en la nube!")
 
-# --- SECCIÓN DE DESCARGA EN LA BARRA LATERAL ---
+# --- BARRA LATERAL (SIDEBAR) ---
     st.sidebar.markdown("---")
     st.sidebar.subheader("📁 Salida de Expedientes")
 
-    # 1. El botón que enciende el motor
-    if st.sidebar.button("🛠️ Preparar Documento Word"):
-        st.sidebar.info("Procesando datos...")
-        # Llama a la función generar_documento que creamos arriba
-        archivo = generar_documento(st.session_state)
-        
-        if archivo:
-            st.session_state['archivo_listo'] = archivo
-            st.sidebar.success("✅ ¡Documento listo!")
+    import glob
+    # ESCÁNER DINÁMICO: Busca todos los Word (.docx) en todas sus carpetas
+    plantillas_disponibles = glob.glob("**/*.docx", recursive=True)
 
-    # 2. El botón que realmente descarga a su PC (Aparece mágicamente)
-    if 'archivo_listo' in st.session_state:
-        st.sidebar.download_button(
-            label="📥 DESCARGAR AHORA EN PC",
-            data=st.session_state['archivo_listo'],
-            file_name="Expediente_AboAgrim.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
+    if len(plantillas_disponibles) == 0:
+        st.sidebar.error("❌ No se encontraron plantillas Word en GitHub.")
+    else:
+        # Menú desplegable para visualizar y elegir la plantilla
+        plantilla_elegida = st.sidebar.selectbox("📄 Seleccione la Plantilla:", plantillas_disponibles)
+
+        # Botón que activa el motor
+        if st.sidebar.button("🛠️ Preparar Documento Word"):
+            with st.sidebar.status("Generando documento...", expanded=True) as status:
+                st.write("Procesando plantilla seleccionada...")
+                
+                try:
+                    # Llamamos al motor pasándole la ruta que usted eligió
+                    archivo = generar_documento(st.session_state, plantilla_elegida)
+                    
+                    if archivo:
+                        st.session_state['archivo_listo'] = archivo
+                        st.session_state['nombre_descarga'] = f"Expediente_{st.session_state.get('n_0', 'AboAgrim')}.docx"
+                        status.update(label="✅ ¡Documento listo!", state="complete", expanded=False)
+                except Exception as e:
+                    status.update(label="❌ Error en las llaves del Word", state="error")
+                    st.sidebar.error(f"Detalle: {e}")
+
+        # Botón de descarga real (Aparece al terminar)
+        if 'archivo_listo' in st.session_state and st.session_state['archivo_listo']:
+            st.sidebar.download_button(
+                label="📥 DESCARGAR AHORA EN PC",
+                data=st.session_state['archivo_listo'],
+                file_name=st.session_state.get('nombre_descarga', 'Documento.docx'),
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
