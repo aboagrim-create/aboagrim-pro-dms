@@ -15,7 +15,7 @@ from database import *
 # Línea 14: Así debe empezar la función
 import streamlit as st
 
-def generar_documento(datos_formulario):
+doc = DocxTemplate("plantillas_maestras/modelo_contrato.docx")
     # 1. Cargamos su plantilla 
     doc = DocxTemplate("modelo_contrato.docx")
     
