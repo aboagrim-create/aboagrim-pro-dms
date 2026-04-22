@@ -419,49 +419,53 @@ with st.sidebar:
 def vista_registro_maestro():
     st.markdown("<h1 style='text-align: center; color: #1a5276;'>👤 Registro Maestro Pro</h1>", unsafe_allow_html=True)
     
-    with st.form("form_registro_maestro_dinamico"):
-        # SECCIÓN 1: CLIENTES MÚLTIPLES
-        st.subheader("👥 Datos de los Intervinientes")
-        num_clientes = st.number_input("¿Cuántos clientes desea registrar?", min_value=1, max_value=10, value=1)
-        
-        for i in range(int(num_clientes)):
-            with st.expander(f"👤 Cliente / Abogado / Agrimensor #{i+1}", expanded=(i==0)):
-                c1, c2 = st.columns(2)
-                c1.text_input(f"Nombre Completo #{i+1}", key=f"nom_{i}")
-                c2.text_input(f"Cédula / RNC #{i+1}", key=f"ced_{i}")
-                
-                c3, c4 = st.columns(2)
-                c3.selectbox(f"Profesión #{i+1}", ["Abogado", "Agrimensor", "Cliente", "Sucesión"], key=f"prof_{i}")
-                c4.text_input(f"Teléfono / WhatsApp #{i+1}", key=f"tel_{i}")
+    # IMPORTANTE: No usamos st.form aquí para que el Sidebar pueda leer los datos en tiempo real
+    st.subheader("👥 Datos de los Intervinientes")
+    num_clientes = st.number_input("Cantidad de personas", min_value=1, max_value=10, value=1)
+    
+    for i in range(int(num_clientes)):
+        with st.expander(f"👤 Persona #{i+1}", expanded=(i==0)):
+            c1, c2 = st.columns(2)
+            st.session_state[f'n_{i}'] = c1.text_input(f"Nombre Completo #{i+1}", key=f"input_n_{i}")
+            st.session_state[f'c_{i}'] = c2.text_input(f"Cédula / RNC #{i+1}", key=f"input_c_{i}")
+            
+            c3, c4 = st.columns(2)
+            st.session_state[f'p_{i}'] = c3.selectbox(f"Rol #{i+1}", ["Cliente", "Abogado", "Agrimensor", "Vendedor"], key=f"input_p_{i}")
+            st.session_state[f't_{i}'] = c4.text_input(f"Teléfono #{i+1}", key=f"input_t_{i}")
 
-        # SECCIÓN 2: DATOS DEL INMUEBLE (Recuperado)
-        st.divider()
-        st.subheader("🏠 Información Técnica del Inmueble")
-        i1, i2, i3 = st.columns(3)
-        i1.text_input("Parcela / Solar")
-        i2.text_input("Distrito Catastral (DC)")
-        i3.text_input("Matrícula")
+    st.divider()
+    st.subheader("🏠 Datos del Inmueble")
+    col1, col2, col3 = st.columns(3)
+    st.session_state['parcela'] = col1.text_input("Parcela", key="input_parcela")
+    st.session_state['dc'] = col2.text_input("DC", key="input_dc")
+    st.session_state['matricula'] = col3.text_input("Matrícula", key="input_matricula")
 
-        # SECCIÓN 3: BOTÓN DE GUARDAR DINÁMICO
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.form_submit_button("💾 GUARDAR EXPEDIENTE EN SISTEMA"):
-            st.success("✅ ¡Datos guardados exitosamente!")
-
-    # SECCIÓN DE DESCARGA EN EL LATERAL
+    # --- BARRA LATERAL (SIDEBAR) ---
     st.sidebar.markdown("---")
-    st.sidebar.subheader("📁 Salida de Documentos")
-    if st.sidebar.button("📄 Generar Word y Descargar"):
-        st.sidebar.info("Preparando descarga...")
-# Diccionario que conecta los botones con sus funciones
-vistas = {
-    "🏠 Mando Central": vista_mando,
-    "👤 Registro Maestro": vista_registro_maestro,
-    "📁 Archivo Digital": vista_archivo_digital,
-    "📄 Plantillas Auto": vista_plantillas,
-    "📅 Alertas y Plazos": vista_alertas,
-    "💳 Facturación": vista_facturacion,
-    "⚙️ Configuración": vista_configuracion
-}
+    st.sidebar.subheader("📁 Salida de Expedientes")
+
+    # Botón que activa el motor real
+    if st.sidebar.button("🛠️ Preparar Documento Word"):
+        with st.sidebar.status("Generando documento...", expanded=True) as status:
+            st.write("Leiendo plantilla en plantillas_maestras/...")
+            # Llamamos al motor que configuramos arriba
+            archivo = generar_documento(st.session_state)
+            
+            if archivo:
+                st.session_state['archivo_listo'] = archivo
+                status.update(label="✅ ¡Documento listo!", state="complete", expanded=False)
+            else:
+                status.update(label="❌ Error en plantilla", state="error")
+                st.sidebar.error("Asegúrese de que 'modelo_contrato.docx' esté en la carpeta 'plantillas_maestras'")
+
+    # Botón de descarga real (Solo aparece cuando el motor termina)
+    if 'archivo_listo' in st.session_state and st.session_state['archivo_listo']:
+        st.sidebar.download_button(
+            label="📥 DESCARGAR AHORA EN PC",
+            data=st.session_state['archivo_listo'],
+            file_name=f"Contrato_{st.session_state.get('n_0', 'AboAgrim')}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
 
 # El motor que ejecuta la pantalla seleccionada
 if menu in vistas:
