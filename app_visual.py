@@ -556,18 +556,21 @@ def vista_registro_maestro():
     st.sidebar.markdown("---")
     st.sidebar.subheader("📁 Salida de Expedientes")
 
-    # Botón para procesar
+    # 1. El botón que enciende el motor
     if st.sidebar.button("🛠️ Preparar Documento Word"):
+        st.sidebar.info("Procesando datos...")
+        # Llama a la función generar_documento que creamos arriba
         archivo = generar_documento(st.session_state)
+        
         if archivo:
-            st.session_state.archivo_listo = archivo
+            st.session_state['archivo_listo'] = archivo
             st.sidebar.success("✅ ¡Documento listo!")
 
-    # Botón para descargar
+    # 2. El botón que realmente descarga a su PC (Aparece mágicamente)
     if 'archivo_listo' in st.session_state:
         st.sidebar.download_button(
             label="📥 DESCARGAR AHORA EN PC",
-            data=st.session_state.archivo_listo,
-            file_name=f"Expediente_{st.session_state.get('n_0', 'Nuevo')}.docx",
+            data=st.session_state['archivo_listo'],
+            file_name="Expediente_AboAgrim.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
