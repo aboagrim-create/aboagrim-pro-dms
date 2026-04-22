@@ -588,7 +588,7 @@ def vista_registro_maestro():
         # Botón que activa el motor
         if st.sidebar.button("🛠️ Preparar Documento Word"):
             with st.sidebar.status("Generando documento...", expanded=True) as status:
-                st.write("Procesando plantilla seleccionada...")
+                st.write(f"Procesando: {plantilla_elegida}")
                 
                 try:
                     # Llamamos al motor pasándole la ruta que usted eligió
@@ -599,7 +599,7 @@ def vista_registro_maestro():
                         st.session_state['nombre_descarga'] = f"Expediente_{st.session_state.get('n_0', 'AboAgrim')}.docx"
                         status.update(label="✅ ¡Documento listo!", state="complete", expanded=False)
                 except Exception as e:
-                    status.update(label="❌ Error en las llaves del Word", state="error")
+                    status.update(label="❌ Error en la plantilla", state="error")
                     st.sidebar.error(f"Detalle: {e}")
 
         # Botón de descarga real (Aparece al terminar)
