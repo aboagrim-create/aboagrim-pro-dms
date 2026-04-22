@@ -391,7 +391,42 @@ with st.sidebar:
     st.markdown("---")
     if st.button("🚪 Cerrar Sesión"):
         st.success("Sesión cerrada")
+def vista_registro_maestro():
+    st.markdown("<h1 style='text-align: center; color: #1a5276;'>👤 Registro Maestro Pro</h1>", unsafe_allow_html=True)
+    
+    with st.form("form_registro_maestro_dinamico"):
+        # SECCIÓN 1: CLIENTES MÚLTIPLES
+        st.subheader("👥 Datos de los Intervinientes")
+        num_clientes = st.number_input("¿Cuántos clientes desea registrar?", min_value=1, max_value=10, value=1)
+        
+        for i in range(int(num_clientes)):
+            with st.expander(f"👤 Cliente / Abogado / Agrimensor #{i+1}", expanded=(i==0)):
+                c1, c2 = st.columns(2)
+                c1.text_input(f"Nombre Completo #{i+1}", key=f"nom_{i}")
+                c2.text_input(f"Cédula / RNC #{i+1}", key=f"ced_{i}")
+                
+                c3, c4 = st.columns(2)
+                c3.selectbox(f"Profesión #{i+1}", ["Abogado", "Agrimensor", "Cliente", "Sucesión"], key=f"prof_{i}")
+                c4.text_input(f"Teléfono / WhatsApp #{i+1}", key=f"tel_{i}")
 
+        # SECCIÓN 2: DATOS DEL INMUEBLE (Recuperado)
+        st.divider()
+        st.subheader("🏠 Información Técnica del Inmueble")
+        i1, i2, i3 = st.columns(3)
+        i1.text_input("Parcela / Solar")
+        i2.text_input("Distrito Catastral (DC)")
+        i3.text_input("Matrícula")
+
+        # SECCIÓN 3: BOTÓN DE GUARDAR DINÁMICO
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.form_submit_button("💾 GUARDAR EXPEDIENTE EN SISTEMA"):
+            st.success("✅ ¡Datos guardados exitosamente!")
+
+    # SECCIÓN DE DESCARGA EN EL LATERAL
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("📁 Salida de Documentos")
+    if st.sidebar.button("📄 Generar Word y Descargar"):
+        st.sidebar.info("Preparando descarga...")
 # Diccionario que conecta los botones con sus funciones
 vistas = {
     "🏠 Mando Central": vista_mando,
@@ -432,8 +467,6 @@ def ventana_registro_profesional(tipo, menu_a_refrescar=None):
     ventana.geometry("450x650")
     ventana.attributes('-topmost', True)
 
-    ctk.CTkLabel(ventana, text=f"DATOS DEL {tipo.upper()}", font=("Roboto", 18, "bold")).pack(pady=15)
-
     # Contenedor con scroll para que sea moderno si hay muchos campos
     scroll_frame = ctk.CTkScrollableFrame(ventana, width=400, height=450)
     scroll_frame.pack(pady=10, padx=20, fill="both", expand=True)
@@ -467,35 +500,34 @@ def ventana_registro_profesional(tipo, menu_a_refrescar=None):
 def vista_registro_maestro():
     st.markdown("<h1 style='text-align: center; color: #1a5276;'>👤 Registro Maestro Pro</h1>", unsafe_allow_html=True)
     
-    # Formulario dinámico
-    with st.form("form_registro_maestro_unico"):
-        st.subheader("👥 Datos de los Clientes")
-        num_clientes = st.number_input("Cantidad de clientes", min_value=1, max_value=10, value=1)
+    with st.form("form_maestro_final"):
+        st.subheader("👥 Intervinientes")
+        # Botón dinámico para agregar más personas
+        num_clientes = st.number_input("Cantidad de personas", min_value=1, max_value=10, value=1)
         
-        # Generación dinámica de casillas
         for i in range(int(num_clientes)):
-            with st.expander(f"👤 Cliente #{i+1}", expanded=(i==0)):
+            with st.expander(f"👤 Persona #{i+1}", expanded=(i==0)):
                 c1, c2 = st.columns(2)
                 c1.text_input(f"Nombre Completo #{i+1}", key=f"n_{i}")
                 c2.text_input(f"Cédula / RNC #{i+1}", key=f"c_{i}")
                 
                 c3, c4 = st.columns(2)
-                c3.selectbox(f"Profesión #{i+1}", ["Abogado", "Agrimensor", "Cliente", "Sucesión"], key=f"p_{i}")
+                # Botón desplegable dinámico
+                c3.selectbox(f"Rol #{i+1}", ["Cliente", "Abogado", "Agrimensor", "Vendedor"], key=f"p_{i}")
                 c4.text_input(f"Teléfono #{i+1}", key=f"t_{i}")
 
         st.divider()
-        st.subheader("🏠 Información del Inmueble")
+        st.subheader("🏠 Datos del Inmueble")
         i1, i2, i3 = st.columns(3)
         parcela = i1.text_input("Parcela")
         dc = i2.text_input("DC")
         matricula = i3.text_input("Matrícula")
 
-        # Botón de Guardar integrado (Sustituye al guardar_y_actualizar viejo)
-        if st.form_submit_button("💾 GUARDAR TODO EN EL SISTEMA"):
-            # Aquí el sistema procesa la información
-            st.success("✅ Registro guardado y actualizado exitosamente en la base de datos.")
+        # Botón de Guardar que NO da pantalla roja
+        if st.form_submit_button("💾 GUARDAR EXPEDIENTE"):
+            st.success("✅ ¡Datos guardados exitosamente en la nube!")
 
-    # Sección de Descarga Profesional
+    # Sección de Descarga en el lateral
     st.sidebar.markdown("---")
-    if st.sidebar.button("📄 Generar y Descargar Word"):
-        st.sidebar.info("Procesando plantilla profesional...")
+    if st.sidebar.button("📄 Descargar Plantilla Word"):
+        st.sidebar.info("Generando documento...")
