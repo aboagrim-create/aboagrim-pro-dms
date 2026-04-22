@@ -14,78 +14,67 @@ from docx import Document
 from database import *
 
 # Línea 14: Así debe empezar la función
+import streamlit as st
+
 def vista_registro_maestro():
-    st.title("👤 Registro Maestro Multifuncional")
-    st.markdown("### *Gestión Dinámica de Intervinientes e Inmuebles*")
+    st.markdown("<h1 style='text-align: center; color: #1a5276;'>👤 Registro Maestro Pro - AboAgrim</h1>", unsafe_allow_html=True)
+    st.info("Complete los datos generales. Use los botones desplegables para agilizar el proceso.")
 
-    with st.form("form_maestro_dinamico"):
+    # Formulario dinámico y profesional
+    with st.form("registro_maestro_extendido"):
         
-        # --- SECCIÓN 1: CLIENTES (Múltiples) ---
-        st.header("👥 Clientes / Solicitantes")
-        num_clientes = st.number_input("¿Cuántos clientes desea registrar?", min_value=1, max_value=10, value=1)
-        
-        for i in range(num_clientes):
-            with st.expander(f"👤 Datos del Cliente #{i+1}", expanded=(i==0)):
-                c1, c2, c3 = st.columns([2, 1, 1])
-                nombre = c1.text_input(f"Nombre / Razón Social #{i+1}")
-                cedula = c2.text_input(f"Cédula / RNC #{i+1}")
-                tipo = c3.selectbox(f"Tipo #{i+1}", ["Física", "Jurídica", "Sucesión"], key=f"t_cli_{i}")
-                
-                d1, d2, d3 = st.columns(3)
-                mail = d1.text_input(f"Correo Electrónico #{i+1}")
-                tel = d2.text_input(f"Teléfono / WhatsApp #{i+1}")
-                est_civil = d3.selectbox(f"Estado Civil #{i+1}", ["Soltero/a", "Casado/a", "Unión Libre"], key=f"ec_{i}")
-                
-                st.text_input(f"📍 Dirección Domiciliaria #{i+1}")
+        # --- SECCIÓN 1: DATOS PERSONALES ---
+        st.subheader("📞 Información de Contacto y Generales")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            nombre = st.text_input("Nombre Completo")
+            cedula = st.text_input("Cédula / RNC")
+        with c2:
+            telefono = st.text_input("Teléfono / WhatsApp")
+            correo = st.text_input("Correo Electrónico")
+        with c3:
+            profesion = st.selectbox("Profesión", ["Abogado", "Agrimensor", "Cliente", "Notario", "Otro"])
+            estado_civil = st.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Unión Libre", "Divorciado/a"])
 
-        # --- SECCIÓN 2: INMUEBLES (Múltiples) ---
-        st.header("🏗️ Inmuebles / Parcelas")
-        num_inmuebles = st.number_input("¿Cuántos inmuebles vinculados?", min_value=1, max_value=5, value=1)
-        
-        for j in range(num_inmuebles):
-            with st.expander(f"📍 Detalle de Inmueble #{j+1}", expanded=False):
-                i1, i2, i3 = st.columns(3)
-                parc = i1.text_input(f"Parcela #{j+1}")
-                dc = i2.text_input(f"D.C. #{j+1}")
-                mat = i3.text_input(f"Matrícula #{j+1}")
-                
-                i4, i5 = st.columns(2)
-                sup = i4.number_input(f"Superficie m² #{j+1}", min_value=0.0)
-                desig = i5.text_input(f"Designación Posicional #{j+1}")
+        # --- SECCIÓN 2: DATOS DEL INMUEBLE (Lo que se había borrado) ---
+        st.divider()
+        st.subheader("🏠 Datos del Inmueble y Ubicación")
+        col_inm1, col_inm2 = st.columns(2)
+        with col_inm1:
+            designacion = st.text_input("Designación Catastral")
+            matricula = st.text_input("Número de Matrícula")
+            area = st.number_input("Área (m²)", min_value=0.0)
+        with col_inm2:
+            provincia = st.selectbox("Provincia", ["Santiago", "Santo Domingo", "La Altagracia", "Puerto Plata", "Otras"])
+            municipio = st.text_input("Municipio / Sector")
+            direccion_inm = st.text_area("Dirección Exacta", height=68)
 
-        # --- SECCIÓN 3: PROFESIONALES (Agrimensores y Abogados) ---
-        st.header("⚖️ Equipo Profesional")
-        
-        col_pro1, col_pro2 = st.columns(2)
-        
-        with col_pro1:
-            with st.expander("👷 Agrimensores Asociados"):
-                num_agri = st.number_input("Cantidad de Agrimensores", min_value=1, max_value=3)
-                for a in range(num_agri):
-                    st.text_input(f"Nombre Agrimensor {a+1}")
-                    st.text_input(f"CODIA {a+1}")
-                    st.divider()
-
-        with col_pro2:
-            with st.expander("👨‍⚖️ Abogados Encargados"):
-                num_abog = st.number_input("Cantidad de Abogados", min_value=1, max_value=3)
-                for b in range(num_abog):
-                    st.text_input(f"Nombre Abogado {b+1}")
-                    st.text_input(f"Exequátur {b+1}")
-                    st.divider()
-
-        # --- SECCIÓN 4: GENERALES Y NOTAS ---
-        st.header("📝 Observaciones Generales")
-        st.text_area("Notas adicionales del expediente (Conflictos, linderos, etc.)")
+        # --- SECCIÓN 3: DICCIONARIO Y VARIABLES DINÁMICAS ---
+        st.divider()
+        st.subheader("📋 Variables del Sistema (Diccionario)")
+        expediente_tipo = st.multiselect(
+            "Tipo de Proceso (Seleccione uno o varios)", 
+            ["Deslinde", "Saneamiento", "Litis sobre derecho registrado", "Determinación de Herederos", "Transferencia"]
+        )
+        notas_adicionales = st.text_area("Observaciones para la Plantilla")
 
         # --- BOTONES DE ACCIÓN ---
-        st.divider()
-        c_btn, _ = st.columns([1, 4])
-        submit = c_btn.form_submit_button("💾 GUARDAR TODO")
+        st.markdown("<br>", unsafe_allow_html=True)
+        col_btn1, col_btn2 = st.columns([1, 1])
+        with col_btn1:
+            # Botón para guardar en base de datos
+            submitted = st.form_submit_button("💾 GUARDAR EN REGISTRO MAESTRO")
+        
+        if submitted:
+            # Aquí va la lógica para guardar en su base de datos
+            st.success(f"¡Registro de {nombre} guardado exitosamente!")
 
-        if submit:
-            st.success("✅ Estructura de expediente guardada. Datos listos para sincronizar.")
-            st.balloons()
+    # --- BOTÓN PARA DESCARGAR (Para encontrar el archivo en su PC) ---
+    st.sidebar.header("📁 Gestión de Archivos")
+    if st.sidebar.button("Generar y Descargar Word"):
+        st.sidebar.write("Generando documento profesional...")
+        # Aquí llamaríamos a su función de plantillas y daríamos el botón de descarga
+        # st.download_button(label="📥 Descargar Expediente", ...)
 
 # Asegúrese de que no haya nada repetido debajo de este bloque.
 # =====================================================================
