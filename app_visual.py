@@ -16,8 +16,20 @@ from database import *
 import streamlit as st
 
 def generar_documento(datos_formulario):
-    # 1. Cargamos su plantilla (con la carpeta correcta y espacios perfectos)
-    doc = DocxTemplate("plantillas_maestras/modelo_contrato.docx")
+    import os
+    
+    # 1. Buscador Automático de la Plantilla (¡Cero adivinanzas!)
+    if os.path.exists("plantillas_maestras/modelo_contrato.docx"):
+        ruta = "plantillas_maestras/modelo_contrato.docx"
+    elif os.path.exists("modelo_contrato.docx"):
+        ruta = "modelo_contrato.docx"
+    elif os.path.exists("modelo_contrato.docx.docx"):
+        ruta = "modelo_contrato.docx.docx"
+    else:
+        st.sidebar.error("❌ El archivo Word no está en GitHub. Por favor súbalo.")
+        return None
+        
+    doc = DocxTemplate(ruta)
     
     # 2. Mapeo del Diccionario
     contexto = {
