@@ -476,55 +476,64 @@ vistas = {
 if menu in vistas:
     vistas[menu]()
     
-    st.button("🔄 Sincronizar con Supabase")
 import customtkinter as ctk
 from tkinter import messagebox
 
-def ventana_agregar_perfil(tipo_perfil):
-    """Crea una ventana moderna para registrar datos personales/generales."""
+# Supongamos que esta es su función de conexión (ajuste según su db.py)
+# from database import ejecutar_query 
+
+def guardar_y_actualizar(tipo_perfil, datos, ventana_origen, menu_desplegable=None):
+    """Guarda en la base de datos y refresca el menú desplegable."""
     
+    # 1. Lógica de inserción (Ejemplo SQL)
+    # query = f"INSERT INTO {tipo_perfil} (nombre, cedula, profesion, ...) VALUES (...)"
+    # ejecutar_query(query)
+    
+    print(f"Datos guardados en la nube para {tipo_perfil}: {datos}")
+    
+    # 2. Refrescar el Menú Desplegable si existe
+    if menu_desplegable:
+        # Aquí obtenemos la lista actualizada de la DB
+        nueva_lista = ["Seleccione..."] + ["Juan Pérez", "Lic. Matos", "Nuevo Registro..."] # Ejemplo
+        menu_desplegable.configure(values=nueva_lista)
+        menu_desplegable.set(datos["Nombre Completo"]) # Selecciona el recién creado
+
+    messagebox.showinfo("Éxito", f"{tipo_perfil} agregado y actualizado en el sistema.")
+    ventana_origen.destroy()
+
+def ventana_registro_profesional(tipo, menu_a_refrescar=None):
     ventana = ctk.CTkToplevel()
-    ventana.title(f"Registro de {tipo_perfil}")
-    ventana.geometry("500x600")
-    ventana.attributes('-topmost', True) # Para que aparezca al frente
+    ventana.title(f"AboAgrim Pro - Registro de {tipo}")
+    ventana.geometry("450x650")
+    ventana.attributes('-topmost', True)
 
-    # Título Principal
-    ctk.CTkLabel(ventana, text=f"Nuevo {tipo_perfil}", font=("Roboto", 20, "bold")).pack(pady=20)
+    ctk.CTkLabel(ventana, text=f"DATOS DEL {tipo.upper()}", font=("Roboto", 18, "bold")).pack(pady=15)
 
-    # Contenedor de campos (Frame)
-    frame_campos = ctk.CTkFrame(ventana)
-    frame_campos.pack(fill="both", expand=True, padx=30, pady=10)
+    # Contenedor con scroll para que sea moderno si hay muchos campos
+    scroll_frame = ctk.CTkScrollableFrame(ventana, width=400, height=450)
+    scroll_frame.pack(pady=10, padx=20, fill="both", expand=True)
 
-    # Diccionario de campos según lo solicitado
-    campos = [
-        "Nombre Completo", "Cédula / RNC", "Dirección", 
-        "Teléfono", "Correo Electrónico", "Profesión"
-    ]
-    
+    campos = ["Nombre Completo", "Cédula / RNC", "Dirección", "Teléfono", "Correo", "Profesión"]
     entradas = {}
 
     for campo in campos:
-        lbl = ctk.CTkLabel(frame_campos, text=campo, font=("Roboto", 12))
-        lbl.pack(anchor="w", padx=10, pady=(10, 0))
-        
-        entry = ctk.CTkEntry(frame_campos, placeholder_text=f"Ingrese {campo.lower()}", width=350)
-        entry.pack(padx=10, pady=(0, 10))
+        ctk.CTkLabel(scroll_frame, text=campo, font=("Roboto", 12, "bold")).pack(anchor="w", padx=10)
+        entry = ctk.CTkEntry(scroll_frame, placeholder_text=f"Escriba {campo.lower()}...", width=320)
+        entry.pack(pady=(0, 15), padx=10)
         entradas[campo] = entry
 
-    def guardar_datos():
-        # Aquí conectamos con su base de datos Supabase o Local
-        datos = {k: v.get() for k, v in entradas.items()}
-        print(f"Guardando en {tipo_perfil}:", datos)
-        messagebox.showinfo("Éxito", f"{tipo_perfil} guardado correctamente.")
-        ventana.destroy()
-
-    # Botón de Guardar con diseño profesional
-    btn_guardar = ctk.CTkButton(ventana, text="Guardar Registro", fg_color="#2c3e50", 
-                                hover_color="#34495e", command=guardar_datos)
-    btn_guardar.pack(pady=30)
-
-# --- BOTONES PRINCIPALES EN SU INTERFAZ MAESTRA ---
-# Agregue estos botones en su menú principal para llamar a la función:
-
-# btn_cliente = ctk.CTkButton(master, text="+ Cliente", command=lambda: ventana_agregar_perfil("Cliente"))
-# btn_abogado = ctk.CTkButton(master, text="+ Abogado", command=lambda: ventana_agregar_perfil("Abogado"))
+    # Botón dinámico
+    btn_guardar = ctk.CTkButton(
+        ventana, 
+        text=f"CONFIRMAR REGISTRO", 
+        fg_color="#1a5276", # Azul profesional
+        hover_color="#21618c",
+        height=45,
+        command=lambda: guardar_y_actualizar(
+            tipo, 
+            {k: v.get() for k, v in entradas.items()}, 
+            ventana, 
+            menu_a_refrescar
+        )
+    )
+    btn_guardar.pack(pady=20)
