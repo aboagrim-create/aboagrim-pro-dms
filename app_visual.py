@@ -19,24 +19,20 @@ def generar_documento(datos_formulario, ruta_plantilla):
     import io
     from docxtpl import DocxTemplate
     
-    # 1. Cargamos la plantilla que usted seleccionó en la pantalla
+    # 1. Cargamos la plantilla
     doc = DocxTemplate(ruta_plantilla)
     
-    # 2. Mapeo del Diccionario
-    contexto = {
-        'nombre_cliente': datos_formulario.get('n_0', 'N/A'),
-        'cedula_cliente': datos_formulario.get('c_0', 'N/A'),
-        'parcela': datos_formulario.get('parcela', 'N/A'),
-        'dc': datos_formulario.get('dc', 'N/A'),
-        'matricula': datos_formulario.get('matricula', 'N/A'),
-        'profesional': "Lic. Jhonny Matos. M.A.",
-        'cargo': "Presidente fundador AboAgrim"
-    }
+    # 2. Magia: Convertimos todas las casillas de la pantalla en variables de Word automáticamente
+    contexto = dict(datos_formulario)
     
-    # 3. Llenar la plantilla
+    # 3. Datos fijos de su firma (siempre estarán disponibles para Word)
+    contexto['profesional'] = "Lic. Jhonny Matos. M.A."
+    contexto['cargo'] = "Presidente fundador AboAgrim"
+    
+    # 4. Llenar la plantilla
     doc.render(contexto)
     
-    # 4. Convertir a binario para descarga web
+    # 5. Convertir a binario
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
@@ -415,29 +411,56 @@ with st.sidebar:
     if st.button("🚪 Cerrar Sesión"):
         st.success("Sesión cerrada")
 def vista_registro_maestro():
-    st.markdown("<h1 style='text-align: center; color: #1a5276;'>👤 Registro Maestro Pro</h1>", unsafe_allow_html=True)
-    
-    # IMPORTANTE: No usamos st.form aquí para que el Sidebar pueda leer los datos en tiempo real
-    st.subheader("👥 Datos de los Intervinientes")
-    num_clientes = st.number_input("Cantidad de personas", min_value=1, max_value=10, value=1)
-    
-    for i in range(int(num_clientes)):
-        with st.expander(f"👤 Persona #{i+1}", expanded=(i==0)):
-            c1, c2 = st.columns(2)
-            st.session_state[f'n_{i}'] = c1.text_input(f"Nombre Completo #{i+1}", key=f"input_n_{i}")
-            st.session_state[f'c_{i}'] = c2.text_input(f"Cédula / RNC #{i+1}", key=f"input_c_{i}")
-            
-            c3, c4 = st.columns(2)
-            st.session_state[f'p_{i}'] = c3.selectbox(f"Rol #{i+1}", ["Cliente", "Abogado", "Agrimensor", "Vendedor"], key=f"input_p_{i}")
-            st.session_state[f't_{i}'] = c4.text_input(f"Teléfono #{i+1}", key=f"input_t_{i}")
+    st.header("👤 Registro Maestro de Expedientes")
+    st.write("Llene los datos del caso. El sistema los inyectará automáticamente en sus plantillas.")
 
-    st.divider()
-    st.subheader("🏠 Datos del Inmueble")
-    col1, col2, col3 = st.columns(3)
-    st.session_state['parcela'] = col1.text_input("Parcela", key="input_parcela")
-    st.session_state['dc'] = col2.text_input("DC", key="input_dc")
-    st.session_state['matricula'] = col3.text_input("Matrícula", key="input_matricula")
+    # --- PESTAÑAS DE ORGANIZACIÓN ---
+    tab1, tab2, tab3, tab4 = st.tabs(["📍 Inmueble & Expediente", "👥 Partes Involucradas", "⚖️ Profesionales", "🧭 Colindancias"])
 
+    with tab1:
+        st.subheader("Datos del Inmueble y Expediente")
+        col1, col2 = st.columns(2)
+        st.session_state['expediente'] = col1.text_input("No. Expediente (Autorización)", key="in_exp")
+        st.session_state['tipo_trabajo'] = col2.selectbox("Tipo de Trabajo", ["Saneamiento", "Deslinde", "Subdivisión", "Transferencia", "Otro"], key="in_tipo")
+
+        col3, col4, col5 = st.columns(3)
+        st.session_state['parcela'] = col3.text_input("Parcela / Solar", key="in_parc")
+        st.session_state['dc'] = col4.text_input("Distrito Catastral (DC)", key="in_dc")
+        st.session_state['matricula'] = col5.text_input("Matrícula", key="in_mat")
+
+        col6, col7 = st.columns(2)
+        st.session_state['superficie'] = col6.text_input("Superficie (m²)", key="in_sup")
+        st.session_state['ubicacion'] = col7.text_input("Ubicación (Provincia/Municipio)", key="in_ubi")
+
+    with tab2:
+        st.subheader("Datos del Reclamante / Propietario / Comprador")
+        col8, col9 = st.columns(2)
+        st.session_state['nombre_cliente'] = col8.text_input("Nombre Completo", key="in_nom_cli")
+        st.session_state['cedula_cliente'] = col9.text_input("Cédula de Identidad", key="in_ced_cli")
+
+        col10, col11 = st.columns(2)
+        st.session_state['estado_civil'] = col10.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a"], key="in_est_cli")
+        st.session_state['domicilio'] = col11.text_input("Domicilio Real", key="in_dom_cli")
+
+    with tab3:
+        st.subheader("Profesionales Actuantes")
+        col12, col13 = st.columns(2)
+        st.session_state['nombre_notario'] = col12.text_input("Nombre del Notario", key="in_not_nom")
+        st.session_state['matricula_notario'] = col13.text_input("Matrícula del Notario", key="in_not_mat")
+
+        col14, col15 = st.columns(2)
+        st.session_state['nombre_apoderado'] = col14.text_input("Nombre del Abogado / Apoderado", key="in_abo_nom")
+        st.session_state['colegiatura_abogado'] = col15.text_input("No. Colegiatura (CARD)", key="in_abo_card")
+
+    with tab4:
+        st.subheader("Límites y Colindancias Actuales")
+        col16, col17 = st.columns(2)
+        st.session_state['limite_norte'] = col16.text_input("Límite Norte", key="in_nor")
+        st.session_state['limite_sur'] = col17.text_input("Límite Sur", key="in_sur")
+
+        col18, col19 = st.columns(2)
+        st.session_state['limite_este'] = col18.text_input("Límite Este", key="in_est")
+        st.session_state['limite_oeste'] = col19.text_input("Límite Oeste", key="in_oes")
 # --- BARRA LATERAL (SIDEBAR) ---
     st.sidebar.markdown("---")
     st.sidebar.subheader("📁 Salida de Expedientes")
