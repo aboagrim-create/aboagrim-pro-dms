@@ -15,9 +15,9 @@ from database import *
 # Línea 14: Así debe empezar la función
 import streamlit as st
 
-doc = DocxTemplate("plantillas_maestras/modelo_contrato.docx")
-    # 1. Cargamos su plantilla 
-    doc = DocxTemplate("modelo_contrato.docx")
+def generar_documento(datos_formulario):
+    # 1. Cargamos su plantilla (con la carpeta correcta y espacios perfectos)
+    doc = DocxTemplate("plantillas_maestras/modelo_contrato.docx")
     
     # 2. Mapeo del Diccionario
     contexto = {
