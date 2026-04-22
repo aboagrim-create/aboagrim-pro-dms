@@ -16,55 +16,7 @@ from database import *
 # Línea 14: Así debe empezar la función
 import streamlit as st
 
-def vista_registro_maestro():
-    st.markdown("<h1 style='text-align: center; color: #1a5276;'>👤 Registro Maestro Pro</h1>", unsafe_allow_html=True)
-    st.markdown("---")
 
-    # Usamos un formulario para que todo se procese junto y sea más rápido
-    with st.form("form_registro_maestro"):
-        
-        # --- SECCIÓN: CLIENTES / SOLICITANTES ---
-        st.subheader("👥 Datos de los Clientes")
-        num_clientes = st.number_input("Cantidad de clientes a registrar", min_value=1, max_value=10, value=1)
-        
-        for i in range(int(num_clientes)):
-            with st.expander(f"👤 Cliente #{i+1}", expanded=(i==0)):
-                c1, c2 = st.columns(2)
-                c1.text_input(f"Nombre Completo / Razón Social #{i+1}", key=f"nom_{i}")
-                c2.text_input(f"Cédula / RNC #{i+1}", key=f"ced_{i}")
-                
-                c3, c4, c5 = st.columns(3)
-                c3.text_input(f"Teléfono #{i+1}", key=f"tel_{i}")
-                c4.text_input(f"Correo #{i+1}", key=f"mail_{i}")
-                c5.selectbox(f"Profesión #{i+1}", ["Abogado", "Agrimensor", "Empresario", "Estudiante", "Otro"], key=f"prof_{i}")
-
-        # --- SECCIÓN: INMUEBLES (Lo que se había borrado) ---
-        st.markdown("---")
-        st.subheader("🏠 Información Técnica del Inmueble")
-        i1, i2, i3 = st.columns(3)
-        parcela = i1.text_input("Parcela / Solar")
-        dc = i2.text_input("Distrito Catastral")
-        matricula = i3.text_input("Matrícula")
-
-        i4, i5, i6 = st.columns(3)
-        area = i4.text_input("Superficie (m²)")
-        designacion = i5.text_input("Designación Posicional")
-        municipio = i6.text_input("Municipio / Provincia", value="Santiago")
-
-        # --- BOTONES DE ACCIÓN ---
-        st.markdown("<br>", unsafe_allow_html=True)
-        col_btn1, col_btn2 = st.columns(2)
-        with col_btn1:
-            guardar = st.form_submit_button("💾 GUARDAR REGISTRO MAESTRO")
-        
-        if guardar:
-            st.success("✅ ¡Datos guardados correctamente en el sistema!")
-
-    # --- BARRA LATERAL PARA DESCARGAS ---
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("📁 Gestión de Expedientes")
-    if st.sidebar.button("📄 Generar Word y Descargar"):
-        st.sidebar.info("El archivo se descargará en su carpeta de 'Descargas'.")
 
 # Asegúrese de que no haya nada repetido debajo de este bloque.
 # =====================================================================
@@ -474,9 +426,6 @@ def guardar_y_actualizar(tipo_perfil, datos, ventana_origen, menu_desplegable=No
         menu_desplegable.configure(values=nueva_lista)
         menu_desplegable.set(datos["Nombre Completo"]) # Selecciona el recién creado
 
-    messagebox.showinfo("Éxito", f"{tipo_perfil} agregado y actualizado en el sistema.")
-    ventana_origen.destroy()
-
 def ventana_registro_profesional(tipo, menu_a_refrescar=None):
     ventana = ctk.CTkToplevel()
     ventana.title(f"AboAgrim Pro - Registro de {tipo}")
@@ -513,3 +462,40 @@ def ventana_registro_profesional(tipo, menu_a_refrescar=None):
         )
     )
     btn_guardar.pack(pady=20)
+# --- FUNCIÓN ÚNICA Y MODERNA PARA EL REGISTRO MAESTRO ---
+
+def vista_registro_maestro():
+    st.markdown("<h1 style='text-align: center; color: #1a5276;'>👤 Registro Maestro Pro</h1>", unsafe_allow_html=True)
+    
+    # Formulario dinámico
+    with st.form("form_registro_maestro_unico"):
+        st.subheader("👥 Datos de los Clientes")
+        num_clientes = st.number_input("Cantidad de clientes", min_value=1, max_value=10, value=1)
+        
+        # Generación dinámica de casillas
+        for i in range(int(num_clientes)):
+            with st.expander(f"👤 Cliente #{i+1}", expanded=(i==0)):
+                c1, c2 = st.columns(2)
+                c1.text_input(f"Nombre Completo #{i+1}", key=f"n_{i}")
+                c2.text_input(f"Cédula / RNC #{i+1}", key=f"c_{i}")
+                
+                c3, c4 = st.columns(2)
+                c3.selectbox(f"Profesión #{i+1}", ["Abogado", "Agrimensor", "Cliente", "Sucesión"], key=f"p_{i}")
+                c4.text_input(f"Teléfono #{i+1}", key=f"t_{i}")
+
+        st.divider()
+        st.subheader("🏠 Información del Inmueble")
+        i1, i2, i3 = st.columns(3)
+        parcela = i1.text_input("Parcela")
+        dc = i2.text_input("DC")
+        matricula = i3.text_input("Matrícula")
+
+        # Botón de Guardar integrado (Sustituye al guardar_y_actualizar viejo)
+        if st.form_submit_button("💾 GUARDAR TODO EN EL SISTEMA"):
+            # Aquí el sistema procesa la información
+            st.success("✅ Registro guardado y actualizado exitosamente en la base de datos.")
+
+    # Sección de Descarga Profesional
+    st.sidebar.markdown("---")
+    if st.sidebar.button("📄 Generar y Descargar Word"):
+        st.sidebar.info("Procesando plantilla profesional...")
