@@ -2,13 +2,12 @@
 # INTERFAZ GRÁFICA Y SISTEMA EXPERTO LEGAL JI (EDICIÓN PREMIUM FULL)
 # Sistema: AboAgrim Pro DMS 
 # =====================================================================
-
-import streamlit as st
+from docxtpl import DocxTemplate
+import io
 import pandas as pd
 import datetime
 import zipfile   # <--- NUEVO
 import io        # <--- NUEVO
-from docx import Document
 # ... arriba están los import ...
 
 from database import *
@@ -16,7 +15,35 @@ from database import *
 # Línea 14: Así debe empezar la función
 import streamlit as st
 
-
+def generar_documento(datos_formulario):
+    try:
+        # 1. Cargamos su plantilla (Asegúrese de subir el archivo a GitHub)
+doc = DocxTemplate("plantillas_maestras/modelo_contrato.docx")
+        
+        # 2. Mapeo del Diccionario (Lo que el sistema escribirá en el Word)
+        # 'nombre_word' es como debe estar en el Word entre {{ }}
+        # 'n_0' es la clave que viene de su formulario dinámico
+        contexto = {
+            'nombre_cliente': datos_formulario.get('n_0', 'N/A'),
+            'cedula_cliente': datos_formulario.get('c_0', 'N/A'),
+            'parcela': datos_formulario.get('parcela', 'N/A'),
+            'dc': datos_formulario.get('dc', 'N/A'),
+            'matricula': datos_formulario.get('matricula', 'N/A'),
+            'profesional': "Lic. Jhonny Matos. M.A.",
+            'cargo': "Presidente fundador AboAgrim"
+        }
+        
+        # 3. Llenar la plantilla
+        doc.render(contexto)
+        
+        # 4. Convertir a binario para descarga web
+        buffer = io.BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
+        return buffer
+    except Exception as e:
+        st.error(f"⚠️ Error al preparar el Word: {e}")
+        return None
 
 # Asegúrese de que no haya nada repetido debajo de este bloque.
 # =====================================================================
@@ -527,19 +554,23 @@ def vista_registro_maestro():
         if st.form_submit_button("💾 GUARDAR EXPEDIENTE"):
             st.success("✅ ¡Datos guardados exitosamente en la nube!")
 
- # --- SECCIÓN DE SALIDA PROFESIONAL ---
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("📁 Gestión de Archivos")
+# En la sección de descarga de su sidebar:
+st.sidebar.markdown("---")
+    st.sidebar.subheader("📁 Salida de Expedientes")
 
-    # Simulamos la creación del documento (Aquí conectará con su lógica de docx)
-    nombre_archivo = "Expediente_AboAgrim.docx"
-    contenido_dummy = b"Este es el contenido del expediente generado por AboAgrim Pro."
+    # Botón para procesar
+    if st.sidebar.button("🛠️ Preparar Documento Word"):
+        # Llamamos a la función con los datos actuales
+        archivo = generar_documento(st.session_state)
+        if archivo:
+            st.session_state.archivo_listo = archivo
+            st.sidebar.success("✅ ¡Documento listo!")
 
-    # ESTE ES EL BOTÓN QUE SÍ DESCARGA
-    st.sidebar.download_button(
-        label="📥 Descargar Plantilla en PC",
-        data=contenido_dummy,
-        file_name=nombre_archivo,
-        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        help="Haga clic para guardar el Word en su carpeta de Descargas"
-    )
+    # Si el archivo está listo, mostramos el botón de descarga real
+    if 'archivo_listo' in st.session_state:
+        st.sidebar.download_button(
+            label="📥 DESCARGAR AHORA EN PC",
+            data=st.session_state.archivo_listo,
+            file_name=f"Contrato_{st.session_state.get('n_0', 'Nuevo')}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
