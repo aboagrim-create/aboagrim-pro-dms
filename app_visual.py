@@ -438,32 +438,45 @@ def vista_registro_maestro():
     st.session_state['dc'] = col2.text_input("DC", key="input_dc")
     st.session_state['matricula'] = col3.text_input("Matrícula", key="input_matricula")
 
-    # --- BARRA LATERAL (SIDEBAR) ---
+# --- BARRA LATERAL (SIDEBAR) ---
     st.sidebar.markdown("---")
     st.sidebar.subheader("📁 Salida de Expedientes")
 
+    import glob
+    # ESCÁNER DINÁMICO: Busca todos los Word (.docx) en todas sus carpetas
+    plantillas_disponibles = glob.glob("**/*.docx", recursive=True)
 
-# El motor que ejecuta la pantalla seleccionada
-# Diccionario que conecta los botones con sus funciones
-# =======================================================
-# CEREBRO DEL SISTEMA (CERO ESPACIOS A LA IZQUIERDA)
-# =======================================================
+    if len(plantillas_disponibles) == 0:
+        st.sidebar.error("❌ No se encontraron plantillas Word en GitHub.")
+    else:
+        # Menú desplegable para visualizar y elegir la plantilla
+        plantilla_elegida = st.sidebar.selectbox("📄 Seleccione la Plantilla:", plantillas_disponibles)
 
-# Diccionario que conecta los botones con sus funciones
-vistas = {
-    "🏠 Mando Central": vista_mando,
-    "👤 Registro Maestro": vista_registro_maestro,
-    "📁 Archivo Digital": vista_archivo_digital,
-    "📄 Plantillas Auto": vista_plantillas,
-    "📅 Alertas y Plazos": vista_alertas,
-    "💳 Facturación": vista_facturacion,
-    "⚙️ Configuración": vista_configuracion
-}
+        # Botón que activa el motor
+        if st.sidebar.button("🛠️ Preparar Documento Word"):
+            with st.sidebar.status("Generando documento...", expanded=True) as status:
+                st.write(f"Procesando: {plantilla_elegida}")
+                
+                try:
+                    # Llamamos al motor pasándole la ruta que usted eligió
+                    archivo = generar_documento(st.session_state, plantilla_elegida)
+                    
+                    if archivo:
+                        st.session_state['archivo_listo'] = archivo
+                        st.session_state['nombre_descarga'] = f"Expediente_{st.session_state.get('n_0', 'AboAgrim')}.docx"
+                        status.update(label="✅ ¡Documento listo!", state="complete", expanded=False)
+                except Exception as e:
+                    status.update(label="❌ Error en la plantilla", state="error")
+                    st.sidebar.error(f"Detalle: {e}")
 
-# El motor que ejecuta la pantalla seleccionada
-if menu in vistas:
-    vistas[menu]()
-
+        # Botón de descarga real (Aparece al terminar)
+        if 'archivo_listo' in st.session_state and st.session_state['archivo_listo']:
+            st.sidebar.download_button(
+                label="📥 DESCARGAR AHORA EN PC",
+                data=st.session_state['archivo_listo'],
+                file_name=st.session_state.get('nombre_descarga', 'Documento.docx'),
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
 # Supongamos que esta es su función de conexión (ajuste según su db.py)
 # from database import ejecutar_query 
 
