@@ -15,28 +15,42 @@ from database import *
 # Línea 14: Así debe empezar la función
 import streamlit as st
 
-def generar_documento(datos_formulario, ruta_plantilla):
+def generar_paquete_documentos(datos_formulario, rutas_plantillas):
     import io
+    import zipfile
+    import os
     from docxtpl import DocxTemplate
     
-    # 1. Cargamos la plantilla
-    doc = DocxTemplate(ruta_plantilla)
-    
-    # 2. Magia: Convertimos todas las casillas de la pantalla en variables de Word automáticamente
+    # 1. El Mega Diccionario (Atrapa todo lo de la pantalla)
     contexto = dict(datos_formulario)
-    
-    # 3. Datos fijos de su firma (siempre estarán disponibles para Word)
     contexto['profesional'] = "Lic. Jhonny Matos. M.A."
     contexto['cargo'] = "Presidente fundador AboAgrim"
     
-    # 4. Llenar la plantilla
-    doc.render(contexto)
+    # 2. Si solo es un archivo, lo procesamos normal
+    if len(rutas_plantillas) == 1:
+        doc = DocxTemplate(rutas_plantillas[0])
+        doc.render(contexto)
+        buffer = io.BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
+        return buffer, f"Expediente_{contexto.get('nom_prop', 'AboAgrim')}.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     
-    # 5. Convertir a binario
-    buffer = io.BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
-    return buffer
+    # 3. Si son VARIOS archivos, creamos un archivo .ZIP con todos adentro
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for ruta in rutas_plantillas:
+            doc = DocxTemplate(ruta)
+            doc.render(contexto)
+            
+            temp_buffer = io.BytesIO()
+            doc.save(temp_buffer)
+            
+            # Nombre del archivo procesado
+            nombre_archivo = f"Listo_{os.path.basename(ruta)}"
+            zip_file.writestr(nombre_archivo, temp_buffer.getvalue())
+            
+    zip_buffer.seek(0)
+    return zip_buffer, f"Paquete_Expediente_{contexto.get('nom_prop', 'AboAgrim')}.zip", "application/zip"
 # Asegúrese de que no haya nada repetido debajo de este bloque.
 # =====================================================================
 # MÓDULO 1: MANDO CENTRAL
@@ -412,93 +426,121 @@ with st.sidebar:
         st.success("Sesión cerrada")
 def vista_registro_maestro():
     st.header("👤 Registro Maestro de Expedientes")
-    st.write("Llene los datos del caso. El sistema los inyectará automáticamente en sus plantillas.")
+    st.write("Llene los datos. Puede generar todos los documentos del expediente a la vez.")
 
     # --- PESTAÑAS DE ORGANIZACIÓN ---
-    tab1, tab2, tab3, tab4 = st.tabs(["📍 Inmueble & Expediente", "👥 Partes Involucradas", "⚖️ Profesionales", "🧭 Colindancias"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📍 Inmueble y Fechas", "👥 Propietario / Reclamante", "🤝 Vendedor (Contratos)", "🧭 Colindancias", "⚖️ Profesionales"])
 
     with tab1:
-        st.subheader("Datos del Inmueble y Expediente")
-        col1, col2 = st.columns(2)
-        st.session_state['expediente'] = col1.text_input("No. Expediente (Autorización)", key="in_exp")
-        st.session_state['tipo_trabajo'] = col2.selectbox("Tipo de Trabajo", ["Saneamiento", "Deslinde", "Subdivisión", "Transferencia", "Otro"], key="in_tipo")
+        st.subheader("Datos Técnicos y del Inmueble")
+        col1, col2, col3 = st.columns(3)
+        st.session_state['exp'] = col1.text_input("No. Expediente", key="in_exp")
+        st.session_state['fecha_men'] = col2.text_input("Fecha Mensura (Ej: 12/11/2025)", key="in_fm")
+        st.session_state['hora_men'] = col3.text_input("Hora Mensura (Ej: 9:00 A.M.)", key="in_hm")
 
-        col3, col4, col5 = st.columns(3)
-        st.session_state['parcela'] = col3.text_input("Parcela / Solar", key="in_parc")
+        col4, col5, col6 = st.columns(3)
         st.session_state['dc'] = col4.text_input("Distrito Catastral (DC)", key="in_dc")
-        st.session_state['matricula'] = col5.text_input("Matrícula", key="in_mat")
+        st.session_state['parcela'] = col5.text_input("Parcela", key="in_par")
+        st.session_state['area_m2'] = col6.text_input("Área (M²)", key="in_area")
 
-        col6, col7 = st.columns(2)
-        st.session_state['superficie'] = col6.text_input("Superficie (m²)", key="in_sup")
-        st.session_state['ubicacion'] = col7.text_input("Ubicación (Provincia/Municipio)", key="in_ubi")
+        col7, col8 = st.columns(2)
+        st.session_state['municipio'] = col7.text_input("Municipio", key="in_mun")
+        st.session_state['provincia'] = col8.text_input("Provincia", key="in_prov")
+
+        st.session_state['ubicacion_det'] = st.text_area("Ubicación Detallada (Ruta para Letreros/Avisos)", key="in_ubi")
+        st.session_state['coordenadas'] = st.text_input("Coordenadas (Ej: 19.494634, -70.893367)", key="in_coord")
 
     with tab2:
-        st.subheader("Datos del Reclamante / Propietario / Comprador")
-        col8, col9 = st.columns(2)
-        st.session_state['nombre_cliente'] = col8.text_input("Nombre Completo", key="in_nom_cli")
-        st.session_state['cedula_cliente'] = col9.text_input("Cédula de Identidad", key="in_ced_cli")
+        st.subheader("Datos del Propietario / Reclamante / Comprador")
+        col9, col10 = st.columns(2)
+        st.session_state['nom_prop'] = col9.text_input("Nombre Completo", key="in_np")
+        st.session_state['ced_prop'] = col10.text_input("Cédula", key="in_cp")
 
-        col10, col11 = st.columns(2)
-        st.session_state['estado_civil'] = col10.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a"], key="in_est_cli")
-        st.session_state['domicilio'] = col11.text_input("Domicilio Real", key="in_dom_cli")
+        col11, col12, col13 = st.columns(3)
+        st.session_state['est_prop'] = col11.selectbox("Estado Civil", ["Soltero", "Casado", "Divorciado", "Viudo"], key="in_ep")
+        st.session_state['nac_prop'] = col12.text_input("Nacionalidad", value="Dominicano", key="in_nap")
+        st.session_state['prof_prop'] = col13.text_input("Profesión/Oficio", key="in_prp")
+        
+        st.session_state['dom_prop'] = st.text_input("Domicilio", key="in_dp")
 
     with tab3:
-        st.subheader("Profesionales Actuantes")
-        col12, col13 = st.columns(2)
-        st.session_state['nombre_notario'] = col12.text_input("Nombre del Notario", key="in_not_nom")
-        st.session_state['matricula_notario'] = col13.text_input("Matrícula del Notario", key="in_not_mat")
-
+        st.subheader("Datos del Vendedor (Solo para Contratos de Venta)")
         col14, col15 = st.columns(2)
-        st.session_state['nombre_apoderado'] = col14.text_input("Nombre del Abogado / Apoderado", key="in_abo_nom")
-        st.session_state['colegiatura_abogado'] = col15.text_input("No. Colegiatura (CARD)", key="in_abo_card")
+        st.session_state['nom_ven'] = col14.text_input("Nombre del Vendedor", key="in_nv")
+        st.session_state['ced_ven'] = col15.text_input("Cédula Vendedor", key="in_cv")
+
+        col16, col17, col18 = st.columns(3)
+        st.session_state['est_ven'] = col16.selectbox("Estado Civil Vendedor", ["Soltero", "Casado", "Divorciado", "Viudo"], key="in_ev")
+        st.session_state['nac_ven'] = col17.text_input("Nacionalidad V.", value="Dominicano", key="in_nav")
+        st.session_state['prof_ven'] = col18.text_input("Profesión V.", key="in_prv")
+
+        st.session_state['dom_ven'] = st.text_input("Domicilio Vendedor", key="in_dv")
 
     with tab4:
-        st.subheader("Límites y Colindancias Actuales")
-        col16, col17 = st.columns(2)
-        st.session_state['limite_norte'] = col16.text_input("Límite Norte", key="in_nor")
-        st.session_state['limite_sur'] = col17.text_input("Límite Sur", key="in_sur")
+        st.subheader("Colindancias Actuales")
+        col19, col20 = st.columns(2)
+        st.session_state['col_norte'] = col19.text_input("Al Norte", key="in_cn")
+        st.session_state['med_norte'] = col20.text_input("Medida Norte (m)", key="in_mn")
+        
+        col21, col22 = st.columns(2)
+        st.session_state['col_sur'] = col21.text_input("Al Sur", key="in_cs")
+        st.session_state['med_sur'] = col22.text_input("Medida Sur (m)", key="in_ms")
 
-        col18, col19 = st.columns(2)
-        st.session_state['limite_este'] = col18.text_input("Límite Este", key="in_est")
-        st.session_state['limite_oeste'] = col19.text_input("Límite Oeste", key="in_oes")
+        col23, col24 = st.columns(2)
+        st.session_state['col_este'] = col23.text_input("Al Este", key="in_ce")
+        st.session_state['med_este'] = col24.text_input("Medida Este (m)", key="in_me")
+
+        col25, col26 = st.columns(2)
+        st.session_state['col_oeste'] = col25.text_input("Al Oeste", key="in_co")
+        st.session_state['med_oeste'] = col26.text_input("Medida Oeste (m)", key="in_mo")
+
+    with tab5:
+        st.subheader("Profesionales Legales Actuantes")
+        col27, col28 = st.columns(2)
+        st.session_state['nom_notario'] = col27.text_input("Nombre del Notario", key="in_nnot")
+        st.session_state['mat_notario'] = col28.text_input("Matrícula Notario", key="in_mnot")
+
+        col29, col30 = st.columns(2)
+        st.session_state['nom_abogado'] = col29.text_input("Nombre Abogado/Apoderado", key="in_nabo")
+        st.session_state['mat_abogado'] = col30.text_input("Colegiatura Abogado", key="in_mabo")
 # --- BARRA LATERAL (SIDEBAR) ---
     st.sidebar.markdown("---")
     st.sidebar.subheader("📁 Salida de Expedientes")
 
     import glob
-    # ESCÁNER DINÁMICO: Busca todos los Word (.docx) en todas sus carpetas
     plantillas_disponibles = glob.glob("**/*.docx", recursive=True)
 
     if len(plantillas_disponibles) == 0:
-        st.sidebar.error("❌ No se encontraron plantillas Word en GitHub.")
+        st.sidebar.error("❌ No se encontraron plantillas.")
     else:
-        # Menú desplegable para visualizar y elegir la plantilla
-        plantilla_elegida = st.sidebar.selectbox("📄 Seleccione la Plantilla:", plantillas_disponibles)
+        # MAGIA AQUÍ: multiselect permite elegir 1 o 10 plantillas al mismo tiempo
+        plantillas_elegidas = st.sidebar.multiselect("📄 Seleccione las Plantillas:", plantillas_disponibles)
 
-        # Botón que activa el motor
-        if st.sidebar.button("🛠️ Preparar Documento Word"):
-            with st.sidebar.status("Generando documento...", expanded=True) as status:
-                st.write(f"Procesando: {plantilla_elegida}")
-                
-                try:
-                    # Llamamos al motor pasándole la ruta que usted eligió
-                    archivo = generar_documento(st.session_state, plantilla_elegida)
-                    
-                    if archivo:
+        if st.sidebar.button("🛠️ Preparar Expediente"):
+            if not plantillas_elegidas:
+                st.sidebar.warning("⚠️ Seleccione al menos una plantilla.")
+            else:
+                with st.sidebar.status("Procesando documentos...", expanded=True) as status:
+                    try:
+                        # Llamamos al Súper Motor
+                        archivo, nombre_archivo, tipo_mime = generar_paquete_documentos(st.session_state, plantillas_elegidas)
+                        
                         st.session_state['archivo_listo'] = archivo
-                        st.session_state['nombre_descarga'] = f"Expediente_{st.session_state.get('n_0', 'AboAgrim')}.docx"
-                        status.update(label="✅ ¡Documento listo!", state="complete", expanded=False)
-                except Exception as e:
-                    status.update(label="❌ Error en la plantilla", state="error")
-                    st.sidebar.error(f"Detalle: {e}")
+                        st.session_state['nombre_descarga'] = nombre_archivo
+                        st.session_state['tipo_mime'] = tipo_mime
+                        
+                        status.update(label="✅ ¡Expediente listo!", state="complete", expanded=False)
+                    except Exception as e:
+                        status.update(label="❌ Error en las llaves del Word", state="error")
+                        st.sidebar.error(f"Revise las llaves de los Word. Detalle: {e}")
 
-        # Botón de descarga real (Aparece al terminar)
+        # Botón de descarga Dinámico (ZIP o Word)
         if 'archivo_listo' in st.session_state and st.session_state['archivo_listo']:
             st.sidebar.download_button(
                 label="📥 DESCARGAR AHORA EN PC",
                 data=st.session_state['archivo_listo'],
-                file_name=st.session_state.get('nombre_descarga', 'Documento.docx'),
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                file_name=st.session_state['nombre_descarga'],
+                mime=st.session_state['tipo_mime']
             )
 # Supongamos que esta es su función de conexión (ajuste según su db.py)
 # from database import ejecutar_query 
