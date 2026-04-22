@@ -465,7 +465,7 @@ def guardar_y_actualizar(tipo_perfil, datos, ventana_origen, menu_desplegable=No
     
     # 2. Refrescar el Menú Desplegable si existe
     if menu_desplegable:
-        # Aquí obtenemos la lista actualizada de la DB
+    
         nueva_lista = ["Seleccione..."] + ["Juan Pérez", "Lic. Matos", "Nuevo Registro..."] # Ejemplo
         menu_desplegable.configure(values=nueva_lista)
         menu_desplegable.set(datos["Nombre Completo"]) # Selecciona el recién creado
