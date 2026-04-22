@@ -16,32 +16,28 @@ from database import *
 import streamlit as st
 
 def generar_documento(datos_formulario):
-    try:
-        # 1. Cargamos su plantilla 
-        doc = DocxTemplate("modelo_contrato.docx")
-        
-        # 2. Mapeo del Diccionario
-        contexto = {
-            'nombre_cliente': datos_formulario.get('n_0', 'N/A'),
-            'cedula_cliente': datos_formulario.get('c_0', 'N/A'),
-            'parcela': datos_formulario.get('parcela', 'N/A'),
-            'dc': datos_formulario.get('dc', 'N/A'),
-            'matricula': datos_formulario.get('matricula', 'N/A'),
-            'profesional': "Lic. Jhonny Matos. M.A.",
-            'cargo': "Presidente fundador AboAgrim"
-        }
-        
-        # 3. Llenar la plantilla
-        doc.render(contexto)
-        
-        # 4. Convertir a binario para descarga web
-        buffer = io.BytesIO()
-        doc.save(buffer)
-        buffer.seek(0)
-        return buffer
-    except Exception as e:
-        st.sidebar.error(f"🚨 DETALLE DEL ERROR: {e}")
-        return None
+    # 1. Cargamos su plantilla 
+    doc = DocxTemplate("modelo_contrato.docx")
+    
+    # 2. Mapeo del Diccionario
+    contexto = {
+        'nombre_cliente': datos_formulario.get('n_0', 'N/A'),
+        'cedula_cliente': datos_formulario.get('c_0', 'N/A'),
+        'parcela': datos_formulario.get('parcela', 'N/A'),
+        'dc': datos_formulario.get('dc', 'N/A'),
+        'matricula': datos_formulario.get('matricula', 'N/A'),
+        'profesional': "Lic. Jhonny Matos. M.A.",
+        'cargo': "Presidente fundador AboAgrim"
+    }
+    
+    # 3. Llenar la plantilla
+    doc.render(contexto)
+    
+    # 4. Convertir a binario para descarga web
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
 # Asegúrese de que no haya nada repetido debajo de este bloque.
 # =====================================================================
 # MÓDULO 1: MANDO CENTRAL
