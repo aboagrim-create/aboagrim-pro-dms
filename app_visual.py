@@ -442,28 +442,6 @@ def vista_registro_maestro():
     st.sidebar.markdown("---")
     st.sidebar.subheader("📁 Salida de Expedientes")
 
-    # Botón que activa el motor real
-    if st.sidebar.button("🛠️ Preparar Documento Word"):
-        with st.sidebar.status("Generando documento...", expanded=True) as status:
-            st.write("Leiendo plantilla en plantillas_maestras/...")
-            # Llamamos al motor que configuramos arriba
-            archivo = generar_documento(st.session_state)
-            
-            if archivo:
-                st.session_state['archivo_listo'] = archivo
-                status.update(label="✅ ¡Documento listo!", state="complete", expanded=False)
-            else:
-                status.update(label="❌ Error en plantilla", state="error")
-                st.sidebar.error("Asegúrese de que 'modelo_contrato.docx' esté en la carpeta 'plantillas_maestras'")
-
-    # Botón de descarga real (Solo aparece cuando el motor termina)
-    if 'archivo_listo' in st.session_state and st.session_state['archivo_listo']:
-        st.sidebar.download_button(
-            label="📥 DESCARGAR AHORA EN PC",
-            data=st.session_state['archivo_listo'],
-            file_name=f"Contrato_{st.session_state.get('n_0', 'AboAgrim')}.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
 
 # El motor que ejecuta la pantalla seleccionada
 # Diccionario que conecta los botones con sus funciones
