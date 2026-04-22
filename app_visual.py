@@ -527,7 +527,19 @@ def vista_registro_maestro():
         if st.form_submit_button("💾 GUARDAR EXPEDIENTE"):
             st.success("✅ ¡Datos guardados exitosamente en la nube!")
 
-    # Sección de Descarga en el lateral
+ # --- SECCIÓN DE SALIDA PROFESIONAL ---
     st.sidebar.markdown("---")
-    if st.sidebar.button("📄 Descargar Plantilla Word"):
-        st.sidebar.info("Generando documento...")
+    st.sidebar.subheader("📁 Gestión de Archivos")
+
+    # Simulamos la creación del documento (Aquí conectará con su lógica de docx)
+    nombre_archivo = "Expediente_AboAgrim.docx"
+    contenido_dummy = b"Este es el contenido del expediente generado por AboAgrim Pro."
+
+    # ESTE ES EL BOTÓN QUE SÍ DESCARGA
+    st.sidebar.download_button(
+        label="📥 Descargar Plantilla en PC",
+        data=contenido_dummy,
+        file_name=nombre_archivo,
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        help="Haga clic para guardar el Word en su carpeta de Descargas"
+    )
