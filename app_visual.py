@@ -465,7 +465,6 @@ vistas = {
 if menu in vistas:
     vistas[menu]()
     
-import customtkinter as ctk
 from tkinter import messagebox
 
 # Supongamos que esta es su función de conexión (ajuste según su db.py)
