@@ -18,7 +18,7 @@ import streamlit as st
 def generar_documento(datos_formulario):
     try:
         # 1. Cargamos su plantilla (con la sangría correcta)
-        doc = DocxTemplate("plantillas_maestras/modelo_contrato.docx")
+        doc = DocxTemplate("modelo_contrato.docx")
         
         # 2. Mapeo del Diccionario
         contexto = {
