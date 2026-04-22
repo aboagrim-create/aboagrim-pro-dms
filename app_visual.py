@@ -552,23 +552,22 @@ def vista_registro_maestro():
         if st.form_submit_button("💾 GUARDAR EXPEDIENTE"):
             st.success("✅ ¡Datos guardados exitosamente en la nube!")
 
-# En la sección de descarga de su sidebar:
-st.sidebar.markdown("---")
+# --- SECCIÓN DE DESCARGA EN LA BARRA LATERAL ---
+    st.sidebar.markdown("---")
     st.sidebar.subheader("📁 Salida de Expedientes")
 
     # Botón para procesar
     if st.sidebar.button("🛠️ Preparar Documento Word"):
-        # Llamamos a la función con los datos actuales
         archivo = generar_documento(st.session_state)
         if archivo:
             st.session_state.archivo_listo = archivo
             st.sidebar.success("✅ ¡Documento listo!")
 
-    # Si el archivo está listo, mostramos el botón de descarga real
+    # Botón para descargar
     if 'archivo_listo' in st.session_state:
         st.sidebar.download_button(
             label="📥 DESCARGAR AHORA EN PC",
             data=st.session_state.archivo_listo,
-            file_name=f"Contrato_{st.session_state.get('n_0', 'Nuevo')}.docx",
+            file_name=f"Expediente_{st.session_state.get('n_0', 'Nuevo')}.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
