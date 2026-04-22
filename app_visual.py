@@ -17,12 +17,10 @@ import streamlit as st
 
 def generar_documento(datos_formulario):
     try:
-        # 1. Cargamos su plantilla (Asegúrese de subir el archivo a GitHub)
-doc = DocxTemplate("plantillas_maestras/modelo_contrato.docx")
+        # 1. Cargamos su plantilla (con la sangría correcta)
+        doc = DocxTemplate("plantillas_maestras/modelo_contrato.docx")
         
-        # 2. Mapeo del Diccionario (Lo que el sistema escribirá en el Word)
-        # 'nombre_word' es como debe estar en el Word entre {{ }}
-        # 'n_0' es la clave que viene de su formulario dinámico
+        # 2. Mapeo del Diccionario
         contexto = {
             'nombre_cliente': datos_formulario.get('n_0', 'N/A'),
             'cedula_cliente': datos_formulario.get('c_0', 'N/A'),
