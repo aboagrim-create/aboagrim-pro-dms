@@ -477,3 +477,54 @@ if menu in vistas:
     vistas[menu]()
     
     st.button("🔄 Sincronizar con Supabase")
+import customtkinter as ctk
+from tkinter import messagebox
+
+def ventana_agregar_perfil(tipo_perfil):
+    """Crea una ventana moderna para registrar datos personales/generales."""
+    
+    ventana = ctk.CTkToplevel()
+    ventana.title(f"Registro de {tipo_perfil}")
+    ventana.geometry("500x600")
+    ventana.attributes('-topmost', True) # Para que aparezca al frente
+
+    # Título Principal
+    ctk.CTkLabel(ventana, text=f"Nuevo {tipo_perfil}", font=("Roboto", 20, "bold")).pack(pady=20)
+
+    # Contenedor de campos (Frame)
+    frame_campos = ctk.CTkFrame(ventana)
+    frame_campos.pack(fill="both", expand=True, padx=30, pady=10)
+
+    # Diccionario de campos según lo solicitado
+    campos = [
+        "Nombre Completo", "Cédula / RNC", "Dirección", 
+        "Teléfono", "Correo Electrónico", "Profesión"
+    ]
+    
+    entradas = {}
+
+    for campo in campos:
+        lbl = ctk.CTkLabel(frame_campos, text=campo, font=("Roboto", 12))
+        lbl.pack(anchor="w", padx=10, pady=(10, 0))
+        
+        entry = ctk.CTkEntry(frame_campos, placeholder_text=f"Ingrese {campo.lower()}", width=350)
+        entry.pack(padx=10, pady=(0, 10))
+        entradas[campo] = entry
+
+    def guardar_datos():
+        # Aquí conectamos con su base de datos Supabase o Local
+        datos = {k: v.get() for k, v in entradas.items()}
+        print(f"Guardando en {tipo_perfil}:", datos)
+        messagebox.showinfo("Éxito", f"{tipo_perfil} guardado correctamente.")
+        ventana.destroy()
+
+    # Botón de Guardar con diseño profesional
+    btn_guardar = ctk.CTkButton(ventana, text="Guardar Registro", fg_color="#2c3e50", 
+                                hover_color="#34495e", command=guardar_datos)
+    btn_guardar.pack(pady=30)
+
+# --- BOTONES PRINCIPALES EN SU INTERFAZ MAESTRA ---
+# Agregue estos botones en su menú principal para llamar a la función:
+
+# btn_cliente = ctk.CTkButton(master, text="+ Cliente", command=lambda: ventana_agregar_perfil("Cliente"))
+# btn_abogado = ctk.CTkButton(master, text="+ Abogado", command=lambda: ventana_agregar_perfil("Abogado"))
