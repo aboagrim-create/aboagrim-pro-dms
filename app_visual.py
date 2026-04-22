@@ -17,64 +17,48 @@ from database import *
 import streamlit as st
 
 def vista_registro_maestro():
-    st.markdown("<h1 style='text-align: center; color: #1a5276;'>👤 Registro Maestro Pro - AboAgrim</h1>", unsafe_allow_html=True)
-    st.info("Complete los datos generales. Use los botones desplegables para agilizar el proceso.")
+    st.title("👤 Registro Maestro Multifuncional")
+    st.markdown("### *Gestión Dinámica de Intervinientes e Inmuebles*")
 
-    # Formulario dinámico y profesional
-    with st.form("registro_maestro_extendido"):
+    with st.form("form_maestro_dinamico"):
         
-        # --- SECCIÓN 1: DATOS PERSONALES ---
-        st.subheader("📞 Información de Contacto y Generales")
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            nombre = st.text_input("Nombre Completo")
-            cedula = st.text_input("Cédula / RNC")
-        with c2:
-            telefono = st.text_input("Teléfono / WhatsApp")
-            correo = st.text_input("Correo Electrónico")
-        with c3:
-            profesion = st.selectbox("Profesión", ["Abogado", "Agrimensor", "Cliente", "Notario", "Otro"])
-            estado_civil = st.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Unión Libre", "Divorciado/a"])
+        # --- SECCIÓN 1: CLIENTES (Múltiples) ---
+        st.header("👥 Clientes / Solicitantes")
+        num_clientes = st.number_input("¿Cuántos clientes desea registrar?", min_value=1, max_value=10, value=1)
+        
+        for i in range(int(num_clientes)):
+            with st.expander(f"👤 Datos del Cliente #{i+1}", expanded=(i==0)):
+                c1, c2, c3 = st.columns([2, 1, 1])
+                nombre = c1.text_input(f"Nombre / Razón Social #{i+1}", key=f"nom_{i}")
+                cedula = c2.text_input(f"Cédula / RNC #{i+1}", key=f"ced_{i}")
+                tipo = c3.selectbox(f"Tipo #{i+1}", ["Física", "Jurídica", "Sucesión"], key=f"t_cli_{i}")
+                
+                d1, d2 = st.columns(2)
+                mail = d1.text_input(f"Correo Electrónico #{i+1}", key=f"mail_{i}")
+                tel = d2.text_input(f"Teléfono / WhatsApp #{i+1}", key=f"tel_{i}")
 
-        # --- SECCIÓN 2: DATOS DEL INMUEBLE (Lo que se había borrado) ---
+        # --- SECCIÓN 2: DATOS TÉCNICOS DEL INMUEBLE ---
         st.divider()
-        st.subheader("🏠 Datos del Inmueble y Ubicación")
-        col_inm1, col_inm2 = st.columns(2)
-        with col_inm1:
-            designacion = st.text_input("Designación Catastral")
-            matricula = st.text_input("Número de Matrícula")
-            area = st.number_input("Área (m²)", min_value=0.0)
-        with col_inm2:
-            provincia = st.selectbox("Provincia", ["Santiago", "Santo Domingo", "La Altagracia", "Puerto Plata", "Otras"])
-            municipio = st.text_input("Municipio / Sector")
-            direccion_inm = st.text_area("Dirección Exacta", height=68)
+        st.header("🏠 Datos del Inmueble (Técnicos y Catastrales)")
+        i1, i2, i3 = st.columns(3)
+        parcela = i1.text_input("Parcela / Solar")
+        dc = i2.text_input("Distrito Catastral (DC)")
+        matricula = i3.text_input("Matrícula / Certificado")
 
-        # --- SECCIÓN 3: DICCIONARIO Y VARIABLES DINÁMICAS ---
-        st.divider()
-        st.subheader("📋 Variables del Sistema (Diccionario)")
-        expediente_tipo = st.multiselect(
-            "Tipo de Proceso (Seleccione uno o varios)", 
-            ["Deslinde", "Saneamiento", "Litis sobre derecho registrado", "Determinación de Herederos", "Transferencia"]
-        )
-        notas_adicionales = st.text_area("Observaciones para la Plantilla")
+        i4, i5, i6 = st.columns(3)
+        superficie = i4.text_input("Superficie (m²)")
+        desig_pos = i5.text_input("Designación Posicional")
+        ubicacion = i6.text_input("Provincia/Municipio", value="Santiago, R.D.")
 
-        # --- BOTONES DE ACCIÓN ---
+        # --- BOTÓN DE GUARDAR ---
         st.markdown("<br>", unsafe_allow_html=True)
-        col_btn1, col_btn2 = st.columns([1, 1])
-        with col_btn1:
-            # Botón para guardar en base de datos
-            submitted = st.form_submit_button("💾 GUARDAR EN REGISTRO MAESTRO")
-        
-        if submitted:
-            # Aquí va la lógica para guardar en su base de datos
-            st.success(f"¡Registro de {nombre} guardado exitosamente!")
+        if st.form_submit_button("💾 GUARDAR EXPEDIENTE COMPLETO"):
+            st.success("✅ Datos procesados y listos para la plantilla.")
 
-    # --- BOTÓN PARA DESCARGAR (Para encontrar el archivo en su PC) ---
-    st.sidebar.header("📁 Gestión de Archivos")
-    if st.sidebar.button("Generar y Descargar Word"):
-        st.sidebar.write("Generando documento profesional...")
-        # Aquí llamaríamos a su función de plantillas y daríamos el botón de descarga
-        # st.download_button(label="📥 Descargar Expediente", ...)
+    # --- BOTÓN DE DESCARGA EN LA BARRA LATERAL ---
+    st.sidebar.markdown("---")
+    st.sidebar.header("📁 Salida de Documentos")
+    st.sidebar.button("📄 Generar Word y Descargar")
 
 # Asegúrese de que no haya nada repetido debajo de este bloque.
 # =====================================================================
