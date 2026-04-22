@@ -39,9 +39,9 @@ def generar_documento(datos_formulario):
         doc.save(buffer)
         buffer.seek(0)
         return buffer
-    except Exception as e:
-        st.error(f"⚠️ Error al preparar el Word: {e}")
-        return None
+except Exception as e:
+    st.sidebar.error(f"🚨 DETALLE DEL ERROR: {e}")
+    return None
 
 # Asegúrese de que no haya nada repetido debajo de este bloque.
 # =====================================================================
