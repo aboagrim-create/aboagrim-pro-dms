@@ -937,18 +937,4 @@ def vista_registro_maestro():
         # Botón de Guardar que NO da pantalla roja
         if st.form_submit_button("💾 GUARDAR EXPEDIENTE"):
             st.success("✅ ¡Datos guardados exitosamente en la nube!")
-# --- LÓGICA DE ARRANQUE DEL SISTEMA ---
-if "autenticado_global" not in st.session_state:
-    st.session_state.autenticado_global = False
-
-if not st.session_state.autenticado_global:
-    login_sistema()
-else:
-    # AQUÍ VA TODO EL CÓDIGO QUE YA TIENE (El menú lateral y las vistas)
-    # Ejemplo:
-    # with st.sidebar:
-    #     menu = st.radio(...)
-    # vistas[menu]()
-    
-    # Agregue un botón de salir al final del menú lateral
 
