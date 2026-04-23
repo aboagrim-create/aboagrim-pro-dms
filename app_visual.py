@@ -801,7 +801,7 @@ def vista_registro_maestro():
 # Diccionario que conecta los botones con sus funciones
 vistas = {
     "🏠 Mando Central": vista_mando,
-    "👤 Registro Maestro": vista_reg_maestro,
+    "👤 Registro Maestro": vista_registro_maestro, # Asegúrese de que termine en _registro_maestro
     "📂 Archivo Digital": vista_archivo_digital,
     "📄 Plantillas Auto": vista_documentos,
     "🗓️ Alertas y Plazos": vista_alertas,
