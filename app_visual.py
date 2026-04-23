@@ -581,18 +581,34 @@ Por medio de la presente, AboAgrim, representada por el Lic. Jhonny Matos, M.A.,
         
         texto_final = st.text_area("Contenido del Documento:", cuerpo, height=350)
 
-        c1, c2 = st.columns(2)
-        if c2.button("🖨️ Imprimir Documento"):
-            # Genera una ventana de impresión limpia
-            doc_html = f"""
-            <div style="font-family: 'Times New Roman', serif; padding: 40px; line-height: 1.6;">
-                <h2 style="text-align: center;">ABOAGRIM - SERVICIOS LEGALES Y CATASTRALES</h2>
-                <hr>
-                <div style="white-space: pre-wrap;">{texto_final}</div>
-            </div>
-            <script>window.print();</script>
-            """
-            st.components.v1.html(doc_html, height=600, scrolling=True)
+# --- BLOQUE DE BOTONES FINAL (Péguelo aquí) ---
+        st.markdown("---")
+        col_btn1, col_btn2 = st.columns(2)
+        
+        with col_btn1:
+            # Este botón descarga el acta a su computadora
+            st.download_button(
+                label="💾 Descargar Acta (.txt)",
+                data=texto_final,
+                file_name=f"Acta_{exp_sel}.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+            
+        with col_btn2:
+            # Este botón abre el panel de impresión profesional
+            if st.button("🖨️ IMPRIMIR DOCUMENTO", use_container_width=True):
+                doc_html = f"""
+                <div style="font-family: 'Times New Roman', serif; padding: 50px; line-height: 1.6; background-color: white; color: black;">
+                    <h2 style="text-align: center; color: #1E3A8A;">ABOAGRIM</h2>
+                    <p style="text-align: center; font-weight: bold;">SERVICIOS LEGALES Y CATASTRALES</p>
+                    <p style="text-align: center; font-size: 12px;">Lic. Jhonny Matos, M.A. | Santiago, R.D.</p>
+                    <hr style="border: 1px solid black;">
+                    <div style="white-space: pre-wrap; margin-top: 30px; font-size: 15px; text-align: justify;">{texto_final}</div>
+                </div>
+                <script>setTimeout(function(){{ window.print(); }}, 500);</script>
+                """
+                st.components.v1.html(doc_html, height=600, scrolling=True)
 def vista_archivo_digital():
     st.header("📁 Archivo Digital Central")
     st.write("Aquí se muestran todos los expedientes guardados en su nube (Supabase).")
