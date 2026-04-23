@@ -859,8 +859,7 @@ def vista_plantillas_auto():
             fecha = st.date_input("Fecha de Mensura")
 
         boton = st.form_submit_button("Generar Set Completo .docx")
-        
-        
+                
         if boton:
             try:
                 # 1. Empaquetamos los datos que usted escribió en un "Diccionario"
@@ -875,7 +874,7 @@ def vista_plantillas_auto():
 
                 # 2. Cargamos el documento Word maestro desde la carpeta
                 # (Asegúrese de que el nombre del archivo coincida exactamente)
-                doc = DocxTemplate("plantillas/Aviso_Mensura.docx")
+                doc = DocxTemplate("plantillas_maestras/contrato_litis_representacion_y_prestacion_de_servicios.docx")
 
                 # 3. Inyectamos los datos de AboAgrim al Word
                 doc.render(datos_expediente)
