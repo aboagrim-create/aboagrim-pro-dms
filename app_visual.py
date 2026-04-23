@@ -367,26 +367,61 @@ def vista_alertas():
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
 def vista_facturacion():
-    st.title("💳 Gestión de Honorarios")
-    
-    col_a, col_b = st.columns(2)
-    monto = col_a.number_input("Monto a Facturar (RD$)", min_value=0)
-    cliente_tel = col_b.text_input("Número de WhatsApp del Cliente (Ej: 1809...)", value="1809")
+    st.header("💰 Gestión de Honorarios - AboAgrim Pro")
+    st.write("Registre y consulte los pagos de sus clientes de mensura y legal.")
+
+    # Formulario para entrada de datos
+    with st.expander("➕ Registrar Nuevo Pago / Abono", expanded=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            exp_fact = st.text_input("No. de Expediente:")
+            cli_fact = st.text_input("Nombre del Cliente:")
+            monto_t = st.number_input("Costo Total del Trabajo (RD$):", min_value=0.0, step=500.0)
+        with col2:
+            monto_a = st.number_input("Monto Recibido (RD$):", min_value=0.0, step=500.0)
+            concepto = st.text_input("Concepto:", placeholder="Ej: Anticipo de Mensura")
+            
+        if st.button("💾 Guardar Cobro en Nube"):
+            if exp_fact and cli_fact and monto_t > 0:
+                estado = "Saldado" if monto_a >= monto_t else "Pendiente"
+                datos_pago = {
+                    "expediente_id": exp_fact,
+                    "cliente": cli_fact,
+                    "monto_total": monto_t,
+                    "monto_abonado": monto_a,
+                    "concepto": concepto,
+                    "estado_pago": estado
+                }
+                try:
+                    supabase.table("facturacion").insert(datos_pago).execute()
+                    st.success(f"✅ ¡Cobro de {cli_fact} guardado con éxito!")
+                except Exception as e:
+                    st.error("Error: ¿Ya creó la tabla en Supabase?")
+            else:
+                st.warning("Por favor, complete los campos principales.")
 
     st.markdown("---")
-    c1, c2, c3 = st.columns(3)
     
-    if c1.button("🖨️ Imprimir Factura"):
-        st.write("Generando PDF para impresión...")
-        
-    # Botón dinámico de WhatsApp
-    mensaje = f"Hola, le habla el Lic. Jhonny Matos. Le informamos que su factura por RD${monto} está lista para pago."
-    url_wa = f"https://wa.me/{cliente_tel}?text={mensaje.replace(' ', '%20')}"
-    
-    c2.link_button("📲 Enviar por WhatsApp", url_wa)
-    
-    if c3.button("📧 Enviar por Correo"):
-        st.success("Correo enviado al cliente.")
+    # Tabla de historial
+    st.subheader("📊 Historial de Ingresos")
+    try:
+        res = supabase.table("facturacion").select("*").order("fecha_pago", desc=True).execute()
+        if res.data:
+            import pandas as pd
+            df_pagos = pd.DataFrame(res.data)
+            df_pagos = df_pagos.rename(columns={
+                "fecha_pago": "Fecha",
+                "expediente_id": "Expediente",
+                "cliente": "Cliente",
+                "monto_total": "Total RD$",
+                "monto_abonado": "Abonado RD$",
+                "estado_pago": "Estado"
+            })
+            st.dataframe(df_pagos[["Fecha", "Expediente", "Cliente", "Total RD$", "Abonado RD$", "Estado"]], use_container_width=True)
+        else:
+            st.info("No hay cobros registrados todavía.")
+    except:
+        st.info("Cargue datos para ver el historial.")
 # =====================================================================
 # MÓDULO 7: CONFIGURACIÓN
 # =====================================================================
