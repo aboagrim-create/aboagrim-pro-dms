@@ -402,19 +402,40 @@ def vista_configuracion():
         
     st.button("✅ Guardar Configuración")
 def vista_archivo_digital():
-    st.title("📁 Archivo Digital Central")
-    
-    col_f1, col_f2 = st.columns([2, 1])
-    tipo_doc = col_f2.selectbox("Filtrar por tipo:", ["Todos", "Planos", "Contratos", "Cédulas", "Sentencias"])
-    busqueda = col_f1.text_input("🔍 Buscar en el archivo (Nombre, Parcela o ID)...")
+    st.header("📁 Archivo Digital Central")
+    st.write("Aquí se muestran todos los expedientes guardados en su nube (Supabase).")
 
-    # Tabla de archivos simulando la nube
-    st.markdown("### Expedientes en la Nube")
-    data = [
-        {"Fecha": "15/04/2026", "Expediente": "2026-001", "Cliente": "Juan Pérez", "Estatus": "Aprobado"},
-        {"Fecha": "10/04/2026", "Expediente": "2026-002", "Cliente": "Maria Sosa", "Estatus": "En Mensuras"}
-    ]
-    st.table(data)
+    try:
+        # 1. Traemos la información fresca desde la nube
+        respuesta = supabase.table("expedientes_maestros").select("*").execute()
+        datos_nube = respuesta.data
+        
+        if not datos_nube:
+            st.info("Bóveda vacía. Aún no ha guardado ningún expediente desde el Registro Maestro.")
+        else:
+            # 2. Convertimos los datos en una tabla inteligente
+            import pandas as pd
+            df = pd.DataFrame(datos_nube)
+            
+            # 3. Organizamos las columnas para que se vean bien
+            df_mostrar = df.rename(columns={
+                "fecha_creacion": "Fecha de Registro",
+                "expediente": "No. Expediente",
+                "nombre_propietario": "Propietario / Cliente",
+                "cedula_propietario": "Cédula",
+                "parcela": "Parcela",
+                "municipio": "Municipio",
+                "provincia": "Provincia"
+            })
+            
+            # Mostramos la tabla con diseño profesional
+            st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
+            
+            st.success(f"Se han encontrado {len(datos_nube)} expedientes en su archivo digital.")
+
+    except Exception as e:
+        st.error("⚠️ No se pudo conectar con la Bóveda Digital.")
+        st.info("Revisando conexión a la base de datos...")
 # ==========================================
 # MENÚ LATERAL Y NAVEGACIÓN DEL SISTEMA
 # ==========================================
