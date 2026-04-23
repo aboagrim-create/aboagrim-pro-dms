@@ -299,70 +299,61 @@ def vista_plantillas():
 # MÓDULO 5: ALERTAS Y PLAZOS
 # =====================================================================
 def vista_alertas():
-    st.title("📅 Motor de Alertas y Plazos Legales")
-    st.info("Cálculo automático de caducidades y prescripciones procesales de la JI.")
+    st.header("📅 Agenda de Mensuras y Plazos")
+    st.write("Organice sus salidas a campo y técnicos asignados.")
+
+    # Formulario para agendar
+    with st.expander("📝 Agendar Nueva Salida a Campo", expanded=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            fecha = st.date_input("Fecha de la Mensura:")
+            hora = st.time_input("Hora aproximada:")
+            exp = st.text_input("No. Expediente:")
+        with col2:
+            cliente = st.text_input("Cliente / Propietario:")
+            ubicacion = st.text_input("Ubicación (Sector/Municipio):")
+            tecnico = st.text_input("Técnico o Agrimensor Responsable:")
+            
+        notas = st.text_area("Notas adicionales (Hitos, colindantes, etc.):")
+        
+        if st.button("🗓️ Guardar en Agenda"):
+            datos_agenda = {
+                "fecha_cita": str(fecha),
+                "hora_cita": str(hora),
+                "expediente": exp,
+                "cliente": cliente,
+                "ubicacion": ubicacion,
+                "tecnico_asignado": tecnico,
+                "notas": notas
+            }
+            try:
+                supabase.table("agenda_mensuras").insert(datos_agenda).execute()
+                st.success("✅ ¡Cita agendada correctamente!")
+            except Exception as e:
+                st.error(f"Error al agendar: {e}")
+
+    st.divider()
     
-    tab_calc, tab_activas = st.tabs(["⏱️ Calculadora y Registro", "🔔 Panel de Vencimientos"])
-    
-    with tab_calc:
-        with st.form("form_alertas", clear_on_submit=True):
-            st.subheader("Registrar un nuevo plazo")
-            c1, c2 = st.columns(2)
-            exp = c1.text_input("Expediente N°:")
-            evento = c2.selectbox("Evento Procesal (Ley 108-05):", [
-                "Autorización de Mensura (60 días)", 
-                "Prórroga de Mensura (30 días)",
-                "Apelación de Sentencia (30 días)", 
-                "Revisión por Causa de Fraude (1 Año)"
-            ])
-            
-            fecha_inicio = st.date_input("Fecha de Notificación / Emisión (Día Cero):")
-            
-            if st.form_submit_button("⏳ Calcular y Guardar Alerta"):
-                if exp:
-                    # El cerebro jurídico: calcula los días según la opción elegida
-                    dias = 60 if "60" in evento else 30 if "30" in evento else 365
-                    fecha_venc = fecha_inicio + datetime.timedelta(days=dias)
-                    
-                    datos = {
-                        "expediente_id": exp,
-                        "tipo_alerta": evento,
-                        "fecha_inicio": fecha_inicio.strftime("%Y-%m-%d"),
-                        "fecha_vencimiento": fecha_venc.strftime("%Y-%m-%d"),
-                        "estado": "Pendiente"
-                    }
-                    if registrar_evento("alertas", datos):
-                        st.success(f"✅ Alerta guardada. Fecha de vencimiento exacta: {fecha_venc.strftime('%d/%m/%Y')}")
-                    else:
-                        st.error("Error al conectar con la base de datos.")
-                else:
-                    st.warning("⚠️ Ingrese un número de expediente.")
-                    
-    with tab_activas:
-        st.subheader("🚨 Control de Vencimientos")
-        alertas = consultar_alertas(solo_pendientes=True)
-        if alertas:
-            df_al = pd.DataFrame(alertas)
-            
-            # 1. Convertimos la columna a formato de Fecha oficial
-            df_al['fecha_vencimiento'] = pd.to_datetime(df_al['fecha_vencimiento'])
-            
-            # 2. Definimos el día de hoy
-            hoy = pd.to_datetime("today").normalize()
-            
-            # 3. Calculamos los días restantes
-            df_al['Días Restantes'] = (df_al['fecha_vencimiento'] - hoy).dt.days
-            
-            # 4. Ponemos la fecha bonita para la tabla (sin horas)
-            df_al['fecha_vencimiento'] = df_al['fecha_vencimiento'].dt.date
-            
-            # Reorganizamos la tabla para que se vea profesional
-            st.dataframe(
-                df_al[['expediente_id', 'tipo_alerta', 'fecha_vencimiento', 'Días Restantes', 'estado']], 
-                use_container_width=True
-            )
+    # Visualización de la Agenda
+    st.subheader("📌 Próximas Salidas Programadas")
+    try:
+        res = supabase.table("agenda_mensuras").select("*").order("fecha_cita").execute()
+        if res.data:
+            import pandas as pd
+            df_age = pd.DataFrame(res.data)
+            df_age = df_age.rename(columns={
+                "fecha_cita": "Fecha",
+                "hora_cita": "Hora",
+                "expediente": "Exp.",
+                "cliente": "Cliente",
+                "ubicacion": "Lugar",
+                "tecnico_asignado": "Responsable"
+            })
+            st.dataframe(df_age[["Fecha", "Hora", "Exp.", "Cliente", "Lugar", "Responsable"]], use_container_width=True, hide_index=True)
         else:
-            st.success("Tranquilidad total. No hay plazos críticos pendientes en este momento.")
+            st.info("No hay mensuras programadas para los próximos días.")
+    except:
+        st.info("Cargue su primera cita para ver la agenda.")
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
