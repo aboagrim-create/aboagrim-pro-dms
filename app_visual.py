@@ -449,88 +449,65 @@ def vista_facturacion():
 # MÓDULO 7: CONFIGURACIÓN
 # =====================================================================
 def vista_configuracion():
-    # --- 1. BLOQUEO DE SEGURIDAD ---
-    if "autenticado" not in st.session_state:
-        st.session_state.autenticado = False
+    # --- 1. BLOQUEO DE ADMINISTRADOR ÚNICO ---
+    if "admin_autenticado" not in st.session_state:
+        st.session_state.admin_autenticado = False
 
-    if not st.session_state.autenticado:
-        st.header("🔒 Configuración Protegida")
-        u_log = st.text_input("Usuario Administrador:")
-        p_log = st.text_input("PIN de Acceso:", type="password")
-        if st.button("Desbloquear Panel"):
-            # Verifica en la tabla de usuarios que creamos
-            user_check = supabase.table("usuarios_sistema").select("*").eq("nombre_usuario", u_log).eq("pin_acceso", p_log).execute()
-            if user_check.data and user_check.data[0]['estado'] == 'Activo':
-                st.session_state.autenticado = True
+    if not st.session_state.admin_autenticado:
+        st.header("🔒 Área Exclusiva del Propietario")
+        st.info("Solo el Lic. Jhonny Matos puede gestionar esta sección.")
+        
+        u_admin = st.text_input("Usuario Maestro:", key="admin_user")
+        p_admin = st.text_input("PIN Maestro:", type="password", key="admin_pin")
+        
+        if st.button("Validar Identidad de Propietario"):
+            # Validamos que sea USTED y que coincida con la base de datos
+            res = supabase.table("usuarios_sistema").select("*").eq("nombre_usuario", u_admin).eq("pin_acceso", p_admin).execute()
+            
+            if res.data and u_admin == "JhonnyMatos":
+                st.session_state.admin_autenticado = True
+                st.success("Identidad confirmada. Bienvenido, Licenciado.")
                 st.rerun()
             else:
-                st.error("Acceso denegado. Verifique sus credenciales.")
+                st.error("Acceso denegado. Esta sección es solo para el administrador principal.")
         return
 
-    # --- 2. PANEL DE CONTROL (Si ya está autenticado) ---
-    st.header("⚙️ Panel de Control y Personalización")
+    # --- 2. PANEL DE CONTROL (Si ya es usted) ---
+    st.header("⚙️ Panel de Control Maestro")
     
-    tab1, tab2 = st.tabs(["👥 Gestión de Accesos", "🎨 Identidad Visual y Estilo"])
+    tab1, tab2 = st.tabs(["👥 Gestión de Accesos", "🎨 Diseño y Estilo"])
 
     with tab1:
-        st.subheader("Control de Personal")
-        with st.expander("➕ Registrar Nuevo Colaborador"):
+        st.subheader("Control de Colaboradores")
+        with st.expander("➕ Dar Acceso a Nuevo Usuario"):
             nuevo_u = st.text_input("Nombre:")
-            nuevo_p = st.text_input("PIN asignado (4 dígitos):", type="password", max_chars=4)
+            nuevo_p = st.text_input("PIN (4 dígitos):", type="password", max_chars=4)
             if st.button("Crear Acceso"):
                 try:
                     supabase.table("usuarios_sistema").insert({"nombre_usuario": nuevo_u, "pin_acceso": nuevo_p}).execute()
-                    st.success(f"✅ {nuevo_u} añadido al sistema.")
+                    st.success(f"Acceso creado para {nuevo_u}")
                 except: st.error("El usuario ya existe.")
         
-        st.markdown("---")
-        # Lista de gestión de usuarios (Activar/Desactivar)
+        # Lista para quitar accesos
         usuarios = supabase.table("usuarios_sistema").select("*").execute()
         for u in usuarios.data:
             c1, c2 = st.columns([3, 1])
-            c1.write(f"👤 **{u['nombre_usuario']}** [{u['estado']}]")
-            btn_txt = "🚫 Bloquear" if u['estado'] == 'Activo' else "✅ Activar"
-            nuevo_est = 'Inactivo' if u['estado'] == 'Activo' else 'Activo'
-            if c2.button(btn_txt, key=f"user_{u['id']}"):
-                supabase.table("usuarios_sistema").update({"estado": nuevo_est}).eq("id", u['id']).execute()
+            c1.write(f"👤 **{u['nombre_usuario']}** - {u['estado']}")
+            label = "Bloquear" if u['estado'] == 'Activo' else "Activar"
+            est = 'Inactivo' if u['estado'] == 'Activo' else 'Activo'
+            if c2.button(label, key=f"u_{u['id']}"):
+                supabase.table("usuarios_sistema").update({"estado": est}).eq("id", u['id']).execute()
                 st.rerun()
 
     with tab2:
-        st.subheader("Personalización Dinámica")
-        
-        col_a, col_b = st.columns(2)
-        with col_a:
-            tema_app = st.selectbox("Tema de Interfaz:", ["Clásico AboAgrim", "Modo Oscuro Profesional", "Elegante Legal", "Vista Campo (Verde)"])
-            fuente = st.radio("Tipo de Letra para Documentos:", ["Sans Serif (Limpia)", "Serif (Formal)", "Monospace (Datos)"])
-        
-        with col_b:
-            color_p = st.color_picker("Color Primario (Botones/Títulos):", "#1E3A8A")
-            radio = st.select_slider("Estilo de Botones:", options=["Rectos", "Suaves", "Redondeados"])
+        st.subheader("Personalización de AboAgrim Pro")
+        color_p = st.color_picker("Color de la Firma:", "#1E3A8A")
+        if st.button("Guardar Cambios de Diseño"):
+            st.markdown(f"<style>h1, h2, h3 {{ color: {color_p} !important; }} .stButton>button {{ background-color: {color_p} !important; }}</style>", unsafe_allow_html=True)
+            st.success("Diseño actualizado.")
 
-        st.markdown("---")
-        st.subheader("📋 Configuración de Cabecera de Actos")
-        c1, c2 = st.columns(2)
-        mostrar_titulos = c1.checkbox("Mostrar Títulos Académicos (M.A.)", value=True)
-        mostrar_cargo = c1.checkbox("Mostrar Cargo (Presidente)", value=True)
-        incluir_rnc = c2.checkbox("Incluir RNC/Cédula en Recibos", value=False)
-        incluir_santiago = c2.checkbox("Fijar Ubicación: Santiago, Rep. Dom.", value=True)
-
-        if st.button("💾 Guardar y Aplicar Cambios"):
-            # Mapeo de estilos dinámicos
-            f_css = "serif" if "Serif" in fuente else "sans-serif"
-            r_css = "0px" if radio == "Rectos" else "10px" if radio == "Suaves" else "25px"
-            
-            st.markdown(f"""
-                <style>
-                * {{ font-family: {f_css} !important; }}
-                .stButton>button {{ background-color: {color_p} !important; border-radius: {r_css} !important; color: white !important; }}
-                h1, h2, h3 {{ color: {color_p} !important; }}
-                </style>
-            """, unsafe_allow_html=True)
-            st.success("¡Preferencias aplicadas exitosamente!")
-
-    if st.button("🔒 Cerrar Sesión de Administrador"):
-        st.session_state.autenticado = False
+    if st.button("🔒 Salir de Modo Maestro"):
+        st.session_state.admin_autenticado = False
         st.rerun()
 def vista_archivo_digital():
     st.header("📁 Archivo Digital Central")
