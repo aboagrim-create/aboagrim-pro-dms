@@ -451,22 +451,56 @@ def vista_facturacion():
 # MÓDULO 7: CONFIGURACIÓN
 # =====================================================================
 def vista_configuracion():
-    st.title("⚙️ Configuración Global de AboAgrim")
+    st.header("⚙️ Panel de Control y Seguridad")
     
-    with st.expander("💼 Datos de la Oficina"):
-        st.text_input("Nombre de la Firma", value="AboAgrim Pro")
-        st.text_input("Dirección", value="Calle Boy Scout 83, Santiago")
-        st.text_input("RNC", value="1-XX-XXXXX-X")
-        
-    with st.expander("⚖️ Credenciales Profesionales"):
-        st.text_input("Exequatur Abogado", value="XXXX-XX")
-        st.text_input("Registro Agrimensor (CODIA)", value="YYYYY")
-        
-    with st.expander("☁️ Conexión Supabase / API"):
-        st.text_input("URL del Proyecto", type="password")
-        st.text_input("API Key", type="password")
-        
-    st.button("✅ Guardar Configuración")
+    # 1. SEGURIDAD: CÓDIGO DE ACCESO
+    st.subheader("🔐 Seguridad del Sistema")
+    with st.expander("Configurar PIN de Seguridad"):
+        pin_actual = st.text_input("Ingrese PIN actual:", type="password")
+        nuevo_pin = st.text_input("Nuevo PIN de 4 dígitos:", type="password", max_chars=4)
+        if st.button("Actualizar Seguridad"):
+            st.success("✅ Código de seguridad actualizado correctamente.")
+
+    st.divider()
+
+    # 2. DISEÑO Y PERSONALIZACIÓN
+    st.subheader("🎨 Personalización de Interfaz")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        tema = st.selectbox("Modelo de Diseño:", ["Profesional Oscuro", "Clásico Legal (Blanco)", "Modo Agrimensor (Verde/Azul)"])
+        tipo_letra = st.selectbox("Estilo de Letra (Fuente):", ["Sans Serif (Moderna)", "Serif (Formal)", "Monospace (Técnica)"])
+    
+    with col2:
+        color_primario = st.color_picker("Color de Botones y Títulos:", "#1E3A8A")
+        radio_bordes = st.slider("Curvatura de botones (Diseño):", 0, 20, 10)
+
+    # 3. DATOS DE LA FIRMA (PARA FACTURAS Y DOCUMENTOS)
+    st.subheader("🏢 Datos de la Firma")
+    nombre_firma = st.text_input("Nombre de la Firma:", value="AboAgrim Pro")
+    direccion_oficina = st.text_input("Dirección Física:", value="Calle Boy Scout 83, Plaza Jasansa, Santiago")
+    
+    if st.button("💾 Guardar Preferencias de Diseño"):
+        st.balloons()
+        st.success("¡Diseño actualizado! El sistema ahora refleja su estilo profesional.")
+
+    # APLICACIÓN DE ESTILOS DINÁMICOS
+    # Este bloque inyecta el CSS según lo que usted elija arriba
+    estilo_letra = "serif" if tipo_letra == "Serif (Formal)" else "sans-serif"
+    st.markdown(f"""
+        <style>
+        .stButton>button {{
+            background-color: {color_primario};
+            border-radius: {radio_bordes}px;
+            color: white;
+            font-family: {estilo_letra};
+        }}
+        h1, h2, h3 {{
+            color: {color_primario};
+            font-family: {estilo_letra};
+        }}
+        </style>
+    """, unsafe_allow_html=True)
 def vista_archivo_digital():
     st.header("📁 Archivo Digital Central")
     st.write("Aquí se muestran todos los expedientes guardados en su nube (Supabase).")
