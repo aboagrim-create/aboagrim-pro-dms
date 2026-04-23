@@ -516,7 +516,7 @@ def vista_registro_maestro():
         # MAGIA AQUÍ: multiselect permite elegir 1 o 10 plantillas al mismo tiempo
         plantillas_elegidas = st.sidebar.multiselect("📄 Seleccione las Plantillas:", plantillas_disponibles)
 
-if st.sidebar.button("🛠️ Preparar Expediente"):
+        if st.sidebar.button("🛠️ Preparar Expediente"):
             if not plantillas_elegidas:
                 st.sidebar.warning("⚠️ Seleccione al menos una plantilla.")
             else:
@@ -531,12 +531,12 @@ if st.sidebar.button("🛠️ Preparar Expediente"):
                         
                         # 2. GUARDADO AUTOMÁTICO EN SUPABASE
                         datos_a_guardar = {
-                            "expediente": st.session_state.get('exp', ''),
-                            "nombre_propietario": st.session_state.get('nom_prop', ''),
-                            "cedula_propietario": st.session_state.get('ced_prop', ''),
-                            "parcela": st.session_state.get('parcela', ''),
-                            "municipio": st.session_state.get('municipio', ''),
-                            "provincia": st.session_state.get('provincia', '')
+                            "expediente": st.session_state.get('in_exp', ''),
+                            "nombre_propietario": st.session_state.get('in_np', ''),
+                            "cedula_propietario": st.session_state.get('in_cp', ''),
+                            "parcela": st.session_state.get('in_par', ''),
+                            "municipio": st.session_state.get('in_mun', ''),
+                            "provincia": st.session_state.get('in_prov', '')
                         }
                         
                         # Enviamos los datos a la tabla 'expedientes_maestros'
