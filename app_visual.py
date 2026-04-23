@@ -842,7 +842,27 @@ def vista_registro_maestro():
 # Supongamos que esta es su función de conexión (ajuste según su db.py)
 # from database import ejecutar_query 
 
+def vista_plantillas_auto():
+    st.title("📄 Generador de Plantillas AboAgrim")
+    st.info("Complete los datos para generar el expediente bajo Res. 790-2022")
+    st.markdown("---")
+    
+    with st.form("form_plantillas"):
+        col1, col2 = st.columns(2)
+        with col1:
+            nombre = st.text_input("Nombre del Propietario")
+            parcela = st.text_input("Parcela No.")
+            dc = st.text_input("D.C.")
+        with col2:
+            matricula = st.text_input("Matrícula Constancia")
+            expediente = st.text_input("No. Expediente (Res. 790-2022)")
+            fecha = st.date_input("Fecha de Mensura")
 
+        boton = st.form_submit_button("Generar Set Completo .docx")
+        
+        if boton:
+            st.success(f"Generando documentos legales para la Parcela {parcela}...")
+            # Aquí conectaremos los Word en el próximo paso
 # Diccionario que conecta los botones con sus funciones
 vistas = {
     "🏠 Mando Central": vista_mando,
@@ -911,25 +931,5 @@ def ventana_registro_profesional(tipo, menu_a_refrescar=None):
 # =======================================================
 # 1. DISEÑO DE LA PANTALLA DE PLANTILLAS
 # =======================================================
-def vista_plantillas_auto():
-    st.title("📄 Generador de Plantillas AboAgrim")
-    st.info("Complete los datos para generar el expediente bajo Res. 790-2022")
-    st.markdown("---")
-    
-    with st.form("form_plantillas"):
-        col1, col2 = st.columns(2)
-        with col1:
-            nombre = st.text_input("Nombre del Propietario")
-            parcela = st.text_input("Parcela No.")
-            dc = st.text_input("D.C.")
-        with col2:
-            matricula = st.text_input("Matrícula Constancia")
-            expediente = st.text_input("No. Expediente (Res. 790-2022)")
-            fecha = st.date_input("Fecha de Mensura")
 
-        boton = st.form_submit_button("Generar Set Completo .docx")
-        
-        if boton:
-            st.success(f"Generando documentos legales para la Parcela {parcela}...")
-            # Aquí conectaremos los Word en el próximo paso
 
