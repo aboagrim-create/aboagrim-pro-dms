@@ -379,6 +379,25 @@ def vista_alertas():
 # =====================================================================
 def vista_facturacion():
     st.header("💰 Gestión de Honorarios y Facturación")
+    # Dentro de vista_configuracion():
+    st.subheader("🎨 Personalización de la Firma")
+    col_letra, col_color = st.columns(2)
+    
+    with col_letra:
+        fuente = st.selectbox("Tipo de Letra:", ["Standard", "Modern", "Classic (Serif)"])
+    with col_color:
+        color_firma = st.color_picker("Color de la Marca AboAgrim:", "#1E3A8A")
+
+    if st.button("Aplicar Nuevo Estilo"):
+        fuente_css = "serif" if fuente == "Classic (Serif)" else "sans-serif"
+        st.markdown(f"""
+            <style>
+            * {{ font-family: {fuente_css} !important; }}
+            .stButton>button {{ background-color: {color_firma} !important; color: white !important; }}
+            h1, h2, h3 {{ color: {color_firma} !important; }}
+            </style>
+        """, unsafe_allow_html=True)
+        st.success("¡Diseño AboAgrim Pro actualizado!")
     
     # 1. Lista de Mensajes Automáticos
     MENSAJES_PRO = {
