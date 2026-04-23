@@ -15,6 +15,16 @@ from database import *
 # Línea 14: Así debe empezar la función
 import streamlit as st
 
+from supabase import create_client, Client
+
+# --- CONEXIÓN A SUPABASE (CEREBRO DIGITAL) ---
+url_supabase = "https://wqcpbxrltttfnusdrawq.supabase.co"
+clave_supabase = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxY3BieHJsdHR0Zm51c2RyYXdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyMTI2NjEsImV4cCI6MjA5MTc4ODY2MX0.uD7v_-rY0b4dJGRSeF1mtDeftNzopFNnyyx7IEhPKPs"
+
+try:
+    supabase: Client = create_client(url_supabase, clave_supabase)
+except Exception as e:
+    pass
 def generar_paquete_documentos(datos_formulario, rutas_plantillas):
     import io
     import zipfile
