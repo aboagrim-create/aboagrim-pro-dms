@@ -846,10 +846,10 @@ def vista_registro_maestro():
 # Diccionario que conecta los botones con sus funciones
 vistas = {
     "🏠 Mando Central": vista_mando,
-    "👤 Registro Maestro": vista_registro_maestro, # Asegúrese de que termine en _registro_maestro
-    "📂 Archivo Digital": vista_archivo_digital,
-    "📄 Plantillas Auto": vista_documentos,
-    "🗓️ Alertas y Plazos": vista_alertas,
+    "👤 Registro Maestro": vista_registro_maestro,
+    "📁 Archivo Digital": vista_archivo_digital,
+    "📄 Plantillas Auto": vista_plantillas_auto,  # <--- AQUÍ ESTÁ LA MAGIA
+    "📅 Alertas y Plazos": vista_alertas,
     "💵 Facturación": vista_facturacion,
     "⚙️ Configuración": vista_configuracion
 }
@@ -933,10 +933,3 @@ def vista_plantillas_auto():
             st.success(f"Generando documentos legales para la Parcela {parcela}...")
             # Aquí conectaremos los Word en el próximo paso
 
-# =======================================================
-# 2. EL INTERRUPTOR PRINCIPAL (El que conecta el menú)
-# =======================================================
-if menu == "👤 Registro Maestro":
-    vista_registro_maestro()
-elif menu == "📄 Plantillas Auto":
-    vista_plantillas_auto()
