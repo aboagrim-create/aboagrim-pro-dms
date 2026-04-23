@@ -449,56 +449,43 @@ def vista_facturacion():
 # MÓDULO 7: CONFIGURACIÓN
 # =====================================================================
 def vista_configuracion():
-    st.header("⚙️ Panel de Control y Seguridad")
+    st.header("⚙️ Configuración y Control de Usuarios")
     
-    # 1. SEGURIDAD: CÓDIGO DE ACCESO
-    st.subheader("🔐 Seguridad del Sistema")
-    with st.expander("Configurar PIN de Seguridad"):
-        pin_actual = st.text_input("Ingrese PIN actual:", type="password")
-        nuevo_pin = st.text_input("Nuevo PIN de 4 dígitos:", type="password", max_chars=4)
-        if st.button("Actualizar Seguridad"):
-            st.success("✅ Código de seguridad actualizado correctamente.")
+    # --- PARTE A: GESTIÓN DE ACCESOS (Solo usted la maneja) ---
+    st.subheader("👥 Control de Personal")
+    
+    with st.expander("➕ Dar Acceso a Nuevo Usuario"):
+        nuevo_u = st.text_input("Nombre del Colaborador:")
+        nuevo_p = st.text_input("Asignar PIN (4 dígitos):", type="password", max_chars=4)
+        if st.button("Registrar y dar Acceso"):
+            try:
+                supabase.table("usuarios_sistema").insert({"nombre_usuario": nuevo_u, "pin_acceso": nuevo_p}).execute()
+                st.success(f"✅ Acceso creado para {nuevo_u}")
+            except: st.error("Ese nombre ya existe.")
+
+    st.markdown("---")
+    st.subheader("🚫 Revocar o Reactivar Accesos")
+    try:
+        usuarios = supabase.table("usuarios_sistema").select("*").execute()
+        for u in usuarios.data:
+            c1, c2 = st.columns([3, 1])
+            c1.write(f"**{u['nombre_usuario']}** - Estado: {u['estado']}")
+            label_btn = "Quitar Acceso" if u['estado'] == 'Activo' else "Reactivar"
+            nuevo_est = 'Inactivo' if u['estado'] == 'Activo' else 'Activo'
+            
+            if c2.button(label_btn, key=u['id']):
+                supabase.table("usuarios_sistema").update({"estado": nuevo_est}).eq("id", u['id']).execute()
+                st.rerun()
+    except: st.info("Cargue usuarios para gestionar.")
 
     st.divider()
 
-    # 2. DISEÑO Y PERSONALIZACIÓN
-    st.subheader("🎨 Personalización de Interfaz")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        tema = st.selectbox("Modelo de Diseño:", ["Profesional Oscuro", "Clásico Legal (Blanco)", "Modo Agrimensor (Verde/Azul)"])
-        tipo_letra = st.selectbox("Estilo de Letra (Fuente):", ["Sans Serif (Moderna)", "Serif (Formal)", "Monospace (Técnica)"])
-    
-    with col2:
-        color_primario = st.color_picker("Color de Botones y Títulos:", "#1E3A8A")
-        radio_bordes = st.slider("Curvatura de botones (Diseño):", 0, 20, 10)
-
-    # 3. DATOS DE LA FIRMA (PARA FACTURAS Y DOCUMENTOS)
-    st.subheader("🏢 Datos de la Firma")
-    nombre_firma = st.text_input("Nombre de la Firma:", value="AboAgrim Pro")
-    direccion_oficina = st.text_input("Dirección Física:", value="Calle Boy Scout 83, Plaza Jasansa, Santiago")
-    
-    if st.button("💾 Guardar Preferencias de Diseño"):
-        st.balloons()
-        st.success("¡Diseño actualizado! El sistema ahora refleja su estilo profesional.")
-
-    # APLICACIÓN DE ESTILOS DINÁMICOS
-    # Este bloque inyecta el CSS según lo que usted elija arriba
-    estilo_letra = "serif" if tipo_letra == "Serif (Formal)" else "sans-serif"
-    st.markdown(f"""
-        <style>
-        .stButton>button {{
-            background-color: {color_primario};
-            border-radius: {radio_bordes}px;
-            color: white;
-            font-family: {estilo_letra};
-        }}
-        h1, h2, h3 {{
-            color: {color_primario};
-            font-family: {estilo_letra};
-        }}
-        </style>
-    """, unsafe_allow_html=True)
+    # --- PARTE B: DISEÑO (Lo que ya teníamos) ---
+    st.subheader("🎨 Personalización de la Oficina")
+    color_firma = st.color_picker("Color Institucional AboAgrim:", "#1E3A8A")
+    if st.button("Aplicar Identidad Visual"):
+        st.markdown(f"<style>h1, h2, h3 {{ color: {color_firma} !important; }} .stButton>button {{ background-color: {color_firma} !important; }}</style>", unsafe_allow_html=True)
+        st.success("Diseño actualizado.")
 def vista_archivo_digital():
     st.header("📁 Archivo Digital Central")
     st.write("Aquí se muestran todos los expedientes guardados en su nube (Supabase).")
