@@ -14,6 +14,12 @@ from database import *
 
 # Línea 14: Así debe empezar la función
 import streamlit as st
+# --- ESTO VA AL PRINCIPIO DEL ARCHIVO ---
+if "autenticado_global" not in st.session_state:
+    st.session_state.autenticado_global = False
+
+if "usuario_actual" not in st.session_state:
+    st.session_state.usuario_actual = None
 
 from supabase import create_client, Client
 
