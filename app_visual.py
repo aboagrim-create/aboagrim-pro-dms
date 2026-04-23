@@ -299,61 +299,85 @@ def vista_plantillas():
 # MÓDULO 5: ALERTAS Y PLAZOS
 # =====================================================================
 def vista_alertas():
-    st.header("📅 Agenda de Mensuras y Plazos")
-    st.write("Organice sus salidas a campo y técnicos asignados.")
+    st.header("⚖️ Control de Plazos y Perenciones")
+    
+    # Diccionario de plazos legales (Ley 108-05)
+    PLAZOS_LEGALES = {
+        "Mensura: Plazo para presentar trabajo (60 días)": 60,
+        "Mensura: Prórroga única (30 días)": 30,
+        "Litis: Plazo para depositar inventario (15 días)": 15,
+        "Recurso de Revisión por causa de error material (15 días)": 15,
+        "Recurso de Apelación (30 días)": 30,
+        "Perención de instancia (3 años)": 1095,
+        "Requisito: Depósito de planos (Plazo particular)": 0
+    }
 
-    # Formulario para agendar
-    with st.expander("📝 Agendar Nueva Salida a Campo", expanded=True):
+    with st.expander("🔔 Programar Alerta Legal o Proceso", expanded=True):
         col1, col2 = st.columns(2)
         with col1:
-            fecha = st.date_input("Fecha de la Mensura:")
-            hora = st.time_input("Hora aproximada:")
+            tipo_plazo = st.selectbox("Tipo de Trámite/Plazo:", list(PLAZOS_LEGALES.keys()))
+            fecha_inicio = st.date_input("Fecha de inicio del plazo (o notificación):")
             exp = st.text_input("No. Expediente:")
         with col2:
-            cliente = st.text_input("Cliente / Propietario:")
-            ubicacion = st.text_input("Ubicación (Sector/Municipio):")
-            tecnico = st.text_input("Técnico o Agrimensor Responsable:")
+            cliente = st.text_input("Cliente:")
+            tecnico = st.text_input("Responsable del seguimiento:")
             
-        notas = st.text_area("Notas adicionales (Hitos, colindantes, etc.):")
+        notas = st.text_area("Requisitos o Procedimiento (Ej: Instancia, Planos, Notificación):")
         
-        if st.button("🗓️ Guardar en Agenda"):
-            datos_agenda = {
-                "fecha_cita": str(fecha),
-                "hora_cita": str(hora),
+        if st.button("🚀 Activar Alerta de Vencimiento"):
+            # Calculamos la fecha de vencimiento automática
+            import datetime
+            dias = PLAZOS_LEGALES[tipo_plazo]
+            fecha_vencimiento = fecha_inicio + datetime.timedelta(days=dias)
+            
+            datos_plazo = {
+                "fecha_cita": str(fecha_vencimiento), # Usamos esta columna como fecha límite
                 "expediente": exp,
                 "cliente": cliente,
-                "ubicacion": ubicacion,
+                "ubicacion": tipo_plazo, # Guardamos el tipo de trámite aquí
                 "tecnico_asignado": tecnico,
-                "notas": notas
+                "notas": f"INICIO: {fecha_inicio}. NOTAS: {notas}",
+                "categoria": "LEGAL"
             }
             try:
-                supabase.table("agenda_mensuras").insert(datos_agenda).execute()
-                st.success("✅ ¡Cita agendada correctamente!")
+                supabase.table("agenda_mensuras").insert(datos_plazo).execute()
+                st.success(f"✅ Alerta programada. Vence el: {fecha_vencimiento}")
             except Exception as e:
-                st.error(f"Error al agendar: {e}")
+                st.error(f"Error: {e}")
 
     st.divider()
-    
-    # Visualización de la Agenda
-    st.subheader("📌 Próximas Salidas Programadas")
+
+    # Visualización con Semáforo de Urgencia
+    st.subheader("🚩 Seguimiento de Vencimientos Próximos")
     try:
         res = supabase.table("agenda_mensuras").select("*").order("fecha_cita").execute()
         if res.data:
             import pandas as pd
-            df_age = pd.DataFrame(res.data)
-            df_age = df_age.rename(columns={
-                "fecha_cita": "Fecha",
-                "hora_cita": "Hora",
+            from datetime import date
+            df = pd.DataFrame(res.data)
+            
+            # Función para poner colores según la urgencia
+            def color_vencimiento(val):
+                hoy = date.today()
+                vence = pd.to_datetime(val).date()
+                dias_restantes = (vence - hoy).days
+                if dias_restantes < 0: return 'background-color: #FEE2E2; color: #991B1B' # Vencido (Rojo)
+                if dias_restantes <= 5: return 'background-color: #FEF3C7; color: #92400E' # Crítico (Amarillo)
+                return ''
+
+            df_vista = df.rename(columns={
+                "fecha_cita": "Vencimiento",
+                "ubicacion": "Trámite",
                 "expediente": "Exp.",
-                "cliente": "Cliente",
-                "ubicacion": "Lugar",
-                "tecnico_asignado": "Responsable"
+                "cliente": "Cliente"
             })
-            st.dataframe(df_age[["Fecha", "Hora", "Exp.", "Cliente", "Lugar", "Responsable"]], use_container_width=True, hide_index=True)
+            
+            st.table(df_vista[["Vencimiento", "Trámite", "Exp.", "Cliente"]].style.applymap(color_vencimiento, subset=['Vencimiento']))
+            st.info("💡 Rojo: Vencido | Amarillo: Menos de 5 días | Blanco: En plazo.")
         else:
-            st.info("No hay mensuras programadas para los próximos días.")
+            st.info("No hay plazos legales en seguimiento.")
     except:
-        st.info("Cargue su primera cita para ver la agenda.")
+        st.info("Inicie el seguimiento de su primer trámite.")
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
