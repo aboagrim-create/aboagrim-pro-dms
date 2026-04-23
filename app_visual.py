@@ -516,31 +516,44 @@ def vista_registro_maestro():
         # MAGIA AQUÍ: multiselect permite elegir 1 o 10 plantillas al mismo tiempo
         plantillas_elegidas = st.sidebar.multiselect("📄 Seleccione las Plantillas:", plantillas_disponibles)
 
-        if st.sidebar.button("🛠️ Preparar Expediente"):
+if st.sidebar.button("🛠️ Preparar Expediente"):
             if not plantillas_elegidas:
                 st.sidebar.warning("⚠️ Seleccione al menos una plantilla.")
             else:
-                with st.sidebar.status("Procesando documentos...", expanded=True) as status:
+                with st.sidebar.status("Procesando documentos y guardando en la nube...", expanded=True) as status:
                     try:
-                        # Llamamos al Súper Motor
+                        # 1. Llamamos al Súper Motor para crear el ZIP
                         archivo, nombre_archivo, tipo_mime = generar_paquete_documentos(st.session_state, plantillas_elegidas)
                         
                         st.session_state['archivo_listo'] = archivo
                         st.session_state['nombre_descarga'] = nombre_archivo
                         st.session_state['tipo_mime'] = tipo_mime
                         
-                        status.update(label="✅ ¡Expediente listo!", state="complete", expanded=False)
+                        # 2. GUARDADO AUTOMÁTICO EN SUPABASE
+                        datos_a_guardar = {
+                            "expediente": st.session_state.get('exp', ''),
+                            "nombre_propietario": st.session_state.get('nom_prop', ''),
+                            "cedula_propietario": st.session_state.get('ced_prop', ''),
+                            "parcela": st.session_state.get('parcela', ''),
+                            "municipio": st.session_state.get('municipio', ''),
+                            "provincia": st.session_state.get('provincia', '')
+                        }
+                        
+                        # Enviamos los datos a la tabla 'expedientes_maestros'
+                        supabase.table("expedientes_maestros").insert(datos_a_guardar).execute()
+                        
+                        status.update(label="✅ ¡Expediente listo y guardado en la nube!", state="complete", expanded=False)
                     except Exception as e:
-                        status.update(label="❌ Error en las llaves del Word", state="error")
-                        st.sidebar.error(f"Revise las llaves de los Word. Detalle: {e}")
+                        status.update(label="❌ Error al procesar o guardar", state="error")
+                        st.sidebar.error(f"Detalle del error: {e}")
 
         # Botón de descarga Dinámico (ZIP o Word)
         if 'archivo_listo' in st.session_state and st.session_state['archivo_listo']:
             st.sidebar.download_button(
                 label="📥 DESCARGAR AHORA EN PC",
                 data=st.session_state['archivo_listo'],
-                file_name=st.session_state['nombre_descarga'],
-                mime=st.session_state['tipo_mime']
+                file_name=st.session_state.get('nombre_descarga', 'Paquete.zip'),
+                mime=st.session_state.get('tipo_mime', 'application/zip')
             )
 # Supongamos que esta es su función de conexión (ajuste según su db.py)
 # from database import ejecutar_query 
