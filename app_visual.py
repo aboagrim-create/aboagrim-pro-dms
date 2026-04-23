@@ -541,6 +541,58 @@ def vista_configuracion():
     if st.button("🔒 Salir de Modo Maestro"):
         st.session_state.admin_autenticado = False
         st.rerun()
+def vista_documentos():
+    st.header("📄 Generador de Documentos y Actas")
+    st.info("Seleccione un expediente y una plantilla para generar el documento automáticamente.")
+
+    # 1. Buscamos los expedientes activos para rellenar datos
+    try:
+        res_exp = supabase.table("agenda_mensuras").select("expediente, cliente, notas").execute()
+        expedientes = [e['expediente'] for e in res_exp.data] if res_exp.data else []
+    except:
+        expedientes = []
+
+    if not expedientes:
+        st.warning("No hay expedientes registrados para generar documentos.")
+        return
+
+    col1, col2 = st.columns(2)
+    with col1:
+        exp_sel = st.selectbox("Seleccione el Expediente:", expedientes)
+        tipo_doc = st.selectbox("Tipo de Documento:", [
+            "Acta de Hito y Colindancia", 
+            "Contrato de Cuota Litis", 
+            "Instancia de Solicitud de Mensura"
+        ])
+    
+    # 2. Buscamos los datos específicos del cliente seleccionado
+    datos_cliente = next((item for item in res_exp.data if item["expediente"] == exp_sel), None)
+
+    if datos_cliente:
+        st.subheader("📝 Editor de Documento")
+        
+        # Plantilla básica
+        cuerpo = f"""ACTA DE HITO Y COLINDANCIA
+            
+En el municipio de Santiago de los Caballeros, República Dominicana.
+En relación al expediente No. {datos_cliente['expediente']}, propiedad de {datos_cliente['cliente']}.
+
+Por medio de la presente, AboAgrim, representada por el Lic. Jhonny Matos, M.A., hace constar que..."""
+        
+        texto_final = st.text_area("Contenido del Documento:", cuerpo, height=350)
+
+        c1, c2 = st.columns(2)
+        if c2.button("🖨️ Imprimir Documento"):
+            # Genera una ventana de impresión limpia
+            doc_html = f"""
+            <div style="font-family: 'Times New Roman', serif; padding: 40px; line-height: 1.6;">
+                <h2 style="text-align: center;">ABOAGRIM - SERVICIOS LEGALES Y CATASTRALES</h2>
+                <hr>
+                <div style="white-space: pre-wrap;">{texto_final}</div>
+            </div>
+            <script>window.print();</script>
+            """
+            st.components.v1.html(doc_html, height=600, scrolling=True)
 def vista_archivo_digital():
     st.header("📁 Archivo Digital Central")
     st.write("Aquí se muestran todos los expedientes guardados en su nube (Supabase).")
@@ -585,10 +637,10 @@ with st.sidebar:
         [
             "🏠 Mando Central",
             "👤 Registro Maestro",
-            "📁 Archivo Digital",
-            "📄 Plantillas Auto",
-            "📅 Alertas y Plazos",
-            "💳 Facturación",
+            "📂 Archivo Digital",
+            "📄 Plantillas Auto",  # <--- Esta es la que ya tiene o vamos a usar
+            "🗓️ Alertas y Plazos",
+            "💵 Facturación",
             "⚙️ Configuración"
         ]
     )
@@ -733,14 +785,13 @@ def vista_registro_maestro():
 # Diccionario que conecta los botones con sus funciones
 vistas = {
     "🏠 Mando Central": vista_mando,
-    "👤 Registro Maestro": vista_registro_maestro,
-    "📁 Archivo Digital": vista_archivo_digital,
-    "📄 Plantillas Auto": vista_plantillas,
-    "📅 Alertas y Plazos": vista_alertas,
-    "💳 Facturación": vista_facturacion,
+    "👤 Registro Maestro": vista_reg_maestro,
+    "📂 Archivo Digital": vista_archivo_digital,
+    "📄 Plantillas Auto": vista_documentos,
+    "🗓️ Alertas y Plazos": vista_alertas,
+    "💵 Facturación": vista_facturacion,
     "⚙️ Configuración": vista_configuracion
 }
-
 # El motor que ejecuta la pantalla seleccionada
 if menu in vistas:
     vistas[menu]()
