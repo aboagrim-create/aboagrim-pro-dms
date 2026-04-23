@@ -860,8 +860,45 @@ def vista_plantillas_auto():
 
         boton = st.form_submit_button("Generar Set Completo .docx")
         
+        
         if boton:
-            st.success(f"Generando documentos legales para la Parcela {parcela}...")
+            try:
+                # 1. Empaquetamos los datos que usted escribió en un "Diccionario"
+                datos_expediente = {
+                    "nombre": nombre,
+                    "parcela": parcela,
+                    "dc": dc,
+                    "matricula": matricula,
+                    "expediente": expediente,
+                    "fecha": fecha.strftime("%d/%m/%Y") # Le da formato bonito a la fecha
+                }
+
+                # 2. Cargamos el documento Word maestro desde la carpeta
+                # (Asegúrese de que el nombre del archivo coincida exactamente)
+                doc = DocxTemplate("plantillas/Aviso_Mensura.docx")
+
+                # 3. Inyectamos los datos de AboAgrim al Word
+                doc.render(datos_expediente)
+
+                # 4. Preparamos el archivo en la memoria de la nube para descargarlo
+                bio = io.BytesIO()
+                doc.save(bio)
+
+                st.success(f"¡Documento para la Parcela {parcela} procesado exitosamente!")
+                st.balloons() # Animación de celebración
+
+                # 5. El botón mágico para descargar el Word listo a su PC
+                st.download_button(
+                    label="⬇️ Descargar Aviso de Mensura Listo",
+                    data=bio.getvalue(),
+                    file_name=f"Aviso_Mensura_Parcela_{parcela}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                )
+
+            except Exception as e:
+                st.error("⚠️ Error: No se encontró el documento maestro.")
+                st.info(f"Detalle técnico: {e}")
+                st.warning("Asegúrese de crear la carpeta 'plantillas' en GitHub y subir el archivo 'Aviso_Mensura.docx' ahí.")
             # Aquí conectaremos los Word en el próximo paso
 # Diccionario que conecta los botones con sus funciones
 vistas = {
