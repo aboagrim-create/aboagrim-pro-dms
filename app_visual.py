@@ -378,33 +378,30 @@ def vista_alertas():
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
 def vista_facturacion():
-    st.header("💰 Gestión de Honorarios y Facturación")
-    # Dentro de vista_configuracion():
-    st.subheader("🎨 Personalización de la Firma")
-    col_letra, col_color = st.columns(2)
-    
-    with col_letra:
-        fuente = st.selectbox("Tipo de Letra:", ["Standard", "Modern", "Classic (Serif)"])
-    with col_color:
-        color_firma = st.color_picker("Color de la Marca AboAgrim:", "#1E3A8A")
+    # --- BLOQUE DE SEGURIDAD ---
+    if "autenticado" not in st.session_state:
+        st.session_state.autenticado = False
 
-    if st.button("Aplicar Nuevo Estilo"):
-        fuente_css = "serif" if fuente == "Classic (Serif)" else "sans-serif"
-        st.markdown(f"""
-            <style>
-            * {{ font-family: {fuente_css} !important; }}
-            .stButton>button {{ background-color: {color_firma} !important; color: white !important; }}
-            h1, h2, h3 {{ color: {color_firma} !important; }}
-            </style>
-        """, unsafe_allow_html=True)
-        st.success("¡Diseño AboAgrim Pro actualizado!")
+    if not st.session_state.autenticado:
+        st.header("🔒 Acceso Restringido - Facturación")
+        pin = st.text_input("Ingrese su PIN de Seguridad:", type="password", key="pin_fact")
+        if st.button("Validar Acceso"):
+            if pin == "1234": # <--- Licenciado, aquí pone su clave
+                st.session_state.autenticado = True
+                st.rerun()
+            else:
+                st.error("PIN Incorrecto.")
+        return 
+
+    # --- TODO SU CONTENIDO NUEVO (FUSIONADO) ---
+    st.header("💰 Gestión de Honorarios y Facturación")
     
-    # 1. Lista de Mensajes Automáticos
+    # Mantenemos sus mensajes automáticos
     MENSAJES_PRO = {
-        "Anticipo": "Hola, le saludo de AboAgrim. Confirmamos el recibo de su anticipo para el proceso de mensura. ¡Seguimos trabajando!",
-        "Saldo": "Saludos, su expediente ya está listo en el Registro de Títulos. Puede pasar a retirar su documento tras liquidar el saldo pendiente.",
-        "Recordatorio": "Buen día, le recordamos que tiene un pago pendiente relativo a sus trámites inmobiliarios. Quedamos a su orden.",
-        "Mensura Programada": "Hola, le informamos que su mensura ha sido agendada. Favor tener los colindantes presentes."
+        "Anticipo": "Hola, le saludo de AboAgrim. Confirmamos el recibo de su anticipo.",
+        "Saldo": "Saludos, su expediente está listo. Favor pasar a liquidar el saldo.",
+        "Recordatorio": "Buen día, le recordamos que tiene un pago pendiente.",
+        "Mensura Programada": "Hola, su mensura ha sido agendada. Favor estar presente."
     }
 
     with st.expander("➕ Registrar y Despachar Factura", expanded=True):
@@ -412,59 +409,41 @@ def vista_facturacion():
         with col1:
             exp_fact = st.text_input("No. de Expediente:")
             cli_fact = st.text_input("Nombre del Cliente:")
-            tel_cli = st.text_input("WhatsApp del Cliente (Ej: 18091234567):")
+            tel_cli = st.text_input("WhatsApp (Ej: 1809...):")
             monto_t = st.number_input("Monto Total (RD$):", min_value=0.0)
         with col2:
             monto_a = st.number_input("Monto Recibido (RD$):", min_value=0.0)
             concepto = st.text_input("Concepto:")
-            msg_tipo = st.selectbox("Mensaje Automático:", list(MENSAJES_PRO.keys()))
+            msg_tipo = st.selectbox("Mensaje WhatsApp:", list(MENSAJES_PRO.keys()))
             
         st.markdown("---")
-        c_btn1, c_btn2, c_btn3 = st.columns(3)
+        c1, c2, c3 = st.columns(3)
         
-        # BOTÓN GUARDAR Y REGISTRAR
-        if c_btn1.button("💾 Guardar y Registrar"):
+        if c1.button("💾 Guardar en Nube"):
             estado = "Saldado" if monto_a >= monto_t else "Pendiente"
-            datos_pago = {
-                "expediente_id": exp_fact, "cliente": cli_fact,
-                "monto_total": monto_t, "monto_abonado": monto_a,
-                "concepto": concepto, "estado_pago": estado
-            }
             try:
-                supabase.table("facturacion").insert(datos_pago).execute()
-                st.success("✅ ¡Factura guardada en la nube!")
+                supabase.table("facturacion").insert({
+                    "expediente_id": exp_fact, "cliente": cli_fact,
+                    "monto_total": monto_t, "monto_abonado": monto_a,
+                    "concepto": concepto, "estado_pago": estado
+                }).execute()
+                st.success("✅ ¡Registrado en Supabase!")
             except Exception as e:
                 st.error(f"Error: {e}")
 
-        # BOTÓN ENVIAR WHATSAPP
-        if c_btn2.button("📲 Enviar por WhatsApp"):
+        if c2.button("📲 Enviar WhatsApp"):
             if tel_cli:
-                texto_base = MENSAJES_PRO[msg_tipo]
-                detalle = f"\n*Detalle:* {concepto}\n*Monto:* RD${monto_a}"
-                msg_final = f"{texto_base}{detalle}".replace(" ", "%20")
-                ws_url = f"https://wa.me/{tel_cli}?text={msg_final}"
-                st.markdown(f'<a href="{ws_url}" target="_blank" style="text-decoration:none;"><button style="background-color:#25D366; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; width:100%;">Abrir WhatsApp ✅</button></a>', unsafe_allow_html=True)
-            else:
-                st.warning("Falta el número de teléfono.")
+                msg = f"{MENSAJES_PRO[msg_tipo]} *Detalle:* {concepto}. *Monto:* RD${monto_a}".replace(" ", "%20")
+                st.markdown(f'<a href="https://wa.me/{tel_cli}?text={msg}" target="_blank"><button style="background-color:#25D366;color:white;border:none;padding:10px;border-radius:5px;width:100%;">Abrir WhatsApp</button></a>', unsafe_allow_html=True)
+            else: st.warning("Falta teléfono.")
 
-        # BOTÓN IMPRIMIR / GUARDAR PC
-        if c_btn3.button("🖨️ Imprimir / Guardar PDF"):
-            factura_html = f"""
-            <div style="padding:20px; border:1px solid #ccc; font-family:Arial;">
-                <h2>RECIBO DE INGRESOS - ABOAGRIM</h2>
-                <p><b>Cliente:</b> {cli_fact}</p>
-                <p><b>Expediente:</b> {exp_fact}</p>
-                <p><b>Concepto:</b> {concepto}</p>
-                <hr>
-                <h3>Monto Recibido: RD$ {monto_a}</h3>
-                <p>Fecha: {datetime.date.today()}</p>
-            </div>
-            <script>window.print();</script>
-            """
-            st.components.v1.html(factura_html, height=400)
+        if c3.button("🖨️ Imprimir Recibo"):
+            factura_html = f"<h3>RECIBO ABOAGRIM</h3><p><b>Cliente:</b> {cli_fact}<br><b>Monto:</b> RD${monto_a}</p><script>window.print();</script>"
+            st.components.v1.html(factura_html, height=200)
 
-    st.markdown("---")
-    st.subheader("📊 Historial de Cobros Recientes")
+    if st.button("🔒 Cerrar Caja Fuerte"):
+        st.session_state.autenticado = False
+        st.rerun()
     # (Aquí sigue el código de la tabla que ya teníamos para mostrar los datos de Supabase)
 # =====================================================================
 # MÓDULO 7: CONFIGURACIÓN
