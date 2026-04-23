@@ -66,49 +66,55 @@ def generar_paquete_documentos(datos_formulario, rutas_plantillas):
 # MÓDULO 1: MANDO CENTRAL
 # =====================================================================
 def vista_mando():
+    # Mantenemos su diseño elegante intacto
     st.markdown("""
-        <div style='background:linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%); padding:35px 30px; border-radius:12px; color:white; border-left:6px solid #FBBF24; margin-bottom: 2rem;'>
-            <h1 style='margin:0; font-size: 2.8rem; font-weight: 800;'>AboAgrim Pro DMS ⚖️📐</h1>
+        <div style='background:linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%); padding:35px 30px; border-radius:12px; color:white; border-left:6px solid #FBBF24; margin-bottom: 20px;'>
+            <h1 style='margin:0; font-size: 2.8rem; font-weight: 800;'>AboAgrim Pro DMS ⚖️</h1>
             <p style='font-size:1.2rem; color:#94A3B8; margin-bottom: 1rem;'>Centro de Mando: Jurisdicción Inmobiliaria y Mensura</p>
             <div style='font-size:1.1rem; color:#FBBF24; font-weight:600; text-transform:uppercase;'>Santiago | Lic. Jhonny Matos, M.A.</div>
         </div>
     """, unsafe_allow_html=True)
-    
-    st.markdown("### 📈 Desempeño Operativo y Búsqueda")
-    casos = consultar_todo()
-    
-    if casos:
-        df = pd.DataFrame(casos)
-        c1, c2 = st.columns([2, 1])
-        
-        # Extracción segura de tags
-        tags_disp = []
-        for col in ['tipo_caso', 'jurisdiccion', 'estado', 'etapa']:
-            if col in df.columns:
-                tags_disp.extend([str(v) for v in df[col].dropna().unique() if str(v).strip() != "N/A"])
-        tags_disp = sorted(list(set(tags_disp)))
-        
-        sel_tags = c1.multiselect("🔍 Filtrar por Etiquetas (Tags):", options=tags_disp, placeholder="Ej. Deslinde, Santiago...")
-        busq = c2.text_input("📝 Búsqueda libre:")
-        
-        df_f = df.copy()
-        if sel_tags: 
-            for t in sel_tags: df_f = df_f[df_f.astype(str).apply(lambda r: t in r.values, axis=1)]
-        if busq: 
-            df_f = df_f[df_f.astype(str).apply(lambda x: x.str.contains(busq, case=False)).any(axis=1)]
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Resultados", len(df_f))
-        m2.metric("Casos Abiertos", len(df_f[df_f.get('estado', '') == 'Abierto']))
-        m3.metric("Deslindes", len(df_f[df_f.get('tipo_caso', '') == 'Deslinde']))
-        m4.metric("Litis", len(df_f[df_f.get('tipo_caso', '') == 'Litis']))
-        
-        st.divider()
-        st.dataframe(df_f, use_container_width=True)
-    else: 
-        st.info("🟢 Sistema operativo en línea. Registre su primer expediente en el Registro Maestro.")
 
+    st.markdown("### 📈 Desempeño Operativo en la Nube")
+
+    try:
+        # 1. Consultar datos reales de la nube Supabase
+        respuesta = supabase.table("expedientes_maestros").select("*").execute()
+        datos = respuesta.data
+        total_expedientes = len(datos)
+
+        # 2. Mostrar Indicadores Rápidos (Métricas reales)
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Expedientes Totales", total_expedientes)
+        col2.metric("Mensuras Pendientes", "Próximamente")
+        col3.metric("Estado del Sistema", "En Línea ☁️")
+
+        st.divider()
+
+        # 3. Mostrar los últimos movimientos reales
+        st.subheader("📝 Últimos Movimientos")
+        
+        if total_expedientes == 0:
+            st.info("Aún no hay expedientes en la base de datos. ¡Empiece hoy mismo en el Registro Maestro!")
+        else:
+            import pandas as pd
+            df = pd.DataFrame(datos)
+            
+            # Ordenamos para mostrar los más recientes arriba
+            df_recientes = df.sort_values(by="fecha_creacion", ascending=False).head(5)
+            
+            # Limpiamos las columnas para la vista rápida
+            df_vista = df_recientes.rename(columns={
+                "expediente": "No. Exp",
+                "nombre_propietario": "Propietario",
+                "municipio": "Ubicación"
+            })
+            
+            st.table(df_vista[["No. Exp", "Propietario", "Ubicación"]])
+            st.caption("Mostrando los últimos 5 expedientes registrados en su archivo digital.")
+
+    except Exception as e:
+        st.error("⚠️ Error al conectar el Mando Central con la Bóveda Digital.")
 # =====================================================================
 # MÓDULO 2: REGISTRO MAESTRO (CON PESTAÑAS Y 7 ROLES)
 # =====================================================================
