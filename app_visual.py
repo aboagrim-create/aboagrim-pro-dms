@@ -449,43 +449,89 @@ def vista_facturacion():
 # MÓDULO 7: CONFIGURACIÓN
 # =====================================================================
 def vista_configuracion():
-    st.header("⚙️ Configuración y Control de Usuarios")
-    
-    # --- PARTE A: GESTIÓN DE ACCESOS (Solo usted la maneja) ---
-    st.subheader("👥 Control de Personal")
-    
-    with st.expander("➕ Dar Acceso a Nuevo Usuario"):
-        nuevo_u = st.text_input("Nombre del Colaborador:")
-        nuevo_p = st.text_input("Asignar PIN (4 dígitos):", type="password", max_chars=4)
-        if st.button("Registrar y dar Acceso"):
-            try:
-                supabase.table("usuarios_sistema").insert({"nombre_usuario": nuevo_u, "pin_acceso": nuevo_p}).execute()
-                st.success(f"✅ Acceso creado para {nuevo_u}")
-            except: st.error("Ese nombre ya existe.")
+    # --- 1. BLOQUEO DE SEGURIDAD ---
+    if "autenticado" not in st.session_state:
+        st.session_state.autenticado = False
 
-    st.markdown("---")
-    st.subheader("🚫 Revocar o Reactivar Accesos")
-    try:
+    if not st.session_state.autenticado:
+        st.header("🔒 Configuración Protegida")
+        u_log = st.text_input("Usuario Administrador:")
+        p_log = st.text_input("PIN de Acceso:", type="password")
+        if st.button("Desbloquear Panel"):
+            # Verifica en la tabla de usuarios que creamos
+            user_check = supabase.table("usuarios_sistema").select("*").eq("nombre_usuario", u_log).eq("pin_acceso", p_log).execute()
+            if user_check.data and user_check.data[0]['estado'] == 'Activo':
+                st.session_state.autenticado = True
+                st.rerun()
+            else:
+                st.error("Acceso denegado. Verifique sus credenciales.")
+        return
+
+    # --- 2. PANEL DE CONTROL (Si ya está autenticado) ---
+    st.header("⚙️ Panel de Control y Personalización")
+    
+    tab1, tab2 = st.tabs(["👥 Gestión de Accesos", "🎨 Identidad Visual y Estilo"])
+
+    with tab1:
+        st.subheader("Control de Personal")
+        with st.expander("➕ Registrar Nuevo Colaborador"):
+            nuevo_u = st.text_input("Nombre:")
+            nuevo_p = st.text_input("PIN asignado (4 dígitos):", type="password", max_chars=4)
+            if st.button("Crear Acceso"):
+                try:
+                    supabase.table("usuarios_sistema").insert({"nombre_usuario": nuevo_u, "pin_acceso": nuevo_p}).execute()
+                    st.success(f"✅ {nuevo_u} añadido al sistema.")
+                except: st.error("El usuario ya existe.")
+        
+        st.markdown("---")
+        # Lista de gestión de usuarios (Activar/Desactivar)
         usuarios = supabase.table("usuarios_sistema").select("*").execute()
         for u in usuarios.data:
             c1, c2 = st.columns([3, 1])
-            c1.write(f"**{u['nombre_usuario']}** - Estado: {u['estado']}")
-            label_btn = "Quitar Acceso" if u['estado'] == 'Activo' else "Reactivar"
+            c1.write(f"👤 **{u['nombre_usuario']}** [{u['estado']}]")
+            btn_txt = "🚫 Bloquear" if u['estado'] == 'Activo' else "✅ Activar"
             nuevo_est = 'Inactivo' if u['estado'] == 'Activo' else 'Activo'
-            
-            if c2.button(label_btn, key=u['id']):
+            if c2.button(btn_txt, key=f"user_{u['id']}"):
                 supabase.table("usuarios_sistema").update({"estado": nuevo_est}).eq("id", u['id']).execute()
                 st.rerun()
-    except: st.info("Cargue usuarios para gestionar.")
 
-    st.divider()
+    with tab2:
+        st.subheader("Personalización Dinámica")
+        
+        col_a, col_b = st.columns(2)
+        with col_a:
+            tema_app = st.selectbox("Tema de Interfaz:", ["Clásico AboAgrim", "Modo Oscuro Profesional", "Elegante Legal", "Vista Campo (Verde)"])
+            fuente = st.radio("Tipo de Letra para Documentos:", ["Sans Serif (Limpia)", "Serif (Formal)", "Monospace (Datos)"])
+        
+        with col_b:
+            color_p = st.color_picker("Color Primario (Botones/Títulos):", "#1E3A8A")
+            radio = st.select_slider("Estilo de Botones:", options=["Rectos", "Suaves", "Redondeados"])
 
-    # --- PARTE B: DISEÑO (Lo que ya teníamos) ---
-    st.subheader("🎨 Personalización de la Oficina")
-    color_firma = st.color_picker("Color Institucional AboAgrim:", "#1E3A8A")
-    if st.button("Aplicar Identidad Visual"):
-        st.markdown(f"<style>h1, h2, h3 {{ color: {color_firma} !important; }} .stButton>button {{ background-color: {color_firma} !important; }}</style>", unsafe_allow_html=True)
-        st.success("Diseño actualizado.")
+        st.markdown("---")
+        st.subheader("📋 Configuración de Cabecera de Actos")
+        c1, c2 = st.columns(2)
+        mostrar_titulos = c1.checkbox("Mostrar Títulos Académicos (M.A.)", value=True)
+        mostrar_cargo = c1.checkbox("Mostrar Cargo (Presidente)", value=True)
+        incluir_rnc = c2.checkbox("Incluir RNC/Cédula en Recibos", value=False)
+        incluir_santiago = c2.checkbox("Fijar Ubicación: Santiago, Rep. Dom.", value=True)
+
+        if st.button("💾 Guardar y Aplicar Cambios"):
+            # Mapeo de estilos dinámicos
+            f_css = "serif" if "Serif" in fuente else "sans-serif"
+            r_css = "0px" if radio == "Rectos" else "10px" if radio == "Suaves" else "25px"
+            
+            st.markdown(f"""
+                <style>
+                * {{ font-family: {f_css} !important; }}
+                .stButton>button {{ background-color: {color_p} !important; border-radius: {r_css} !important; color: white !important; }}
+                h1, h2, h3 {{ color: {color_p} !important; }}
+                </style>
+            """, unsafe_allow_html=True)
+            st.success("¡Preferencias aplicadas exitosamente!")
+
+    if st.button("🔒 Cerrar Sesión de Administrador"):
+        st.session_state.autenticado = False
+        st.rerun()
 def vista_archivo_digital():
     st.header("📁 Archivo Digital Central")
     st.write("Aquí se muestran todos los expedientes guardados en su nube (Supabase).")
