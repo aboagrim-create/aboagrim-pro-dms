@@ -300,138 +300,80 @@ def vista_plantillas():
 # =====================================================================
 def vista_alertas():
     st.header("⚖️ Control de Plazos, Perenciones y Caducidades")
-    st.write("Basado en Reglamentos 2022 y Resoluciones actualizadas al 2026.")
+    st.info("Basado en Reglamentos 2022 y Resoluciones actualizadas al 2026.")
     
-    # DICCIONARIO MAESTRO DE PLAZOS (Actualizado 2026)
     PLAZOS_LEGALES = {
-        "-- MENSURAS CATASTRALES --": 0,
-        "Presentación de trabajos (Plazo General - 60 días)": 60,
-        "Prórroga para presentación de trabajos (30 días adicionales)": 30,
-        "Plazo para subsanar observaciones técnicas (15 días)": 15,
-        "Autorización de Mensura (Vigencia - 90 días)": 90,
-        
-        "-- REGISTRO DE TÍTULOS --": 0,
-        "Recurso jerárquico ante Dirección Nacional (15 días)": 15,
-        "Plazo para subsanar faltas en RT (15 días - Resol. 2022)": 15,
-        "Solicitud de Certificación de Estado Jurídico (Plazo validez)": 30,
-        
-        "-- TRIBUNALES DE TIERRAS --": 0,
-        "Recurso de Apelación (30 días a partir de notificación)": 30,
+        "Presentación de trabajos (60 días)": 60,
+        "Prórroga trabajos (30 días)": 30,
+        "Subsanar observaciones técnicas (15 días)": 15,
+        "Autorización de Mensura (90 días)": 90,
+        "Recurso jerárquico Dirección Nacional (15 días)": 15,
+        "Subsanar faltas en RT (15 días)": 15,
+        "Certificación Estado Jurídico (30 días)": 30,
+        "Recurso de Apelación (30 días)": 30,
         "Recurso de Casación (30 días)": 30,
-        "Litis sobre Derechos Registrados: Octava para inventario (15 días)": 15,
-        "Revisión por Causa de Fraude (1 año de la sentencia)": 365,
-        "Perención de Instancia (3 años sin actividad procesal)": 1095,
-        
-        "-- RESOLUCIONES RECIENTES 2024-2026 --": 0,
-        "Plazo de respuesta a instancias administrativas (15 días)": 15,
-        "Validación de firmas digitales en actos (Plazo verificación)": 5
+        "Litis: Octava para inventario (15 días)": 15,
+        "Revisión por Causa de Fraude (1 año)": 365,
+        "Perención de Instancia (3 años)": 1095,
+        "Respuesta instancias administrativas (15 días)": 15
     }
 
     with st.expander("🔔 Programar Alerta Legal Automática", expanded=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            tipo_plazo = st.selectbox("Seleccione el Trámite o Reglamento:", list(PLAZOS_LEGALES.keys()))
-            fecha_referencia = st.date_input("Fecha de inicio (Notificación/Depósito/Autorización):")
-            exp = st.text_input("No. Expediente / Referencia:")
-        with col2:
-            cliente = st.text_input("Cliente / Propietario:")
-            organo = st.text_input("Órgano (Ej: Regional Norte, RT Santiago, TT Original):")
-            
-        notas = st.text_area("Notas sobre el procedimiento o requisitos faltantes:")
+        c1, c2 = st.columns(2)
+        tipo = c1.selectbox("Trámite:", list(PLAZOS_LEGALES.keys()))
+        f_ini = c1.date_input("Fecha Inicio:")
+        exp = c1.text_input("No. Expediente:")
+        cli = c2.text_input("Cliente:")
+        org = c2.text_input("Órgano / Responsable:")
+        notas = st.text_area("Notas del procedimiento:")
         
         if st.button("🚀 Activar Blindaje Legal"):
-            if "--" in tipo_plazo:
-                st.warning("Por favor, seleccione un trámite válido, no un encabezado.")
-            else:
-                import datetime
-                dias = PLAZOS_LEGALES[tipo_plazo]
-                fecha_vencimiento = fecha_referencia + datetime.timedelta(days=dias)
-                
-                # Calculamos días para alerta (5 días antes del fatal)
-                datos_plazo = {
-                    "fecha_cita": str(fecha_vencimiento),
-                    "expediente": exp,
-                    "cliente": cliente,
-                    "ubicacion": tipo_plazo,
-                    "tecnico_asignado": organo,
-                    "notas": f"FECHA INICIO: {fecha_referencia}. NOTAS: {notas}",
-                    "categoria": "FATAL"
-                }
-                try:
-                    supabase.table("agenda_mensuras").insert(datos_plazo).execute()
-                    st.success(f"✅ Alerta configurada. El plazo vence el: {fecha_vencimiento.strftime('%d/%m/%Y')}")
-                except Exception as e:
-                    st.error(f"Error al conectar con la base de datos: {e}")
+            import datetime
+            vence = f_ini + datetime.timedelta(days=PLAZOS_LEGALES[tipo])
+            datos = {
+                "fecha_cita": str(vence),
+                "expediente": exp,
+                "cliente": cli,
+                "ubicacion": tipo,
+                "tecnico_asignado": org,
+                "notas": f"INICIO: {f_ini}. {notas}",
+                "categoria": "FATAL"
+            }
+            try:
+                supabase.table("agenda_mensuras").insert(datos).execute()
+                st.success(f"✅ ¡Alerta programada para el {vence}!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error: {e}")
 
     st.divider()
-
-    # TABLA DE SEGUIMIENTO CON SEMÁFORO DE ADVERTENCIA
     st.subheader("🚩 Monitor de Plazos y Caducidades")
+    
     try:
         res = supabase.table("agenda_mensuras").select("*").order("fecha_cita").execute()
         if res.data:
             import pandas as pd
             from datetime import date
             df = pd.DataFrame(res.data)
+            df['fecha_cita'] = pd.to_datetime(df['fecha_cita']).dt.date
             
-            # Estilo visual para detectar peligros
-            def destacar_vencimiento(row):
-                vence = pd.to_datetime(row['fecha_cita']).date()
-                dias_restantes = (vence - date.today()).days
-                if dias_restantes < 0:
-                    return ['background-color: #fee2e2'] * len(row) # Rojo: Vencido
-                elif dias_restantes <= 7:
-                    return ['background-color: #fef3c7'] * len(row) # Amarillo: Crítico (1 semana)
-                return [''] * len(row)
+            # Formateo de la tabla
+            df_v = df.rename(columns={"fecha_cita":"Vencimiento", "ubicacion":"Trámite", "expediente":"Exp."})
+            
+            # Aplicamos colores de forma segura
+            def resaltar(s):
+                color = ''
+                dias = (s.Vencimiento - date.today()).days
+                if dias < 0: color = 'background-color: #fee2e2' # Rojo
+                elif dias <= 7: color = 'background-color: #fef3c7' # Amarillo
+                return [color] * len(s)
 
-            df_vista = df.rename(columns={
-                "fecha_cita": "Fecha Fatal",
-                "ubicacion": "Procedimiento",
-                "expediente": "Expediente",
-                "cliente": "Cliente",
-                "tecnico_asignado": "Órgano/Responsable"
-            })
-            
-            # Mostrar tabla estilizada
-            st.dataframe(
-                df_vista[["Fecha Fatal", "Procedimiento", "Expediente", "Cliente", "Órgano/Responsable"]].style.apply(destacar_vencimiento, axis=1),
-                use_container_width=True,
-                hide_index=True
-            )
-            
-            st.markdown("""
-                <div style='display: flex; gap: 20px; font-size: 0.8rem; margin-top: 10px;'>
-                    <span style='color: #991B1B;'>● Rojo: PLAZO VENCIDO (Peligro de Perención/Caducidad)</span>
-                    <span style='color: #92400E;'>● Amarillo: Menos de 7 días (Urgente)</span>
-                </div>
-            """, unsafe_allow_html=True)
+            st.dataframe(df_v[["Vencimiento", "Trámite", "Exp.", "cliente"]].style.apply(resaltar, axis=1), use_container_width=True, hide_index=True)
+            st.caption("🔴 Rojo: Vencido | 🟡 Amarillo: Menos de 7 días.")
         else:
-            st.info("No hay procesos en seguimiento actualmente.")
-    except:
-        st.info("Agregue su primer plazo para activar el monitor.")
-            
-            # Función para poner colores según la urgencia
-            def color_vencimiento(val):
-                hoy = date.today()
-                vence = pd.to_datetime(val).date()
-                dias_restantes = (vence - hoy).days
-                if dias_restantes < 0: return 'background-color: #FEE2E2; color: #991B1B' # Vencido (Rojo)
-                if dias_restantes <= 5: return 'background-color: #FEF3C7; color: #92400E' # Crítico (Amarillo)
-                return ''
-
-            df_vista = df.rename(columns={
-                "fecha_cita": "Vencimiento",
-                "ubicacion": "Trámite",
-                "expediente": "Exp.",
-                "cliente": "Cliente"
-            })
-            
-            st.table(df_vista[["Vencimiento", "Trámite", "Exp.", "Cliente"]].style.applymap(color_vencimiento, subset=['Vencimiento']))
-            st.info("💡 Rojo: Vencido | Amarillo: Menos de 5 días | Blanco: En plazo.")
-        else:
-            st.info("No hay plazos legales en seguimiento.")
-    except:
-        st.info("Inicie el seguimiento de su primer trámite.")
+            st.info("No hay plazos en seguimiento.")
+    except Exception as e:
+        st.error(f"Error al cargar monitor: {e}")
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
