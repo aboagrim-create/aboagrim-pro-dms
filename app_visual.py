@@ -683,6 +683,11 @@ def vista_archivo_digital():
     except Exception as e:
         st.error("⚠️ No se pudo conectar con la Bóveda Digital.")
         st.info("Revisando conexión a la base de datos...")
+
+# --- 🔐 CANDADO DE SEGURIDAD PRINCIPAL ---
+if not st.session_state.get("autenticado_global", False):
+    login_sistema()
+    st.stop()  # 🛑 Esto oculta todo el menú y el sistema si no hay PIN
 # ==========================================
 # MENÚ LATERAL Y NAVEGACIÓN DEL SISTEMA
 # ==========================================
@@ -700,8 +705,9 @@ with st.sidebar:
         ]
     )
     st.markdown("---")
-    if st.button("🚪 Cerrar Sesión"):
-        st.success("Sesión cerrada")
+        if st.button("🚪 Cerrar Sesión"):
+            st.session_state.autenticado_global = False
+            st.rerun()
 def vista_registro_maestro():
     st.header("👤 Registro Maestro de Expedientes")
     st.write("Llene los datos. Puede generar todos los documentos del expediente a la vez.")
