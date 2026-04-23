@@ -951,6 +951,4 @@ else:
     # vistas[menu]()
     
     # Agregue un botón de salir al final del menú lateral
-    if st.sidebar.button("🚪 Cerrar Sesión"):
-        st.session_state.autenticado_global = False
-        st.rerun()
+
