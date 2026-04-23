@@ -473,6 +473,38 @@ def vista_configuracion():
         return
 
     # --- 2. PANEL DE CONTROL (Si ya es usted) ---
+    st.divider()
+    st.subheader("📥 Respaldo y Protección de Datos")
+    st.info("Descargue una copia de seguridad completa (Excel) de su base de datos a su computadora.")
+
+    if st.button("🚀 Generar Respaldo Maestro"):
+        try:
+            import pandas as pd
+            from io import BytesIO
+            from datetime import date
+
+            # 1. Extraer datos de Supabase
+            df_ingresos = pd.DataFrame(supabase.table("facturacion").select("*").execute().data)
+            df_agenda = pd.DataFrame(supabase.table("agenda_mensuras").select("*").execute().data)
+            df_usuarios = pd.DataFrame(supabase.table("usuarios_sistema").select("*").execute().data)
+            
+            # 2. Preparar el archivo Excel en memoria
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                df_ingresos.to_excel(writer, sheet_name='Facturacion', index=False)
+                df_agenda.to_excel(writer, sheet_name='Agenda_Plazos', index=False)
+                df_usuarios.to_excel(writer, sheet_name='Usuarios', index=False)
+            
+            # 3. Crear el botón de descarga real
+            st.download_button(
+                label="💾 Guardar Archivo en PC",
+                data=output.getvalue(),
+                file_name=f"Respaldo_AboAgrim_{date.today()}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+            st.success("✅ Archivo generado. Presione el botón de arriba para guardarlo.")
+        except Exception as e:
+            st.error(f"Hubo un problema al recopilar los datos: {e}")
     st.header("⚙️ Panel de Control Maestro")
     
     tab1, tab2 = st.tabs(["👥 Gestión de Accesos", "🎨 Diseño y Estilo"])
