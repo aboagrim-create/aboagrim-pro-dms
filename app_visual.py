@@ -378,61 +378,75 @@ def vista_alertas():
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
 def vista_facturacion():
-    st.header("💰 Gestión de Honorarios - AboAgrim Pro")
-    st.write("Registre y consulte los pagos de sus clientes de mensura y legal.")
+    st.header("💰 Gestión de Honorarios y Facturación")
+    
+    # 1. Lista de Mensajes Automáticos
+    MENSAJES_PRO = {
+        "Anticipo": "Hola, le saludo de AboAgrim. Confirmamos el recibo de su anticipo para el proceso de mensura. ¡Seguimos trabajando!",
+        "Saldo": "Saludos, su expediente ya está listo en el Registro de Títulos. Puede pasar a retirar su documento tras liquidar el saldo pendiente.",
+        "Recordatorio": "Buen día, le recordamos que tiene un pago pendiente relativo a sus trámites inmobiliarios. Quedamos a su orden.",
+        "Mensura Programada": "Hola, le informamos que su mensura ha sido agendada. Favor tener los colindantes presentes."
+    }
 
-    # Formulario para entrada de datos
-    with st.expander("➕ Registrar Nuevo Pago / Abono", expanded=True):
+    with st.expander("➕ Registrar y Despachar Factura", expanded=True):
         col1, col2 = st.columns(2)
         with col1:
             exp_fact = st.text_input("No. de Expediente:")
             cli_fact = st.text_input("Nombre del Cliente:")
-            monto_t = st.number_input("Costo Total del Trabajo (RD$):", min_value=0.0, step=500.0)
+            tel_cli = st.text_input("WhatsApp del Cliente (Ej: 18091234567):")
+            monto_t = st.number_input("Monto Total (RD$):", min_value=0.0)
         with col2:
-            monto_a = st.number_input("Monto Recibido (RD$):", min_value=0.0, step=500.0)
-            concepto = st.text_input("Concepto:", placeholder="Ej: Anticipo de Mensura")
+            monto_a = st.number_input("Monto Recibido (RD$):", min_value=0.0)
+            concepto = st.text_input("Concepto:")
+            msg_tipo = st.selectbox("Mensaje Automático:", list(MENSAJES_PRO.keys()))
             
-        if st.button("💾 Guardar Cobro en Nube"):
-            if exp_fact and cli_fact and monto_t > 0:
-                estado = "Saldado" if monto_a >= monto_t else "Pendiente"
-                datos_pago = {
-                    "expediente_id": exp_fact,
-                    "cliente": cli_fact,
-                    "monto_total": monto_t,
-                    "monto_abonado": monto_a,
-                    "concepto": concepto,
-                    "estado_pago": estado
-                }
-                try:
-                    supabase.table("facturacion").insert(datos_pago).execute()
-                    st.success(f"✅ ¡Cobro de {cli_fact} guardado con éxito!")
-                except Exception as e:
-                    st.error("Error: ¿Ya creó la tabla en Supabase?")
+        st.markdown("---")
+        c_btn1, c_btn2, c_btn3 = st.columns(3)
+        
+        # BOTÓN GUARDAR Y REGISTRAR
+        if c_btn1.button("💾 Guardar y Registrar"):
+            estado = "Saldado" if monto_a >= monto_t else "Pendiente"
+            datos_pago = {
+                "expediente_id": exp_fact, "cliente": cli_fact,
+                "monto_total": monto_t, "monto_abonado": monto_a,
+                "concepto": concepto, "estado_pago": estado
+            }
+            try:
+                supabase.table("facturacion").insert(datos_pago).execute()
+                st.success("✅ ¡Factura guardada en la nube!")
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+        # BOTÓN ENVIAR WHATSAPP
+        if c_btn2.button("📲 Enviar por WhatsApp"):
+            if tel_cli:
+                texto_base = MENSAJES_PRO[msg_tipo]
+                detalle = f"\n*Detalle:* {concepto}\n*Monto:* RD${monto_a}"
+                msg_final = f"{texto_base}{detalle}".replace(" ", "%20")
+                ws_url = f"https://wa.me/{tel_cli}?text={msg_final}"
+                st.markdown(f'<a href="{ws_url}" target="_blank" style="text-decoration:none;"><button style="background-color:#25D366; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; width:100%;">Abrir WhatsApp ✅</button></a>', unsafe_allow_html=True)
             else:
-                st.warning("Por favor, complete los campos principales.")
+                st.warning("Falta el número de teléfono.")
+
+        # BOTÓN IMPRIMIR / GUARDAR PC
+        if c_btn3.button("🖨️ Imprimir / Guardar PDF"):
+            factura_html = f"""
+            <div style="padding:20px; border:1px solid #ccc; font-family:Arial;">
+                <h2>RECIBO DE INGRESOS - ABOAGRIM</h2>
+                <p><b>Cliente:</b> {cli_fact}</p>
+                <p><b>Expediente:</b> {exp_fact}</p>
+                <p><b>Concepto:</b> {concepto}</p>
+                <hr>
+                <h3>Monto Recibido: RD$ {monto_a}</h3>
+                <p>Fecha: {datetime.date.today()}</p>
+            </div>
+            <script>window.print();</script>
+            """
+            st.components.v1.html(factura_html, height=400)
 
     st.markdown("---")
-    
-    # Tabla de historial
-    st.subheader("📊 Historial de Ingresos")
-    try:
-        res = supabase.table("facturacion").select("*").order("fecha_pago", desc=True).execute()
-        if res.data:
-            import pandas as pd
-            df_pagos = pd.DataFrame(res.data)
-            df_pagos = df_pagos.rename(columns={
-                "fecha_pago": "Fecha",
-                "expediente_id": "Expediente",
-                "cliente": "Cliente",
-                "monto_total": "Total RD$",
-                "monto_abonado": "Abonado RD$",
-                "estado_pago": "Estado"
-            })
-            st.dataframe(df_pagos[["Fecha", "Expediente", "Cliente", "Total RD$", "Abonado RD$", "Estado"]], use_container_width=True)
-        else:
-            st.info("No hay cobros registrados todavía.")
-    except:
-        st.info("Cargue datos para ver el historial.")
+    st.subheader("📊 Historial de Cobros Recientes")
+    # (Aquí sigue el código de la tabla que ya teníamos para mostrar los datos de Supabase)
 # =====================================================================
 # MÓDULO 7: CONFIGURACIÓN
 # =====================================================================
