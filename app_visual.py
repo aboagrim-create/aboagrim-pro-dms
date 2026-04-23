@@ -906,37 +906,8 @@ def ventana_registro_profesional(tipo, menu_a_refrescar=None):
         )
     )
     btn_guardar.pack(pady=20)
-# --- FUNCIÓN ÚNICA Y MODERNA PARA EL REGISTRO MAESTRO ---
 
-def vista_registro_maestro():
-    st.markdown("<h1 style='text-align: center; color: #1a5276;'>👤 Registro Maestro Pro</h1>", unsafe_allow_html=True)
-    
-    with st.form("form_maestro_final"):
-        st.subheader("👥 Intervinientes")
-        # Botón dinámico para agregar más personas
-        num_clientes = st.number_input("Cantidad de personas", min_value=1, max_value=10, value=1)
-        
-        for i in range(int(num_clientes)):
-            with st.expander(f"👤 Persona #{i+1}", expanded=(i==0)):
-                c1, c2 = st.columns(2)
-                c1.text_input(f"Nombre Completo #{i+1}", key=f"n_{i}")
-                c2.text_input(f"Cédula / RNC #{i+1}", key=f"c_{i}")
-                
-                c3, c4 = st.columns(2)
-                # Botón desplegable dinámico
-                c3.selectbox(f"Rol #{i+1}", ["Cliente", "Abogado", "Agrimensor", "Vendedor"], key=f"p_{i}")
-                c4.text_input(f"Teléfono #{i+1}", key=f"t_{i}")
 
-        st.divider()
-        st.subheader("🏠 Datos del Inmueble")
-        i1, i2, i3 = st.columns(3)
-        parcela = i1.text_input("Parcela")
-        dc = i2.text_input("DC")
-        matricula = i3.text_input("Matrícula")
-
-        # Botón de Guardar que NO da pantalla roja
-        if st.form_submit_button("💾 GUARDAR EXPEDIENTE"):
-            st.success("✅ ¡Datos guardados exitosamente en la nube!")
 # =======================================================
 # 1. DISEÑO DE LA PANTALLA DE PLANTILLAS
 # =======================================================
