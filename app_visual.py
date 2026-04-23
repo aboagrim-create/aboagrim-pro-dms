@@ -874,7 +874,8 @@ def vista_plantillas_auto():
 
                 # 2. Cargamos el documento Word maestro desde la carpeta
                 # (Asegúrese de que el nombre del archivo coincida exactamente)
-                doc = DocxTemplate("plantillas_maestras/contrato_litis_representacion_y_prestacion_de_servicios.docx")
+                # 2. Cargamos el documento Word maestro desde su ruta exacta
+                doc = DocxTemplate("plantillas_maestras/Mensuras Catastrales Tecnicas/Saneamiento/Aviso de Mensura Para Saneamiento.docx")
 
                 # 3. Inyectamos los datos de AboAgrim al Word
                 doc.render(datos_expediente)
@@ -888,12 +889,11 @@ def vista_plantillas_auto():
 
                 # 5. El botón mágico para descargar el Word listo a su PC
                 st.download_button(
-                    label="⬇️ Descargar Aviso de Mensura Listo",
+                    label="⬇️ Descargar Aviso de Saneamiento",
                     data=bio.getvalue(),
-                    file_name=f"Aviso_Mensura_Parcela_{parcela}.docx",
+                    file_name=f"Aviso_Saneamiento_Parcela_{parcela}.docx",
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 )
-
             except Exception as e:
                 st.error("⚠️ Error: No se encontró el documento maestro.")
                 st.info(f"Detalle técnico: {e}")
