@@ -541,6 +541,39 @@ def vista_configuracion():
     if st.button("🔒 Salir de Modo Maestro"):
         st.session_state.admin_autenticado = False
         st.rerun()
+
+def login_sistema():
+    st.markdown("""
+        <style>
+        .login-box {
+            background-color: #f0f2f6;
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #1E3A8A;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1,2,1])
+    
+    with col2:
+        st.image("https://vuestra-url-logo.com/logo.png", width=200) # Si tiene logo
+        st.header("🔐 Acceso AboAgrim Pro")
+        
+        u_ingreso = st.text_input("Nombre de Usuario:")
+        p_ingreso = st.text_input("PIN de Seguridad:", type="password", max_chars=4)
+        
+        if st.button("Ingresar al Sistema", use_container_width=True):
+            # Buscamos en la tabla de usuarios que ya creamos en Supabase
+            res = supabase.table("usuarios_sistema").select("*").eq("nombre_usuario", u_ingreso).eq("pin_acceso", p_ingreso).eq("estado", "Activo").execute()
+            
+            if res.data:
+                st.session_state.autenticado_global = True
+                st.session_state.usuario_actual = u_ingreso
+                st.success(f"Bienvenido, {u_ingreso}")
+                st.rerun()
+            else:
+                st.error("Usuario o PIN incorrectos, o cuenta inactiva.")
 def vista_documentos():
     st.header("📄 Generador de Documentos y Actas")
     st.info("Seleccione un expediente y una plantilla para generar el documento automáticamente.")
