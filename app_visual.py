@@ -936,6 +936,9 @@ def vista_plantillas_auto():
 # =======================================================
 # 2. EL INTERRUPTOR PRINCIPAL (El que conecta el menú)
 # =======================================================
+# =======================================================
+# 2. EL INTERRUPTOR PRINCIPAL (El que conecta el menú)
+# =======================================================
 if menu == "👤 Registro Maestro":
     vista_registro_maestro()
 elif menu == "📄 Plantillas Auto":
