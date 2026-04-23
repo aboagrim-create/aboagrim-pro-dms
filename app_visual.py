@@ -705,9 +705,9 @@ with st.sidebar:
         ]
     )
     st.markdown("---")
-        if st.button("🚪 Cerrar Sesión"):
-            st.session_state.autenticado_global = False
-            st.rerun()
+    if st.button("🚪 Cerrar Sesión"):
+        st.session_state.autenticado_global = False
+        st.rerun()
 def vista_registro_maestro():
     st.header("👤 Registro Maestro de Expedientes")
     st.write("Llene los datos. Puede generar todos los documentos del expediente a la vez.")
