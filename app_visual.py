@@ -1256,17 +1256,19 @@ with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
         out_e = io.BytesIO(); doc_e.save(out_e)
         zip_file.writestr(nombre_limpio, out_e.getvalue())
 
-st.success(f"¡Set de {proceso} preparado con {len(archivos_adicionales)+1} documentos!")
-st.balloons()
+# --- FINAL DEL PROCESO ---
+    st.success(f"⚖️ Set de {proceso} preparado con {len(archivos_adicionales)+1} documentos!")
+    st.balloons()
 
-st.download_button(
-    label="📥 DESCARGAR EXPEDIENTE COMPLETO",
-    data=buf.getvalue(),
-    file_name=f"Expediente_{proceso}_{parcela}.zip",
-    mime="application/zip"
-)
-            except Exception as e:
-                st.error(f"Asegúrese de que las rutas de las carpetas sean correctas. Error: {e}")
+    st.download_button(
+        label="📥 DESCARGAR EXPEDIENTE COMPLETO",
+        data=buf.getvalue(),
+        file_name=f"Expediente_{proceso}_{parcela}.zip",
+        mime="application/zip"
+    )
+
+except Exception as e:
+    st.error(f"⚠️ Error en la generación: {e}")
 # --- EL INTERRUPTOR FINAL ---
 # ==========================================
 # MOTOR DE NAVEGACIÓN (DICCIONARIO FINAL)
