@@ -397,19 +397,55 @@ def vista_alertas():
 def vista_facturacion():
     st.title("💵 Gestión de Facturación y Honorarios")
     
-    # Resumen rápido
+    # 1. Indicadores Financieros Principales
     c1, c2, c3 = st.columns(3)
     c1.metric("Pendiente por Cobrar", "RD$ 45,000", "+5%")
     c2.metric("Cobrado este mes", "RD$ 120,000")
     c3.metric("Gastos Operativos", "RD$ 12,500")
 
-    st.subheader("Historial de Pagos")
-    # Tabla simulada (mañana la conectamos a su base de datos)
-    datos_pago = [
-        {"Cliente": "Juan Perez", "Concepto": "Deslinde P. 44", "Monto": "RD$ 25,000", "Estado": "Pagado"},
-        {"Cliente": "Maria Sosa", "Concepto": "Saneamiento", "Monto": "RD$ 20,000", "Estado": "Pendiente"}
-    ]
-    st.table(datos_pago)
+    st.markdown("---")
+
+    # 2. Pantalla dividida: Creación y Visualización
+    col_form, col_tabla = st.columns([1, 1.5]) # La tabla será un poco más ancha
+
+    with col_form:
+        st.subheader("📝 Nueva Factura / Recibo")
+        with st.form("form_crear_factura"):
+            cliente_fact = st.text_input("Nombre del Cliente")
+            concepto_fact = st.text_input("Concepto (Ej. Anticipo Deslinde Parcela 44)")
+            
+            c_monto, c_estado = st.columns(2)
+            monto_fact = c_monto.number_input("Monto (RD$)", min_value=0.0, step=1000.0)
+            estado_fact = c_estado.selectbox("Estado", ["Pendiente", "Pagado", "Abono"])
+            
+            # Botones de acción
+            st.write("Acciones:")
+            b1, b2 = st.columns(2)
+            btn_guardar = b1.form_submit_button("💾 Guardar Registro")
+            btn_enviar = b2.form_submit_button("📤 Generar Recibo")
+
+            if btn_guardar:
+                # Aquí irá la conexión a Supabase más adelante
+                st.success(f"✅ Registro de {cliente_fact} guardado exitosamente.")
+            
+            if btn_enviar:
+                if cliente_fact and monto_fact > 0:
+                    st.info(f"📧 Recibo de RD$ {monto_fact} listo para enviar a {cliente_fact}.")
+                    # Simulamos la creación de un recibo en texto para descargar
+                    recibo_texto = f"RECIBO DE PAGO - AboAgrim\nCliente: {cliente_fact}\nConcepto: {concepto_fact}\nMonto: RD$ {monto_fact}\nEstado: {estado_fact}"
+                    st.download_button("⬇️ Descargar PDF/Word", recibo_texto, file_name=f"Recibo_{cliente_fact}.txt")
+                else:
+                    st.warning("⚠️ Llene el nombre y monto para generar el recibo.")
+
+    with col_tabla:
+        st.subheader("📋 Historial Reciente")
+        # Esta es la tabla visual (pronto la conectaremos a su base de datos)
+        datos_pago = [
+            {"Cliente": "Juan Perez", "Concepto": "Deslinde P. 44", "Monto": "RD$ 25,000", "Estado": "Pagado"},
+            {"Cliente": "Maria Sosa", "Concepto": "Saneamiento", "Monto": "RD$ 20,000", "Estado": "Pendiente"},
+            {"Cliente": "Constructora XYZ", "Concepto": "Subdivisión", "Monto": "RD$ 75,000", "Estado": "Abono"}
+        ]
+        st.dataframe(datos_pago, use_container_width=True)
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
