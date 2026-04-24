@@ -303,8 +303,24 @@ def vista_plantillas():
 # MÓDULO 5: ALERTAS Y PLAZOS
 # =====================================================================
 def vista_alertas():
-    st.header("⚖️ Control de Plazos, Perenciones y Caducidades")
-    st.info("Basado en Reglamentos 2022 y Resoluciones actualizadas al 2026.")
+    st.title("📅 Control de Alertas y Plazos")
+    st.info("Gestione sus audiencias, plazos de objeción y vencimientos de mensura.")
+    
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        st.subheader("Nueva Alerta")
+        tipo = st.selectbox("Tipo de Plazo", ["Audiencia", "Plazo JI", "Cierre Mensura", "Pago Impuestos"])
+        fecha_alerta = st.date_input("Fecha límite")
+        nota = st.text_area("Descripción corta")
+        if st.button("Guardar Recordatorio"):
+            st.success("Alerta programada correctamente")
+            
+    with col2:
+        st.subheader("Próximos Vencimientos")
+        # Aquí luego jalaremos los datos de Supabase
+        st.warning("⚠️ Audiencia de Saneamiento - Parcela 102 - Faltan 3 días")
+        st.info("📅 Entrega de Planos - Parcela 55 - 15 de Mayo")
     
     PLAZOS_LEGALES = {
         "Presentación de trabajos (60 días)": 60,
@@ -378,10 +394,40 @@ def vista_alertas():
             st.info("No hay plazos en seguimiento.")
     except Exception as e:
         st.error(f"Error al cargar monitor: {e}")
+
+def vista_facturacion():
+    st.title("💵 Gestión de Facturación y Honorarios")
+    
+    # Resumen rápido
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Pendiente por Cobrar", "RD$ 45,000", "+5%")
+    c2.metric("Cobrado este mes", "RD$ 120,000")
+    c3.metric("Gastos Operativos", "RD$ 12,500")
+
+    st.subheader("Historial de Pagos")
+    # Tabla simulada (mañana la conectamos a su base de datos)
+    datos_pago = [
+        {"Cliente": "Juan Perez", "Concepto": "Deslinde P. 44", "Monto": "RD$ 25,000", "Estado": "Pagado"},
+        {"Cliente": "Maria Sosa", "Concepto": "Saneamiento", "Monto": "RD$ 20,000", "Estado": "Pendiente"}
+    ]
+    st.table(datos_pago)
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
-def vista_facturacion():
+def vista_configuracion():
+    st.title("⚙️ Configuración del Sistema")
+    
+    with st.expander("🏢 Datos de la Firma AboAgrim"):
+        st.text_input("Nombre de la Oficina", value="Abogados y Agrimensores 'AboAgrim'")
+        st.text_input("Dirección en Santiago", value="Calle Principal, Santiago, Rep. Dom.")
+        st.text_input("Teléfono de Contacto", value="809-XXX-XXXX")
+        
+    with st.expander("💾 Conexión de Base de Datos"):
+        st.success("Conexión con Supabase: ACTIVA")
+        st.code("Host: database.supabase.co")
+        
+    if st.button("Guardar Cambios"):
+        st.success("Configuración actualizada")
     # --- BLOQUE DE SEGURIDAD ---
     if "autenticado" not in st.session_state:
         st.session_state.autenticado = False
