@@ -1258,17 +1258,17 @@ with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
 
 # --- FINAL DEL PROCESO ---
         st.success(f"⚖️ Set de {proceso} preparado con {len(archivos_adicionales)+1} documentos!")
-        st.balloons()
+            st.balloons()
 
-        st.download_button(
-            label="📥 DESCARGAR EXPEDIENTE COMPLETO",
-            data=buf.getvalue(),
-            file_name=f"Expediente_{proceso}_{parcela}.zip",
-            mime="application/zip"
-        )
+            st.download_button(
+                label="📥 DESCARGAR EXPEDIENTE COMPLETO",
+                data=buf.getvalue(),
+                file_name=f"Expediente_{proceso}_{parcela}.zip",
+                mime="application/zip"
+            )
 
-            except Exception as e:
-                st.error(f"⚠️ Error en la generación: {e}")
+        except Exception as e:
+            st.error(f"⚠️ Error en la generación: {e}")
 # --- EL INTERRUPTOR FINAL ---
 # ==========================================
 # MOTOR DE NAVEGACIÓN (DICCIONARIO FINAL)
