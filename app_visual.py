@@ -1183,8 +1183,9 @@ def vista_plantillas_auto():
                     "profesional": "Lic. Jhonny Matos. M.A.",
                     "cargo": "Presidente fundador AboAgrim"
                 }
-            # --- FUNCIÓN 1: GENERACIÓN MASIVA ZIP ---
-            buf = io.BytesIO()
+
+                # --- FUNCIÓN 1: GENERACIÓN MASIVA ZIP ---
+                buf = io.BytesIO()
                 with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
                     # 1. El Aviso Principal
                     ruta_base = f"plantillas_maestras/Mensuras Catastrales Tecnicas/{proceso}/"
