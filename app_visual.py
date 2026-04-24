@@ -432,20 +432,82 @@ def vista_facturacion():
         
         if btn_enviar:
             if cliente_fact and monto_fact > 0:
-                st.info(f"📧 Recibo de RD$ {monto_fact} listo para enviar a {cliente_fact}.")
-                recibo_texto = f"RECIBO DE PAGO - AboAgrim\nCliente: {cliente_fact}\nConcepto: {concepto_fact}\nMonto: RD$ {monto_fact}\nEstado: {estado_fact}"
-                st.download_button("⬇️ Descargar PDF/Word", recibo_texto, file_name=f"Recibo_{cliente_fact}.txt")
+                from datetime import datetime
+                fecha_hoy = datetime.now().strftime("%d/%m/%Y")
+                num_recibo = datetime.now().strftime("ABG-%y%m%d%H%M")
+                
+                # Diseño WAOO en HTML/CSS integrado
+                recibo_html = f"""
+                <html>
+                <head>
+                <meta charset="utf-8">
+                <style>
+                    body {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f6f9; padding: 20px; }}
+                    .factura-container {{ max-width: 750px; margin: auto; background: #ffffff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 8px solid #0a2540; }}
+                    .cabecera {{ display: flex; justify-content: space-between; border-bottom: 2px solid #eef0f5; padding-bottom: 20px; margin-bottom: 30px; }}
+                    .logo-box h1 {{ color: #0a2540; margin: 0; font-size: 32px; letter-spacing: 1px; }}
+                    .logo-box h2 {{ color: #636b6f; margin: 5px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; }}
+                    .logo-box p {{ color: #8a9499; font-size: 13px; margin-top: 5px; }}
+                    .info-box {{ text-align: right; color: #4a5568; font-size: 14px; line-height: 1.6; }}
+                    .titulo-factura {{ text-align: center; color: #0a2540; letter-spacing: 2px; margin-bottom: 30px; font-size: 22px; }}
+                    .tabla-datos {{ width: 100%; border-collapse: collapse; margin-bottom: 30px; }}
+                    .tabla-datos td {{ padding: 15px; border-bottom: 1px solid #eef0f5; font-size: 15px; }}
+                    .tabla-datos td:first-child {{ font-weight: bold; color: #4a5568; width: 30%; }}
+                    .tabla-datos td:last-child {{ color: #2d3748; }}
+                    .total-box {{ text-align: right; font-size: 28px; font-weight: bold; color: #2e8540; margin-top: 20px; padding: 20px; background-color: #f8fcf9; border-radius: 5px; }}
+                    .pie-pagina {{ text-align: center; margin-top: 60px; color: #718096; font-size: 13px; border-top: 1px solid #eef0f5; padding-top: 30px; }}
+                    .firma-linea {{ width: 250px; border-bottom: 1px solid #000; margin: 0 auto 10px auto; }}
+                </style>
+                </head>
+                <body>
+                    <div class="factura-container">
+                        <div class="cabecera">
+                            <div class="logo-box">
+                                <h1>⚖️ AboAgrim</h1>
+                                <h2>Abogados & Agrimensores</h2>
+                                <p>Lic. Jhonny Matos. M.A. | Presidente</p>
+                            </div>
+                            <div class="info-box">
+                                <strong>Santiago de los Caballeros</strong><br>
+                                República Dominicana<br>
+                                <strong>Fecha:</strong> {fecha_hoy}<br>
+                                <strong>Factura No:</strong> {num_recibo}
+                            </div>
+                        </div>
+                        
+                        <div class="titulo-factura">RECIBO DE HONORARIOS</div>
+                        
+                        <table class="tabla-datos">
+                            <tr><td>Recibimos de:</td><td>{cliente_fact}</td></tr>
+                            <tr><td>Por concepto de:</td><td>{concepto_fact}</td></tr>
+                            <tr><td>Estado actual:</td><td><strong style="color: #0a2540; text-transform: uppercase;">{estado_fact}</strong></td></tr>
+                        </table>
+                        
+                        <div class="total-box">
+                            TOTAL: RD$ {monto_fact:,.2f}
+                        </div>
+                        
+                        <div class="pie-pagina">
+                            <div class="firma-linea"></div>
+                            <strong>Firma Autorizada</strong><br><br>
+                            Este documento es un comprobante de pago emitido por el sistema AboAgrim Pro DMS.<br>
+                            Gracias por confiar sus procesos legales y catastrales en nuestras manos.
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """
+                
+                st.info(f"📧 Recibo Premium generado para {cliente_fact}.")
+                # Note que cambiamos el file_name a .html
+                st.download_button(
+                    label="⬇️ Descargar Factura Premium (HTML/PDF)", 
+                    data=recibo_html, 
+                    file_name=f"AboAgrim_Factura_{cliente_fact}.html",
+                    mime="text/html"
+                )
             else:
-                st.warning("⚠️ Llene el nombre y monto para generar el recibo.")
-
-    with col_tabla:
-        st.subheader("📋 Historial Reciente")
-        datos_pago = [
-            {"Cliente": "Juan Perez", "Concepto": "Deslinde P. 44", "Monto": "RD$ 25,000", "Estado": "Pagado"},
-            {"Cliente": "Maria Sosa", "Concepto": "Saneamiento", "Monto": "RD$ 20,000", "Estado": "Pendiente"},
-            {"Cliente": "Constructora XYZ", "Concepto": "Subdivisión", "Monto": "RD$ 75,000", "Estado": "Abono"}
-        ]
-        st.dataframe(datos_pago, use_container_width=True)
+                st.warning("⚠️ Llene el nombre y el monto para generar el recibo.")
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
