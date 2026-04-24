@@ -1268,7 +1268,7 @@ with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
         )
 
 except Exception as e:
-    st.error(f"⚠️ Error en la generación: {e}")
+                st.error(f"⚠️ Error en la generación: {e}")
 # --- EL INTERRUPTOR FINAL ---
 # ==========================================
 # MOTOR DE NAVEGACIÓN (DICCIONARIO FINAL)
