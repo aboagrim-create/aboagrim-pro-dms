@@ -1084,7 +1084,10 @@ def vista_registro_maestro():
                     except Exception as e:
                         st.sidebar.error(f"Error al procesar: {e}")
 
-    if btn_guardar:
+    st.divider() # Esto pone una línea bonita para separar
+        btn_guardar = st.button("💾 GUARDAR EXPEDIENTE Y CREAR BÓVEDA", type="primary", use_container_width=True)
+
+        if btn_guardar:
         if st.session_state.get('in_np', '') != '': # Verificamos que haya un nombre escrito
             try:
                 # 1. Guardamos en Supabase (usando su tabla expedientes_maestros)
