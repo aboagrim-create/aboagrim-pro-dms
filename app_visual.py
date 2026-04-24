@@ -1172,18 +1172,17 @@ def vista_plantillas_auto():
         btn_magico = st.form_submit_button("🚀 GENERAR EXPEDIENTE COMPLETO (.ZIP)")
 
         if btn_magico:
-        try:
-            # Datos para las llaves {{ }} de sus plantillas Word
-            datos = {
-                "nombre": nombre, "parcela": parcela, "dc": dc,
-                "matricula": matricula, "expediente": expediente,
-                "fecha": fecha.strftime("%d/%m/%Y"),
-                "notario": nom_notario, "mat_not": mat_notario,
-                "abogado": nom_abogado, "mat_abo": mat_abogado,
-                "profesional": "Lic. Jhonny Matos. M.A.",
-                "cargo": "Presidente fundador AboAgrim"
-            }
-
+            try:
+                # Datos para las llaves {{ }} de sus plantillas Word
+                datos = {
+                    "nombre": nombre, "parcela": parcela, "dc": dc,
+                    "matricula": matricula, "expediente": expediente,
+                    "fecha": fecha.strftime("%d/%m/%Y"),
+                    "notario": nom_notario, "mat_not": mat_notario,
+                    "abogado": nom_abogado, "mat_abo": mat_abogado,
+                    "profesional": "Lic. Jhonny Matos. M.A.",
+                    "cargo": "Presidente fundador AboAgrim"
+                }
             # --- FUNCIÓN 1: GENERACIÓN MASIVA ZIP ---
             buf = io.BytesIO()
                 with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
