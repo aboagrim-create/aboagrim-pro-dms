@@ -406,27 +406,32 @@ def vista_facturacion():
     st.markdown("---")
 
     # 2. Pantalla dividida: Creación y Visualización
-    col_form, col_tabla = st.columns([1, 1.5]) 
+    col_form, col_tabla = st.columns([1, 1.2], gap="large") 
 
     with col_form:
         st.subheader("📝 Nueva Factura / Recibo")
         
-        # --- INICIO DEL FORMULARIO ---
         with st.form("form_crear_factura"):
+            st.write("Datos del Cliente (Pronto automáticos desde Registro Maestro)")
             cliente_fact = st.text_input("Nombre del Cliente")
+            
+            # NUEVOS CAMPOS AÑADIDOS
+            c_ced, c_dir = st.columns(2)
+            cedula_fact = c_ced.text_input("Cédula / RNC")
+            direccion_fact = c_dir.text_input("Dirección (Ciudad/Sector)")
+            
             concepto_fact = st.text_input("Concepto (Ej. Anticipo Deslinde Parcela 44)")
             
             c_monto, c_estado = st.columns(2)
             monto_fact = c_monto.number_input("Monto (RD$)", min_value=0.0, step=1000.0)
             estado_fact = c_estado.selectbox("Estado", ["Pendiente", "Pagado", "Abono"])
             
-            st.write("Acciones:")
+            st.markdown("---")
             b1, b2 = st.columns(2)
             btn_guardar = b1.form_submit_button("💾 Guardar Registro")
             btn_enviar = b2.form_submit_button("📤 Generar Recibo")
-        # --- FIN DEL FORMULARIO ---
 
-        # --- LÓGICA FUERA DEL FORMULARIO (La Solución) ---
+        # --- LÓGICA DE GENERACIÓN (HTML PREMIUM) ---
         if btn_guardar:
             st.success(f"✅ Registro de {cliente_fact} guardado exitosamente.")
         
@@ -436,7 +441,7 @@ def vista_facturacion():
                 fecha_hoy = datetime.now().strftime("%d/%m/%Y")
                 num_recibo = datetime.now().strftime("ABG-%y%m%d%H%M")
                 
-                # Diseño WAOO en HTML/CSS integrado
+                # Diseño WAOO actualizado con cédula y dirección
                 recibo_html = f"""
                 <html>
                 <head>
@@ -451,8 +456,8 @@ def vista_facturacion():
                     .info-box {{ text-align: right; color: #4a5568; font-size: 14px; line-height: 1.6; }}
                     .titulo-factura {{ text-align: center; color: #0a2540; letter-spacing: 2px; margin-bottom: 30px; font-size: 22px; }}
                     .tabla-datos {{ width: 100%; border-collapse: collapse; margin-bottom: 30px; }}
-                    .tabla-datos td {{ padding: 15px; border-bottom: 1px solid #eef0f5; font-size: 15px; }}
-                    .tabla-datos td:first-child {{ font-weight: bold; color: #4a5568; width: 30%; }}
+                    .tabla-datos td {{ padding: 12px 15px; border-bottom: 1px solid #eef0f5; font-size: 15px; }}
+                    .tabla-datos td:first-child {{ font-weight: bold; color: #4a5568; width: 35%; }}
                     .tabla-datos td:last-child {{ color: #2d3748; }}
                     .total-box {{ text-align: right; font-size: 28px; font-weight: bold; color: #2e8540; margin-top: 20px; padding: 20px; background-color: #f8fcf9; border-radius: 5px; }}
                     .pie-pagina {{ text-align: center; margin-top: 60px; color: #718096; font-size: 13px; border-top: 1px solid #eef0f5; padding-top: 30px; }}
@@ -478,7 +483,9 @@ def vista_facturacion():
                         <div class="titulo-factura">RECIBO DE HONORARIOS</div>
                         
                         <table class="tabla-datos">
-                            <tr><td>Recibimos de:</td><td>{cliente_fact}</td></tr>
+                            <tr><td>Facturado a:</td><td>{cliente_fact}</td></tr>
+                            <tr><td>Cédula / RNC:</td><td>{cedula_fact if cedula_fact else "N/A"}</td></tr>
+                            <tr><td>Dirección:</td><td>{direccion_fact if direccion_fact else "N/A"}</td></tr>
                             <tr><td>Por concepto de:</td><td>{concepto_fact}</td></tr>
                             <tr><td>Estado actual:</td><td><strong style="color: #0a2540; text-transform: uppercase;">{estado_fact}</strong></td></tr>
                         </table>
@@ -499,7 +506,6 @@ def vista_facturacion():
                 """
                 
                 st.info(f"📧 Recibo Premium generado para {cliente_fact}.")
-                # Note que cambiamos el file_name a .html
                 st.download_button(
                     label="⬇️ Descargar Factura Premium (HTML/PDF)", 
                     data=recibo_html, 
@@ -508,6 +514,15 @@ def vista_facturacion():
                 )
             else:
                 st.warning("⚠️ Llene el nombre y el monto para generar el recibo.")
+
+    with col_tabla:
+        st.subheader("📋 Historial Reciente")
+        datos_pago = [
+            {"Cliente": "Juan Perez", "Monto": "RD$ 25,000", "Estado": "Pagado", "Fecha": "24/04/2026"},
+            {"Cliente": "Maria Sosa", "Monto": "RD$ 20,000", "Estado": "Pendiente", "Fecha": "23/04/2026"},
+            {"Cliente": "Const. XYZ", "Monto": "RD$ 75,000", "Estado": "Abono", "Fecha": "20/04/2026"}
+        ]
+        st.dataframe(datos_pago, use_container_width=True)
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
