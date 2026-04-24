@@ -1080,9 +1080,11 @@ def vista_registro_maestro():
                             "parcela": st.session_state.get('in_par', ''),
                             "municipio": st.session_state.get('in_mun', ''),
                             "provincia": st.session_state.get('in_prov', '')
-                        }
-                        
-if btn_guardar:
+                }
+            except Exception as e:
+                st.sidebar.error(f"Error al procesar: {e}")
+
+    if btn_guardar:
         if st.session_state.get('in_np', '') != '': # Verificamos que haya un nombre escrito
             try:
                 # 1. Guardamos en Supabase (usando su tabla expedientes_maestros)
