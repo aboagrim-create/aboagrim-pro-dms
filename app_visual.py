@@ -1110,7 +1110,7 @@ if btn_guardar:
                 with st.status("🏗️ Creando oficina virtual en Google Drive...", expanded=True) as status:
                     
                     # ---> IMPORTANTE: PEGUE AQUÍ SU ID DE DRIVE <---
-                    ID_MAESTRA = "SU_ID_AQUÍ" 
+                    ID_MAESTRA = "1d1FmJhurQ_Ojj8j_fKxyLBOr-zFqUTuz" 
                     
                     url_carpeta = crear_oficina_virtual(nombre_cliente, id_generado, ID_MAESTRA)
                     
