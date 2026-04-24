@@ -1065,7 +1065,7 @@ def vista_registro_maestro():
             else:
                 with st.sidebar.status("Procesando documentos y guardando en la nube...", expanded=True) as status:
                     try:
-                          # 1. Llamamos al Súper Motor para crear el ZIP
+                        # 1. Llamamos al Súper Motor para crear el ZIP
                         archivo, nombre_archivo, tipo_mime = generar_paquete_documentos(st.session_state, plantillas_elegidas)
                         
                         st.session_state['archivo_listo'] = archivo
@@ -1081,8 +1081,8 @@ def vista_registro_maestro():
                             "municipio": st.session_state.get('in_mun', ''),
                             "provincia": st.session_state.get('in_prov', '')
                         }
-                        except Exception as e:
-                            st.sidebar.error(f"Error al procesar: {e}")
+                    except Exception as e:
+                        st.sidebar.error(f"Error al procesar: {e}")
 
     if btn_guardar:
         if st.session_state.get('in_np', '') != '': # Verificamos que haya un nombre escrito
