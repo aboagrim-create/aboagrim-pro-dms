@@ -1065,7 +1065,14 @@ def vista_registro_maestro():
             else:
                 with st.sidebar.status("Procesando documentos y guardando en la nube...", expanded=True) as status:
                     try:
-                            # 2. GUARDADO AUTOMÁTICO EN SUPABASE
+                          # 1. Llamamos al Súper Motor para crear el ZIP
+                        archivo, nombre_archivo, tipo_mime = generar_paquete_documentos(st.session_state, plantillas_elegidas)
+                        
+                        st.session_state['archivo_listo'] = archivo
+                        st.session_state['nombre_descarga'] = nombre_archivo
+                        st.session_state['tipo_mime'] = tipo_mime
+
+                        # 2. GUARDADO AUTOMÁTICO EN SUPABASE
                         datos_a_guardar = {
                             "expediente": st.session_state.get('in_exp', ''),
                             "nombre_propietario": st.session_state.get('in_np', ''),
@@ -1074,8 +1081,6 @@ def vista_registro_maestro():
                             "municipio": st.session_state.get('in_mun', ''),
                             "provincia": st.session_state.get('in_prov', '')
                         }
-                        
-                        # Fíjese cómo este except baja en línea recta desde el try
                         except Exception as e:
                             st.sidebar.error(f"Error al procesar: {e}")
 
