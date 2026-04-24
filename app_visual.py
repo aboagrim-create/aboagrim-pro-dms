@@ -1187,13 +1187,19 @@ def vista_plantillas_auto():
 
         if btn_magico:
             try:
-                # Datos para las llaves {{ }} de sus plantillas Word
+                # El "Cerebro" que llena los espacios {{ }} en sus Word
                 datos = {
-                    "nombre": nombre, "parcela": parcela, "dc": dc,
-                    "matricula": matricula, "expediente": expediente,
-                    "fecha": fecha.strftime("%d/%m/%Y"),
-                    "notario": nom_notario, "mat_not": mat_notario,
-                    "abogado": nom_abogado, "mat_abo": mat_abogado,
+                    "nombre": st.session_state.get('in_np', ''),
+                    "cedula": st.session_state.get('in_cp', ''),
+                    "parcela": st.session_state.get('in_par', ''),
+                    "municipio": st.session_state.get('in_mun', ''),
+                    "provincia": st.session_state.get('in_prov', ''),
+                    "expediente": st.session_state.get('in_exp', ''),
+                    "fecha": fecha.strftime("%d de %B del %Y"),
+                    "notario": nom_notario,
+                    "mat_not": mat_notario,
+                    "abogado": nom_abogado,
+                    "mat_abo": mat_abogado,
                     "profesional": "Lic. Jhonny Matos. M.A.",
                     "cargo": "Presidente fundador AboAgrim"
                 }
