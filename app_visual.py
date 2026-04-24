@@ -1050,40 +1050,33 @@ def vista_registro_maestro():
                         }
                         
                         # Enviamos los datos a la tabla 'expedientes_maestros'
-                        supabase.table("expedientes_maestros").insert(datos_a_guardar).execute()
-# --- Dentro de la función de Registro Maestro ---
+try:
+        # 1. Guardamos sus datos en Supabase (Atrapamos la respuesta en 'res')
+        res = supabase.table("expedientes_maestros").insert(datos_a_guardar).execute()
+        
+        # Obtenemos el ID nuevo y el nombre del propietario para la carpeta
+        id_generado = res.data[0]['id']
+        nombre_cliente = st.session_state.get('in_np', 'Sin_Nombre')
 
-if btn_guardar:
-    if nombre_completo:
-        # 1. Primero guardamos los datos en Supabase
-        nuevo_cliente = {
-            "nombre_completo": nombre_completo,
-            "cedula": cedula,
-            "direccion": direccion,
-            "tipo_proceso": tipo_proceso,
-            "estado": "Activo"
-        }
-        try:
-            res = supabase.table("registro_maestro").insert(nuevo_cliente).execute()
-            id_generado = res.data[0]['id'] # Obtenemos el ID que creó Supabase
-
-            # 2. ¡LA MAGIA DE LA NUBE! 
-            # Creamos la carpeta usando el ID de la carpeta maestra que copió arriba
-            with st.status("🏗️ Creando oficina virtual en Google Drive...", expanded=True) as status:
-                ID_MAESTRA = "PONGA_AQUI_EL_ID_QUE_COPIO_DE_DRIVE"
-                
-                # Llamamos a la función de creación (que definimos en el paso anterior)
-                url_carpeta = crear_oficina_virtual(nombre_completo, id_generado, ID_MAESTRA)
-                
-                if url_carpeta:
-                    # Guardamos el link de la carpeta en Supabase para el futuro
-                    supabase.table("registro_maestro").update({"url_drive": url_carpeta}).eq("id", id_generado).execute()
-                    status.update(label="✅ Expediente Digital Organizado con éxito!", state="complete")
-                    
-            st.success(f"⚖️ Registro de {nombre_completo} completado.")
-            st.link_button("📂 Abrir Carpeta en Google Drive", url_carpeta)
+        # 2. ¡LA MAGIA DE LA NUBE! (Creación de carpetas)
+        with st.status("🏗️ Creando oficina virtual en Google Drive...", expanded=True) as status:
+            # Reemplace el texto de abajo por el ID de su carpeta EXPEDIENTES_ABOAGRIM
+            ID_MAESTRA = "PONGA_AQUI_EL_ID_QUE_COPIO_DE_DRIVE" 
             
-        except Exception as e:
+            url_carpeta = crear_oficina_virtual(nombre_cliente, id_generado, ID_MAESTRA)
+            
+            if url_carpeta:
+                # Actualizamos la tabla expedientes_maestros para guardar el link
+                supabase.table("expedientes_maestros").update({"url_drive": url_carpeta}).eq("id", id_generado).execute()
+                status.update(label="✅ Expediente Digital Organizado con éxito!", state="complete")
+                
+        st.success("⚖️ Registro completado con éxito en la base de datos.")
+        if url_carpeta:
+            st.link_button("📂 Abrir Carpeta en Google Drive", url_carpeta)
+
+    except Exception as e:
+        st.error(f"Error al registrar: {e}")
+
             st.error(f"Error al registrar: {e}")
                         
                         status.update(label="✅ ¡Expediente listo y guardado en la nube!", state="complete", expanded=False)
