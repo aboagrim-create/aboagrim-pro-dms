@@ -28,6 +28,39 @@ try:
     supabase: Client = create_client(url_supabase, clave_supabase)
 except Exception as e:
     pass
+
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+
+def crear_oficina_virtual(nombre_cliente, id_expediente, id_maestra):
+    try:
+        # Cargamos los secretos que pegamos en Streamlit
+        info_llave = st.secrets["google_drive"]
+        creds = service_account.Credentials.from_service_account_info(info_llave)
+        drive_service = build('drive', 'v3', credentials=creds)
+
+        nombre_carpeta = f"EXP-{id_expediente} | {nombre_cliente}"
+
+        # 1. Crear Carpeta Principal
+        meta_principal = {
+            'name': nombre_carpeta,
+            'mimeType': 'application/vnd.google-apps.folder',
+            'parents': [id_maestra]
+        }
+        archivo = drive_service.files().create(body=meta_principal, fields='id, webViewLink').execute()
+        folder_id = archivo.get('id')
+        link_web = archivo.get('webViewLink')
+
+        # 2. Crear las 3 Subcarpetas (Orden Diamante)
+        subcarpetas = ["01_DOCUMENTOS_LEGALES", "02_PLANOS_Y_TECNICO", "03_RECIBOS_Y_PAGOS"]
+        for sub in subcarpetas:
+            meta_sub = {'name': sub, 'mimeType': 'application/vnd.google-apps.folder', 'parents': [folder_id]}
+            drive_service.files().create(body=meta_sub).execute()
+
+        return link_web
+    except Exception as e:
+        st.error(f"Error en Drive: {e}")
+        return None
 def generar_paquete_documentos(datos_formulario, rutas_plantillas):
     import io
     import zipfile
