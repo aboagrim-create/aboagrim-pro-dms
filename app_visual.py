@@ -1187,7 +1187,7 @@ def vista_plantillas_auto():
 
         if btn_magico:
             try:
-                # El "Cerebro" que llena los espacios {{ }} en sus Word
+                # 1. El "Cerebro" que llena los espacios {{ }} en sus Word
                 datos = {
                     "nombre": st.session_state.get('in_np', ''),
                     "cedula": st.session_state.get('in_cp', ''),
@@ -1203,72 +1203,57 @@ def vista_plantillas_auto():
                     "profesional": "Lic. Jhonny Matos. M.A.",
                     "cargo": "Presidente fundador AboAgrim"
                 }
-                # --- SUBIDA AUTOMÁTICA A DRIVE ---
+
                 url_carpeta = st.session_state.get('url_drive_actual')
-                if url_carpeta:
-                    id_carpeta_cliente = url_carpeta.split('/')[-1]
-                    for nombre_archivo, contenido_bio in archivos_generados:
-                        subir_archivo_a_drive(contenido_bio, nombre_archivo, id_carpeta_cliente)
-                    st.success("✅ Documentos guardados también en la Bóveda de Drive.")
+                id_carpeta_cliente = url_carpeta.split('/')[-1] if url_carpeta else None
 
-            except Exception as e: # <--- AQUÍ (12 espacios exactos)
-                st.error(f"Error al generar documentos: {e}")
-        else: # <--- AQUÍ (8 espacios, alineado con el 'if btn_magico')
-            st.warning("⚠️ Debe completar los datos...")
-            st.warning("⚠️ Debe completar los datos en el Registro Maestro antes de generar plantillas.")
-# --- FUERA DE TODO LO ANTERIOR (AL FINAL DEL ARCHIVO) ---
+                # 2. GENERACIÓN MASIVA ZIP Y SUBIDA A DRIVE DIRECTA
+                buf = io.BytesIO()
+                with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+                    
+                    # - Aviso Principal
+                    ruta_base = f"plantillas_maestras/Mensuras Catastrales Tecnicas/{proceso}/"
+                    file_p = f"Aviso de Mensura Para {proceso}.docx"
+                    
+                    doc_p = DocxTemplate(ruta_base + file_p)
+                    doc_p.render(datos)
+                    out_p = io.BytesIO()
+                    doc_p.save(out_p)
+                    zip_file.writestr(file_p, out_p.getvalue())
+                    
+                    if id_carpeta_cliente:
+                        subir_archivo_a_drive(out_p.getvalue(), file_p, id_carpeta_cliente)
 
-if menu_id == "Archivo Digital":
-    st.header("📂 Archivo Digital AboAgrim")
-    st.info("Consulte expedientes y acceda a las carpetas en la nube.")
-    
-    busqueda = st.text_input("🔍 Buscar por Nombre o No. de Expediente")
-    if busqueda:
-        res = supabase.table("expedientes_maestros").select("*").or_(f"nombre_propietario.ilike.%{busqueda}%,expediente.ilike.%{busqueda}%").execute()
-        if res.data:
-            for exp in res.data:
-                with st.expander(f"📋 {exp['nombre_propietario']} | Exp: {exp['expediente']}"):
-                    st.write(f"**Parcela:** {exp.get('parcela', 'N/A')}")
-                    url = exp.get('url_drive')
-                    if url:
-                        st.link_button("📂 Abrir Bóveda en Drive", url)
-                    else:
-                        st.warning("⚠️ No tiene carpeta vinculada.")
+                    # - Plantillas Extras
+                    for p_extra in archivos_adicionales:
+                        nombre_limpio = p_extra.split('/')[-1]
+                        doc_e = DocxTemplate(p_extra)
+                        doc_e.render(datos)
+                        out_e = io.BytesIO()
+                        doc_e.save(out_e)
+                        zip_file.writestr(nombre_limpio, out_e.getvalue())
+                        
+                        if id_carpeta_cliente:
+                            subir_archivo_a_drive(out_e.getvalue(), nombre_limpio, id_carpeta_cliente)
+
+                # 3. FINAL DEL PROCESO
+                if id_carpeta_cliente:
+                    st.success("✅ Documentos subidos a la Bóveda de Drive.")
+                    
+                st.success(f"⚖️ Set de {proceso} preparado con {len(archivos_adicionales)+1} documentos!")
+                st.balloons()
+
+                st.download_button(
+                    label="📥 DESCARGAR EXPEDIENTE COMPLETO",
+                    data=buf.getvalue(),
+                    file_name=f"Expediente_{proceso}_{datos['parcela']}.zip",
+                    mime="application/zip"
+                )
+
+            except Exception as e:
+                st.error(f"⚠️ Error en la generación: {e}")
         else:
-            st.error("No se encontraron resultados.")
-# --- FUNCIÓN 1: GENERACIÓN MASIVA ZIP ---
-            buf = io.BytesIO()
-            with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
-                # 1. El Aviso Principal
-                ruta_base = f"plantillas_maestras/Mensuras Catastrales Tecnicas/{proceso}/"
-                file_p = f"Aviso de Mensura Para {proceso}.docx"
-                
-                doc_p = DocxTemplate(ruta_base + file_p)
-                doc_p.render(datos)
-                out_p = io.BytesIO(); doc_p.save(out_p)
-                zip_file.writestr(file_p, out_p.getvalue())
-
-                # 2. Las plantillas extras marcadas en la izquierda
-                for p_extra in archivos_adicionales:
-                    nombre_limpio = p_extra.split('/')[-1]
-                    doc_e = DocxTemplate(p_extra)
-                    doc_e.render(datos)
-                    out_e = io.BytesIO(); doc_e.save(out_e)
-                    zip_file.writestr(nombre_limpio, out_e.getvalue())
-
-            # --- FINAL DEL PROCESO ---
-            st.success(f"⚖️ Set de {proceso} preparado con {len(archivos_adicionales)+1} documentos!")
-            st.balloons()
-
-            st.download_button(
-                label="📥 DESCARGAR EXPEDIENTE COMPLETO",
-                data=buf.getvalue(),
-                file_name=f"Expediente_{proceso}_{parcela}.zip",
-                mime="application/zip"
-            )
-
-        except Exception as e:
-            st.error(f"⚠️ Error en la generación: {e}")
+            st.warning("⚠️ Complete los datos en el Registro Maestro antes de generar.")
 # --- EL INTERRUPTOR FINAL ---
 # ==========================================
 # MOTOR DE NAVEGACIÓN (DICCIONARIO FINAL)
