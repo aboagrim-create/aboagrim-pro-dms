@@ -1210,7 +1210,13 @@ def vista_plantillas_auto():
                     for nombre_archivo, contenido_bio in archivos_generados:
                         subir_archivo_a_drive(contenido_bio, nombre_archivo, id_carpeta_cliente)
                     st.success("✅ Documentos guardados también en la Bóveda de Drive.")
-# --- PESTAÑA: ARCHIVO DIGITAL (OPCIÓN 2) ---
+except Exception as e:
+                st.error(f"Error al generar documentos: {e}")
+    else:
+        st.warning("⚠️ Debe completar los datos en el Registro Maestro antes de generar plantillas.")
+
+# --- FUERA DE TODO LO ANTERIOR (AL FINAL DEL ARCHIVO) ---
+
 if menu_id == "Archivo Digital":
     st.header("📂 Archivo Digital AboAgrim")
     st.info("Consulte expedientes y acceda a las carpetas en la nube.")
