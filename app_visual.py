@@ -1090,6 +1090,17 @@ btn_guardar = st.button("💾 GUARDAR EXPEDIENTE Y CREAR BÓVEDA", type="primary
 if btn_guardar:
         if st.session_state.get('in_np', '') != '': # Verificamos que haya un nombre escrito
             try:
+                # ---> PEGAR ESTE PAQUETE AQUÍ <---
+                datos_a_guardar = {
+                    "expediente": st.session_state.get('in_exp', ''),
+                    "nombre_propietario": st.session_state.get('in_np', ''),
+                    "cedula_propietario": st.session_state.get('in_cp', ''),
+                    "parcela": st.session_state.get('in_par', ''),
+                    "municipio": st.session_state.get('in_mun', ''),
+                    "provincia": st.session_state.get('in_prov', '')
+                }
+                
+                # 1. Guardamos en Supabase (usando su tabla expedientes_maestros)
                 # 1. Guardamos en Supabase (usando su tabla expedientes_maestros)
                 res = supabase.table("expedientes_maestros").insert(datos_a_guardar).execute()
                 id_generado = res.data[0]['id']
