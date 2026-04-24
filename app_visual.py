@@ -844,60 +844,62 @@ def vista_registro_maestro():
 
 def vista_plantillas_auto():
     st.title("📄 Generador de Plantillas AboAgrim")
-    st.info("Complete los datos para generar el expediente bajo Res. 790-2022")
-    st.markdown("---")
-    
+    st.info("Complete los datos y seleccione el tipo de proceso para generar el documento.")
+
     with st.form("form_plantillas"):
         col1, col2 = st.columns(2)
         with col1:
-            nombre = st.text_input("Nombre del Propietario")
-            parcela = st.text_input("Parcela No.")
-            dc = st.text_input("D.C.")
+            nombre = st.text_input("Nombre del Propietario/Solicitante")
+            parcela = st.text_input("Designación Catastral (Parcela)")
+            dc = st.text_input("Distrito Catastral")
         with col2:
-            matricula = st.text_input("Matrícula Constancia")
-            expediente = st.text_input("No. Expediente (Res. 790-2022)")
-            fecha = st.date_input("Fecha de Mensura")
+            matricula = st.text_input("Matrícula")
+            expediente = st.text_input("No. de Expediente")
+            fecha = st.date_input("Fecha del Documento")
 
-        boton = st.form_submit_button("Generar Set Completo .docx")
-                
+        # --- SELECTOR DE PROCESO (Navega por sus carpetas reales) ---
+        proceso = st.selectbox("Seleccione el Tipo de Proceso", [
+            "Saneamiento",
+            "Deslinde",
+            "Refundición",
+            "Subdivisión"
+        ])
+
+        boton = st.form_submit_button("Generar y Descargar .docx")
+
         if boton:
             try:
-                # 1. Empaquetamos los datos que usted escribió en un "Diccionario"
-                datos_expediente = {
-                    "nombre": nombre,
-                    "parcela": parcela,
-                    "dc": dc,
-                    "matricula": matricula,
-                    "expediente": expediente,
-                    "fecha": fecha.strftime("%d/%m/%Y") # Le da formato bonito a la fecha
+                datos = {
+                    "nombre": nombre, "parcela": parcela, "dc": dc,
+                    "matricula": matricula, "expediente": expediente,
+                    "fecha": fecha.strftime("%d/%m/%Y")
                 }
 
-                # 2. Cargamos el documento Word maestro desde la carpeta
-                # (Asegúrese de que el nombre del archivo coincida exactamente)
-                # 2. Cargamos el documento Word maestro desde su ruta exacta
-                doc = DocxTemplate("plantillas_maestras/Mensuras Catastrales Tecnicas/Saneamiento/Aviso de Mensura Para Saneamiento.docx")
+                # 1. Ruta dinámica que entra en sus carpetas de GitHub
+                ruta_base = f"plantillas_maestras/Mensuras Catastrales Tecnicas/{proceso}/"
+                archivo_nombre = f"Aviso de Mensura Para {proceso}.docx"
+                ruta_final = ruta_base + archivo_nombre
 
-                # 3. Inyectamos los datos de AboAgrim al Word
-                doc.render(datos_expediente)
+                # 2. Procesa el Word
+                doc = DocxTemplate(ruta_final)
+                doc.render(datos)
 
-                # 4. Preparamos el archivo en la memoria de la nube para descargarlo
                 bio = io.BytesIO()
                 doc.save(bio)
 
-                st.success(f"¡Documento para la Parcela {parcela} procesado exitosamente!")
-                st.balloons() # Animación de celebración
+                st.success(f"✅ Documento de {proceso} generado con éxito.")
+                st.balloons()
 
-                # 5. El botón mágico para descargar el Word listo a su PC
+                # 3. Botón de descarga
                 st.download_button(
-                    label="⬇️ Descargar Aviso de Saneamiento",
+                    label=f"⬇️ Descargar Aviso de {proceso}",
                     data=bio.getvalue(),
-                    file_name=f"Aviso_Saneamiento_Parcela_{parcela}.docx",
+                    file_name=f"Aviso_{proceso}_Parcela_{parcela}.docx",
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 )
             except Exception as e:
-                st.error("⚠️ Error: No se encontró el documento maestro.")
-                st.info(f"Detalle técnico: {e}")
-                st.warning("Asegúrese de crear la carpeta 'plantillas' en GitHub y subir el archivo 'Aviso_Mensura.docx' ahí.")
+                st.error(f"❌ Error: No se encontró la plantilla de {proceso}")
+                st.info(f"Busqué en: {proceso}. Asegúrese de que el archivo se llame: 'Aviso de Mensura Para {proceso}.docx'")
             # Aquí conectaremos los Word en el próximo paso
 # Diccionario que conecta los botones con sus funciones
 vistas = {
