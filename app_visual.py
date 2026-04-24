@@ -1239,10 +1239,9 @@ if menu_id == "Archivo Digital":
 # --- FUNCIÓN 1: GENERACIÓN MASIVA ZIP ---
 buf = io.BytesIO()
 with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
-    # Todo lo que sigue debajo del 'with' SÍ lleva 4 espacios de sangría
-    # 1. El Aviso Principal
+    # A partir de aquí SÍ llevan espacios porque están DENTRO del with
     ruta_base = f"plantillas_maestras/Mensuras Catastrales Tecnicas/{proceso}/"
-                    file_p = f"Aviso de Mensura Para {proceso}.docx"
+    file_p = f"Aviso de Mensura Para {proceso}.docx"
                     
                     doc_p = DocxTemplate(ruta_base + file_p)
                     doc_p.render(datos)
