@@ -1233,4 +1233,20 @@ def ventana_registro_profesional(tipo, menu_a_refrescar=None):
 # 1. DISEÑO DE LA PANTALLA DE PLANTILLAS
 # =======================================================
 
-
+def crear_carpeta_expediente(nombre_cliente, id_expediente):
+    # 1. Definimos el nombre de la carpeta principal
+    nombre_carpeta = f"EXP_{id_expediente}_{nombre_cliente}"
+    
+    # 2. Lógica para crear carpeta en Google Drive (usando service account o OAuth)
+    # (Aquí va la conexión técnica con Google)
+    folder_metadata = {
+        'name': nombre_carpeta,
+        'mimeType': 'application/vnd.google-apps.folder',
+        'parents': ['ID_DE_SU_CARPETA_MAESTRA_ABOAGRIM'] # Su carpeta raíz
+    }
+    
+    # El sistema crea la carpeta y nos devuelve un Link
+    # drive_service.files().create(body=folder_metadata).execute()
+    
+    link_drive = f"https://drive.google.com/drive/folders/ID_GENERADO"
+    return link_drive
