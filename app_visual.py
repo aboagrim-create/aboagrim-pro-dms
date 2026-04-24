@@ -1250,3 +1250,39 @@ def crear_carpeta_expediente(nombre_cliente, id_expediente):
     
     link_drive = f"https://drive.google.com/drive/folders/ID_GENERADO"
     return link_drive
+import googleapiclient.discovery
+
+def automatizar_nube_cliente(nombre_cliente, id_expediente):
+    """
+    Crea la estructura de carpetas en Google Drive y devuelve el link.
+    """
+    # ID de su carpeta maestra (el que copió en el paso 1)
+    ID_CARPETA_MAESTRA = "SU_ID_AQUI" 
+    
+    nombre_principal = f"EXP-{id_expediente} | {nombre_cliente}"
+    
+    try:
+        # 1. Crear Carpeta Principal del Cliente
+        folder_metadata = {
+            'name': nombre_principal,
+            'mimeType': 'application/vnd.google-apps.folder',
+            'parents': [ID_CARPETA_MAESTRA]
+        }
+        # folder = drive_service.files().create(body=folder_metadata, fields='id, webViewLink').execute()
+        # folder_id = folder.get('id')
+        # link_final = folder.get('webViewLink')
+
+        # 2. Crear Sub-carpetas de organización interna
+        subcarpetas = ["01_DOCUMENTOS_LEGALES", "02_PLANOS_Y_TECNICO", "03_PAGOS_Y_RECIBOS"]
+        for sub in subcarpetas:
+            sub_metadata = {
+                'name': sub,
+                'mimeType': 'application/vnd.google-apps.folder',
+                # 'parents': [folder_id]
+            }
+            # drive_service.files().create(body=sub_metadata).execute()
+
+        # return link_final
+        return "https://drive.google.com/..." # Simulación de retorno
+    except Exception as e:
+        return None
