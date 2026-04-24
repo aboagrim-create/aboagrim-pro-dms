@@ -1267,7 +1267,7 @@ with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
             mime="application/zip"
         )
 
-except Exception as e:
+            except Exception as e:
                 st.error(f"⚠️ Error en la generación: {e}")
 # --- EL INTERRUPTOR FINAL ---
 # ==========================================
