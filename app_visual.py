@@ -844,12 +844,18 @@ def vista_registro_maestro():
 def vista_plantillas_auto():
     st.title("📄 Generador de Plantillas AboAgrim")
     
-    # --- OPCIÓN 2: CONEXIÓN CON DATOS (Visualización rápida) ---
-    with st.expander("🔍 Ver expedientes recientes en la base de datos"):
-        st.write("Aquí aparecerán sus últimos registros de Supabase próximamente...")
-        # (Aquí conectaremos la tabla en el siguiente paso)
+    # --- FUNCIÓN 2: CONEXIÓN A BASE DE DATOS (Expedientes recientes) ---
+    with st.expander("🔍 Ver últimos expedientes registrados en la nube"):
+        try:
+            res = supabase.table("expedientes_maestros").select("*").order("created_at", desc=True).limit(5).execute()
+            if res.data:
+                st.table(res.data) # Muestra una tabla limpia con los datos de Supabase
+            else:
+                st.write("No hay expedientes recientes.")
+        except Exception:
+            st.write("Conectando con la base de datos...")
 
-    # Recuperamos las plantillas que usted marcó en la barra lateral
+    # Recuperamos las plantillas elegidas en la barra lateral
     archivos_adicionales = st.session_state.get('plantillas_elegidas', [])
 
     with st.form("form_plantillas_pro"):
@@ -864,21 +870,21 @@ def vista_plantillas_auto():
             expediente = st.text_input("No. Expediente (Res. 790-2022)", key="f_exp")
             fecha = st.date_input("Fecha de Mensura")
 
-        # --- OPCIÓN 3: MODO NOTARIO/ABOGADO (Captura rápida) ---
-        with st.expander("⚖️ Datos de Profesionales Actuantes (Opcional)"):
+        # --- FUNCIÓN 3: MODO NOTARIO Y ABOGADO ---
+        with st.expander("⚖️ Datos de Profesionales Actuantes (Para actas y contratos)"):
             c1, c2 = st.columns(2)
-            nom_notario = c1.text_input("Nombre del Notario")
-            mat_notario = c2.text_input("Matrícula Notario")
-            nom_abogado = c1.text_input("Nombre del Abogado")
-            mat_abogado = c2.text_input("Colegiatura Abogado")
+            nom_notario = c1.text_input("Nombre del Notario", value=st.session_state.get('nom_notario', ''))
+            mat_notario = c2.text_input("Matrícula Notario", value=st.session_state.get('mat_notario', ''))
+            nom_abogado = c1.text_input("Nombre Abogado/Apoderado", value=st.session_state.get('nom_abogado', ''))
+            mat_abogado = c2.text_input("Colegiatura Abogado", value=st.session_state.get('mat_abogado', ''))
 
-        proceso = st.selectbox("Proceso a realizar", ["Saneamiento", "Deslinde", "Refundición", "Subdivisión"])
+        proceso = st.selectbox("Tipo de Proceso Catastral", ["Saneamiento", "Deslinde", "Refundición", "Subdivisión"])
         
         btn_magico = st.form_submit_button("🚀 GENERAR EXPEDIENTE COMPLETO (.ZIP)")
 
         if btn_magico:
             try:
-                # Diccionario Maestro (Incluye datos de Notario para sus Word)
+                # Diccionario Maestro (Estos nombres deben estar en su Word entre {{ }})
                 datos = {
                     "nombre": nombre, "parcela": parcela, "dc": dc,
                     "matricula": matricula, "expediente": expediente,
@@ -887,9 +893,10 @@ def vista_plantillas_auto():
                     "abogado": nom_abogado, "mat_abo": mat_abogado
                 }
 
+                # --- FUNCIÓN 1: GENERACIÓN MASIVA ZIP ---
                 buf = io.BytesIO()
                 with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
-                    # 1. Agregamos el Aviso Principal automáticamente
+                    # Agregamos el Aviso de Mensura Automático
                     ruta_base = f"plantillas_maestras/Mensuras Catastrales Tecnicas/{proceso}/"
                     file_p = f"Aviso de Mensura Para {proceso}.docx"
                     
@@ -898,27 +905,37 @@ def vista_plantillas_auto():
                     out_p = io.BytesIO(); doc_p.save(out_p)
                     zip_file.writestr(file_p, out_p.getvalue())
 
-                    # 2. Agregamos todo lo que usted seleccionó en la barra lateral
+                    # Agregamos las plantillas extras elegidas en la barra lateral
                     for p_extra in archivos_adicionales:
-                        # Limpiamos la ruta por si glob trae rutas completas
                         nombre_limpio = p_extra.split('/')[-1]
                         doc_e = DocxTemplate(p_extra)
                         doc_e.render(datos)
                         out_e = io.BytesIO(); doc_e.save(out_e)
                         zip_file.writestr(nombre_limpio, out_e.getvalue())
 
-                st.success(f"¡Expediente preparado! Se procesaron {len(archivos_adicionales)+1} documentos.")
+                st.success(f"¡Set de {proceso} preparado con éxito!")
                 st.balloons()
 
                 st.download_button(
-                    label="⬇️ DESCARGAR TODO EL SET (ZIP)",
+                    label="⬇️ DESCARGAR EXPEDIENTE COMPLETO",
                     data=buf.getvalue(),
                     file_name=f"Expediente_{proceso}_{parcela}.zip",
                     mime="application/zip"
                 )
             except Exception as e:
-                st.error(f"Hubo un problema: {e}")
-# El motor que ejecuta la pantalla seleccionada
+                st.error(f"Error técnico: {e}")
+# 1. Definición del Diccionario (Asegúrese de que esté después de def vista_plantillas_auto)
+vistas = {
+    "🏠 Mando Central": vista_mando,
+    "👤 Registro Maestro": vista_registro_maestro,
+    "📁 Archivo Digital": vista_archivo_digital,
+    "📄 Plantillas Auto": vista_plantillas_auto,
+    "📅 Alertas y Plazos": vista_alertas,
+    "💵 Facturación": vista_facturacion,
+    "⚙️ Configuración": vista_configuracion
+}
+
+# 2. El motor que arranca la aplicación (ESTA ES LA LÍNEA 923)
 if menu in vistas:
     vistas[menu]()
 def guardar_y_actualizar(tipo_perfil, datos, ventana_origen, menu_desplegable=None):
