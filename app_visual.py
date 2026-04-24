@@ -1163,26 +1163,20 @@ def vista_plantillas_auto():
         btn_magico = st.form_submit_button("🚀 GENERAR EXPEDIENTE COMPLETO (.ZIP)")
 
         if btn_magico:
-            try:
-# 1. Llamamos al Súper Motor para crear el ZIP
-                        archivo, nombre_archivo, tipo_mime = generar_paquete_documentos(st.session_state, plantillas_elegidas)
-                        
-                        st.session_state['archivo_listo'] = archivo
-                        st.session_state['nombre_descarga'] = nombre_archivo
-                        st.session_state['tipo_mime'] = tipo_mime
+        try:
+            # Datos para las llaves {{ }} de sus plantillas Word
+            datos = {
+                "nombre": nombre, "parcela": parcela, "dc": dc,
+                "matricula": matricula, "expediente": expediente,
+                "fecha": fecha.strftime("%d/%m/%Y"),
+                "notario": nom_notario, "mat_not": mat_notario,
+                "abogado": nom_abogado, "mat_abo": mat_abogado,
+                "profesional": "Lic. Jhonny Matos. M.A.",
+                "cargo": "Presidente fundador AboAgrim"
+            }
 
-                        # 2. GUARDADO AUTOMÁTICO EN SUPABASE
-                        datos_a_guardar = {
-                            "expediente": st.session_state.get('in_exp', ''),
-                            "nombre_propietario": st.session_state.get('in_np', ''),
-                            "cedula_propietario": st.session_state.get('in_cp', ''),
-                            "parcela": st.session_state.get('in_par', ''),
-                            "municipio": st.session_state.get('in_mun', ''),
-                            "provincia": st.session_state.get('in_prov', '')
-                        }
-
-                # --- FUNCIÓN 1: GENERACIÓN MASIVA ZIP ---
-                buf = io.BytesIO()
+            # --- FUNCIÓN 1: GENERACIÓN MASIVA ZIP ---
+            buf = io.BytesIO()
                 with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
                     # 1. El Aviso Principal
                     ruta_base = f"plantillas_maestras/Mensuras Catastrales Tecnicas/{proceso}/"
