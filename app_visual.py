@@ -1203,7 +1203,32 @@ def vista_plantillas_auto():
                     "profesional": "Lic. Jhonny Matos. M.A.",
                     "cargo": "Presidente fundador AboAgrim"
                 }
-
+                # --- SUBIDA AUTOMÁTICA A DRIVE ---
+                url_carpeta = st.session_state.get('url_drive_actual')
+                if url_carpeta:
+                    id_carpeta_cliente = url_carpeta.split('/')[-1]
+                    for nombre_archivo, contenido_bio in archivos_generados:
+                        subir_archivo_a_drive(contenido_bio, nombre_archivo, id_carpeta_cliente)
+                    st.success("✅ Documentos guardados también en la Bóveda de Drive.")
+# --- PESTAÑA: ARCHIVO DIGITAL (OPCIÓN 2) ---
+if menu_id == "Archivo Digital":
+    st.header("📂 Archivo Digital AboAgrim")
+    st.info("Consulte expedientes y acceda a las carpetas en la nube.")
+    
+    busqueda = st.text_input("🔍 Buscar por Nombre o No. de Expediente")
+    if busqueda:
+        res = supabase.table("expedientes_maestros").select("*").or_(f"nombre_propietario.ilike.%{busqueda}%,expediente.ilike.%{busqueda}%").execute()
+        if res.data:
+            for exp in res.data:
+                with st.expander(f"📋 {exp['nombre_propietario']} | Exp: {exp['expediente']}"):
+                    st.write(f"**Parcela:** {exp.get('parcela', 'N/A')}")
+                    url = exp.get('url_drive')
+                    if url:
+                        st.link_button("📂 Abrir Bóveda en Drive", url)
+                    else:
+                        st.warning("⚠️ No tiene carpeta vinculada.")
+        else:
+            st.error("No se encontraron resultados.")
                 # --- FUNCIÓN 1: GENERACIÓN MASIVA ZIP ---
                 buf = io.BytesIO()
                 with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
