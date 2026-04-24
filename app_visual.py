@@ -814,68 +814,101 @@ Por medio de la presente, AboAgrim, representada por el Lic. Jhonny Matos, M.A.,
                 st.components.v1.html(doc_html, height=600, scrolling=True)
 def vista_archivo_digital():
     st.title("📂 Archivo Digital de Expedientes")
-    st.markdown("### Gestión Centralizada de Documentación Técnica y Jurídica")
+    
+    # --- Estilo de Tarjetas Premium ---
+    st.markdown("""
+        <style>
+        .card {
+            border: 1px solid #e6e9ef;
+            padding: 1.5rem;
+            border-radius: 12px;
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 1rem;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-    # --- 1. MÉTRICAS DE ALTO NIVEL (Diseño Millonario) ---
+    # 1. Métricas (KPIs)
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Total Expedientes", "1,240", "↑ 12")
-    m2.metric("Planos Aprobados", "850", "72%")
-    m3.metric("En Proceso JI", "125", "-4")
-    m4.metric("Digitalizados", "98%", "🔥")
+    m1.metric("Expedientes", "1,240", "↑ 12")
+    m2.metric("Aprobados", "850", "72%")
+    m3.metric("En Proceso", "125", "-4")
+    m4.metric("Digital", "98%", "🔥")
 
-    st.markdown("---")
+    st.divider()
 
-    # --- 2. BARRA DE HERRAMIENTAS PROFESIONAL ---
-    c_busqueda, c_filtro, c_orden = st.columns([2, 1, 1])
-    query = c_busqueda.text_input("🔍 Buscar por Nombre, Parcela o Designación Catastral...")
-    filtro_tipo = c_filtro.selectbox("Filtrar por Tipo", ["Todos", "Deslindes", "Saneamientos", "Ventas", "Condominios"])
-    ordenar = c_orden.selectbox("Ordenar por", ["Más Recientes", "A-Z", "Prioridad"])
+    # 2. Lógica de Datos (Traer de Supabase)
+    try:
+        # Buscamos en su tabla maestra
+        res = supabase.table("registro_maestro").select("*").limit(10).execute()
+        expedientes = res.data
+    except:
+        expedientes = [] # Fallback por si la tabla está vacía
 
-    # --- 3. CUERPO DEL ARCHIVO: TARJETAS DINÁMICAS ---
-    # Simulamos datos (esto vendría de su tabla 'registro_maestro' o 'archivos')
-    expedientes = [
-        {"id": "EXP-2024-001", "cliente": "Juan Pérez", "tipo": "Deslinde", "estado": "En Proceso", "progreso": 65},
-        {"id": "EXP-2024-042", "cliente": "María García", "tipo": "Saneamiento", "estado": "Completado", "progreso": 100},
-        {"id": "EXP-2023-115", "cliente": "Inmobiliaria Santiago", "tipo": "Condominio", "estado": "Pendiente", "progreso": 15},
-    ]
+    # 3. Buscador
+    query = st.text_input("🔍 Buscar expediente por nombre o parcela...")
 
+    # 4. Generación de Tarjetas
     for exp in expedientes:
-        with st.container():
-            # Creamos un borde y sombra con CSS para que se vea premium
-            st.markdown(
-                f"""
-                <div style="
-                    border: 1px solid #e6e9ef; 
-                    padding: 20px; 
-                    border-radius: 10px; 
-                    background-color: #ffffff; 
-                    box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
-                    margin-bottom: 15px;
-                ">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h4 style="margin:0; color: #0a2540;">ID: {exp['id']} | {exp['cliente']}</h4>
-                        <span style="background-color: {'#d4edda' if exp['estado'] == 'Completado' else '#fff3cd'}; 
-                                     color: {'#155724' if exp['estado'] == 'Completado' else '#856404'}; 
-                                     padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: bold;">
-                            {exp['estado'].upper()}
+        nombre = exp.get('nombre_completo', 'Sin Nombre')
+        id_exp = exp.get('id', '000')
+        tipo = exp.get('tipo_proceso', 'Legal/Técnico')
+        estado = exp.get('estado', 'Activo')
+        
+        # Filtro de búsqueda simple
+        if query.lower() in nombre.lower():
+            with st.container():
+                # Diseño de la Tarjeta con HTML
+                color_estado = "#d4edda" if estado == "Completado" else "#fff3cd"
+                texto_estado = "#155724" if estado == "Completado" else "#856404"
+                
+                st.markdown(f"""
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #0a2540; font-weight: bold; font-size: 18px;">👤 {nombre}</span>
+                        <span class="status-badge" style="background-color: {color_estado}; color: {texto_estado};">
+                            {estado}
                         </span>
                     </div>
-                    <p style="color: #666; font-size: 14px;"><b>Tipo:</b> {exp['tipo']} | <b>Ubicación:</b> Santiago, R.D.</p>
+                    <p style="color: #666; margin: 10px 0;">📂 <b>Tipo:</b> {tipo} | 🆔 <b>ID:</b> {id_exp}</p>
                 </div>
-                """, 
-                unsafe_allow_status=True
-            )
-            
-            col_prog, col_btn = st.columns([4, 1])
-            col_prog.progress(exp['progreso'])
-            if col_btn.button("Ver Carpeta", key=exp['id']):
-                st.info(f"Abriendo archivos de {exp['cliente']}...")
+                """, unsafe_allow_html=True)
 
-    # --- 4. ACCIÓN RÁPIDA (Botón Flotante o Destacado) ---
+                # Botones de Acción
+                col1, col2, col3 = st.columns([1, 1, 2])
+                
+                if col1.button(f"📄 Ver Documentos", key=f"doc_{id_exp}"):
+                    st.session_state.expediente_ver = nombre
+                    st.toast(f"Cargando archivos de {nombre}...")
+                
+                if col2.button(f"✏️ Editar", key=f"edit_{id_exp}"):
+                    st.info("Función de edición en desarrollo")
+
+                # Visualizador de archivos (Solo aparece si se hace clic)
+                if st.session_state.get('expediente_ver') == nombre:
+                    with st.expander(f"📂 Carpeta Digital: {nombre}", expanded=True):
+                        st.write("---")
+                        # Aquí conectaríamos con su Google Drive
+                        st.markdown("### 📥 Archivos Disponibles")
+                        col_a, col_b = st.columns(2)
+                        col_a.link_button("📜 Título de Propiedad.pdf", "https://google.com")
+                        col_b.link_button("🗺️ Plano Catastral.pdf", "https://google.com")
+                        if st.button("Cerrar Carpeta"):
+                            st.session_state.expediente_ver = None
+                            st.rerun()
+
+    # Botón para agregar nuevo
     st.markdown("---")
-    c1, c2, c3 = st.columns([1, 2, 1])
-    if c2.button("➕ Digitalizar Nuevo Expediente (Subir a Nube)", use_container_width=True):
-        st.session_state.mostrar_subida = True
+    if st.button("➕ Digitalizar Nuevo Expediente", use_container_width=True):
+        st.success("Abriendo escáner y carga de archivos...")
 
 # --- 🔐 CANDADO DE SEGURIDAD PRINCIPAL ---
 if not st.session_state.get("autenticado_global", False):
