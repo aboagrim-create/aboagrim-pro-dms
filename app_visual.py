@@ -1088,8 +1088,8 @@ st.divider() # Esto pone una línea bonita para separar
 btn_guardar = st.button("💾 GUARDAR EXPEDIENTE Y CREAR BÓVEDA", type="primary", use_container_width=True)
 
 if btn_guardar:
-    if st.session_state.get('in_np', '') != '': # Verificamos que haya un nombre escrito
-        try:
+        if st.session_state.get('in_np', '') != '': # Verificamos que haya un nombre escrito
+            try:
                 # 1. Guardamos en Supabase (usando su tabla expedientes_maestros)
                 res = supabase.table("expedientes_maestros").insert(datos_a_guardar).execute()
                 id_generado = res.data[0]['id']
