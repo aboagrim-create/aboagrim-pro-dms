@@ -844,7 +844,12 @@ def vista_registro_maestro():
 
 def vista_plantillas_auto():
     st.title("📄 Generador de Plantillas AboAgrim")
-    st.info("Complete los datos y seleccione el tipo de proceso para generar el documento.")
+    st.info("Complete los datos. Si selecciona varios archivos en la barra lateral, se generará un ZIP.")
+
+    # 1. Recuperamos lo que usted seleccionó en la barra lateral (Salida de Expedientes)
+    # Asumo que su variable de multiselect se llama 'archivos_seleccionados'
+    # Si tiene otro nombre en su código de la barra lateral, cámbielo aquí:
+    archivos_lista = st.session_state.get('archivos_seleccionados', [])
 
     with st.form("form_plantillas"):
         col1, col2 = st.columns(2)
@@ -857,15 +862,8 @@ def vista_plantillas_auto():
             expediente = st.text_input("No. de Expediente")
             fecha = st.date_input("Fecha del Documento")
 
-        # --- SELECTOR DE PROCESO (Navega por sus carpetas reales) ---
-        proceso = st.selectbox("Seleccione el Tipo de Proceso", [
-            "Saneamiento",
-            "Deslinde",
-            "Refundición",
-            "Subdivisión"
-        ])
-
-        boton = st.form_submit_button("Generar y Descargar .docx")
+        proceso = st.selectbox("Proceso Principal", ["Saneamiento", "Deslinde", "Refundición", "Subdivisión"])
+        boton = st.form_submit_button("🚀 Generar Expediente Completo")
 
         if boton:
             try:
@@ -875,42 +873,43 @@ def vista_plantillas_auto():
                     "fecha": fecha.strftime("%d/%m/%Y")
                 }
 
-                # 1. Ruta dinámica que entra en sus carpetas de GitHub
-                ruta_base = f"plantillas_maestras/Mensuras Catastrales Tecnicas/{proceso}/"
-                archivo_nombre = f"Aviso de Mensura Para {proceso}.docx"
-                ruta_final = ruta_base + archivo_nombre
+                # Creamos un "cubo" en la memoria para guardar el ZIP
+                buf = io.BytesIO()
+                
+                with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+                    # RUTA BASE: Ajustada a su estructura
+                    ruta_base = f"plantillas_maestras/Mensuras Catastrales Tecnicas/{proceso}/"
+                    
+                    # 1. Siempre incluimos el Aviso de Mensura principal
+                    nombre_principal = f"Aviso de Mensura Para {proceso}.docx"
+                    doc_principal = DocxTemplate(ruta_base + nombre_principal)
+                    doc_principal.render(datos)
+                    
+                    byte_io = io.BytesIO()
+                    doc_principal.save(byte_io)
+                    zip_file.writestr(nombre_principal, byte_io.getvalue())
 
-                # 2. Procesa el Word
-                doc = DocxTemplate(ruta_final)
-                doc.render(datos)
+                    # 2. Si seleccionó más archivos en la barra lateral, los incluimos
+                    for archivo in archivos_lista:
+                        # Buscamos el archivo en la misma carpeta del proceso
+                        doc_extra = DocxTemplate(ruta_base + archivo)
+                        doc_extra.render(datos)
+                        
+                        extra_io = io.BytesIO()
+                        doc_extra.save(extra_io)
+                        zip_file.writestr(archivo, extra_io.getvalue())
 
-                bio = io.BytesIO()
-                doc.save(bio)
-
-                st.success(f"✅ Documento de {proceso} generado con éxito.")
+                st.success(f"✅ Expediente de {proceso} preparado con {len(archivos_lista) + 1} documentos.")
                 st.balloons()
 
-                # 3. Botón de descarga
                 st.download_button(
-                    label=f"⬇️ Descargar Aviso de {proceso}",
-                    data=bio.getvalue(),
-                    file_name=f"Aviso_{proceso}_Parcela_{parcela}.docx",
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    label="⬇️ Descargar Expediente Completo (ZIP)",
+                    data=buf.getvalue(),
+                    file_name=f"Expediente_{proceso}_{parcela}.zip",
+                    mime="application/zip"
                 )
             except Exception as e:
-                st.error(f"❌ Error: No se encontró la plantilla de {proceso}")
-                st.info(f"Busqué en: {proceso}. Asegúrese de que el archivo se llame: 'Aviso de Mensura Para {proceso}.docx'")
-            # Aquí conectaremos los Word en el próximo paso
-# Diccionario que conecta los botones con sus funciones
-vistas = {
-    "🏠 Mando Central": vista_mando,
-    "👤 Registro Maestro": vista_registro_maestro,
-    "📁 Archivo Digital": vista_archivo_digital,
-    "📄 Plantillas Auto": vista_plantillas_auto,  # <--- AQUÍ ESTÁ LA MAGIA
-    "📅 Alertas y Plazos": vista_alertas,
-    "💵 Facturación": vista_facturacion,
-    "⚙️ Configuración": vista_configuracion
-}
+                st.error(f"❌ Error al generar el paquete: {e}")
 # El motor que ejecuta la pantalla seleccionada
 if menu in vistas:
     vistas[menu]()
