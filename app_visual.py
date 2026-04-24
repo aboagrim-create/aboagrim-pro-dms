@@ -6,7 +6,6 @@ import streamlit as st
 import zipfile
 import io
 from docxtpl import DocxTemplate
-
 # ... arriba están los import ...
 
 
@@ -990,11 +989,9 @@ vistas = {
     "⚙️ Configuración": vista_configuracion
 }
 
-# El interruptor que enciende cada pantalla
 if menu in vistas:
     vistas[menu]()
 else:
-    # Este mensaje le dirá si falta un emoji o un espacio
     st.error(f"Error de Conexión: La sección '{menu}' no coincide con el diccionario.")
     st.info("Sugerencia: Verifique que el nombre en el sidebar sea igual al del diccionario 'vistas'.")
 def guardar_y_actualizar(tipo_perfil, datos, ventana_origen, menu_desplegable=None):
