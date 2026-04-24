@@ -395,12 +395,11 @@ def vista_alertas():
         st.error(f"Error al cargar monitor: {e}")
 
 def vista_facturacion():
-    # ⏱️ EL RELOJ REPARADO: Importamos datetime aquí arriba para que no dé error
     from datetime import datetime 
     
     st.title("💵 Gestión de Facturación y Honorarios")
     
-    # 1. Indicadores Financieros Principales
+    # 1. Indicadores Financieros
     c1, c2, c3 = st.columns(3)
     c1.metric("Pendiente por Cobrar", "RD$ 45,000", "+5%")
     c2.metric("Cobrado este mes", "RD$ 120,000")
@@ -410,26 +409,20 @@ def vista_facturacion():
 
     # 2. Lógica de Búsqueda Automática
     try:
-        # Asegúrese de que aquí diga "registro_maestro" o el nombre de su tabla de clientes
         res = supabase.table("registro_maestro").select("nombre_completo, cedula, direccion").execute()
         clientes_db = res.data
     except Exception:
         clientes_db = []
 
-    # 3. Pantalla Dividida (Formulario a la izq, Tabla a la der)
     col_form, col_tabla = st.columns([1, 1.2], gap="large") 
 
     with col_form:
-        st.subheader("📝 Nueva Factura / Recibo")
+        st.subheader("📝 Nuevo Registro de Cobro")
         
-        # BUSCADOR INTELIGENTE
         nombres_clientes = [c['nombre_completo'] for c in clientes_db]
-        cliente_seleccionado = st.selectbox("🔍 Buscar Cliente en Registro Maestro", ["-- Seleccione un cliente --"] + nombres_clientes)
+        cliente_seleccionado = st.selectbox("🔍 Buscar Cliente", ["-- Seleccione un cliente --"] + nombres_clientes)
         
-        val_cedula = ""
-        val_direccion = ""
-        val_nombre = ""
-        
+        val_cedula, val_direccion, val_nombre = "", "", ""
         if cliente_seleccionado != "-- Seleccione un cliente --":
             datos = next((c for c in clientes_db if c['nombre_completo'] == cliente_seleccionado), None)
             if datos:
@@ -438,149 +431,106 @@ def vista_facturacion():
                 val_direccion = datos.get('direccion', '')
         
         with st.form("form_crear_factura"):
-            st.info("Complete los detalles del cobro:")
             nombre_final = st.text_input("Nombre del Cliente", value=val_nombre)
             
             c_ced, c_dir = st.columns(2)
             cedula_fact = c_ced.text_input("Cédula / RNC", value=val_cedula)
             direccion_fact = c_dir.text_input("Dirección", value=val_direccion)
             
-            concepto_fact = st.text_input("Concepto del Servicio (Ej. Deslinde Parcela 44)")
+            concepto_fact = st.text_input("Concepto (Ej. Saneamiento Parcela 12)")
             
-            # --- NUEVO: PAGOS POR ETAPAS ---
+            # --- NUEVA CASILLA: MONTO TOTAL VS PAGO ACTUAL ---
+            c_total, c_actual = st.columns(2)
+            monto_total_contrato = c_total.number_input("Monto Total Contrato (RD$)", min_value=0.0, step=5000.0)
+            monto_pago_actual = c_actual.number_input("Monto Pago Actual (RD$)", min_value=0.0, step=1000.0)
+            
+            # --- PAGOS POR ETAPAS ---
             etapa_pago = st.selectbox("Etapa del Proceso", [
-                "Pago Único / Total", 
-                "Avance Inicial (Firma de Contrato)", 
-                "2do Pago (Trabajo de Campo / Mensura)", 
-                "3er Pago (Sometimiento a Jurisdicción Inmobiliaria)", 
-                "Pago Final (Entrega de Planos y Títulos)"
+                "Pago Único", "Avance Inicial", "Etapa de Campo", "Sometimiento JI", "Aprobación / Entrega"
             ])
             
-            c_monto, c_estado = st.columns(2)
-            monto_fact = c_monto.number_input("Monto a Pagar (RD$)", min_value=0.0, step=1000.0)
-            estado_fact = c_estado.selectbox("Estado", ["Pendiente", "Pagado", "Abono"])
+            estado_fact = st.selectbox("Estado del Pago Actual", ["Pendiente", "Pagado", "Abono"])
             
             st.markdown("---")
             b1, b2 = st.columns(2)
-            btn_guardar = b1.form_submit_button("💾 Guardar en BD")
-            btn_enviar = b2.form_submit_button("📤 Generar Factura Premium")
+            btn_guardar = b1.form_submit_button("💾 Guardar en Nube")
+            btn_enviar = b2.form_submit_button("📤 Generar Factura")
 
         # --- LÓGICA DE GUARDADO ---
         if btn_guardar:
-            # Unimos el concepto con la etapa para que se guarde todo junto en la nube
-            concepto_completo = f"{concepto_fact} | Etapa: {etapa_pago}"
             nueva_factura = {
                 "cliente": nombre_final,
-                "monto": monto_fact,
+                "monto_pago": monto_pago_actual,
+                "monto_total": monto_total_contrato,
                 "estado": estado_fact,
-                "concepto": concepto_completo,
+                "concepto": f"{concepto_fact} ({etapa_pago})",
                 "fecha": datetime.now().isoformat()
             }
             try:
                 supabase.table("facturas").insert(nueva_factura).execute()
-                st.success(f"✅ Factura de {nombre_final} guardada en la base de datos.")
+                st.success(f"✅ Cobro de {nombre_final} registrado.")
             except Exception as e:
-                st.error(f"Error al guardar en la nube (Asegúrese de haber creado la tabla 'facturas'): {e}")
+                st.error(f"Error: {e}")
         
-        # --- LÓGICA DE GENERACIÓN WAOO ---
+        # --- DISEÑO PREMIUM CON DESGLOSE DE MONTOS ---
         if btn_enviar:
-            if nombre_final and monto_fact > 0:
+            if nombre_final and monto_pago_actual > 0:
                 fecha_hoy = datetime.now().strftime("%d/%m/%Y")
                 num_recibo = datetime.now().strftime("ABG-%y%m%d%H%M")
+                pendiente = monto_total_contrato - monto_pago_actual if monto_total_contrato > 0 else 0
                 
                 recibo_html = f"""
                 <html>
-                <head>
-                <meta charset="utf-8">
+                <head><meta charset="utf-8">
                 <style>
-                    body {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f6f9; padding: 20px; }}
-                    .factura-container {{ max-width: 750px; margin: auto; background: #ffffff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 8px solid #0a2540; }}
-                    .cabecera {{ display: flex; justify-content: space-between; border-bottom: 2px solid #eef0f5; padding-bottom: 20px; margin-bottom: 30px; }}
-                    .logo-box h1 {{ color: #0a2540; margin: 0; font-size: 32px; letter-spacing: 1px; }}
-                    .logo-box h2 {{ color: #636b6f; margin: 5px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; }}
-                    .logo-box p {{ color: #8a9499; font-size: 13px; margin-top: 5px; }}
-                    .info-box {{ text-align: right; color: #4a5568; font-size: 14px; line-height: 1.6; }}
-                    .titulo-factura {{ text-align: center; color: #0a2540; letter-spacing: 2px; margin-bottom: 30px; font-size: 22px; }}
-                    .tabla-datos {{ width: 100%; border-collapse: collapse; margin-bottom: 30px; }}
-                    .tabla-datos td {{ padding: 12px 15px; border-bottom: 1px solid #eef0f5; font-size: 15px; }}
-                    .tabla-datos td:first-child {{ font-weight: bold; color: #4a5568; width: 35%; }}
-                    .tabla-datos td:last-child {{ color: #2d3748; }}
-                    .total-box {{ text-align: right; font-size: 28px; font-weight: bold; color: #2e8540; margin-top: 20px; padding: 20px; background-color: #f8fcf9; border-radius: 5px; }}
-                    .pie-pagina {{ text-align: center; margin-top: 60px; color: #718096; font-size: 13px; border-top: 1px solid #eef0f5; padding-top: 30px; }}
-                    .firma-linea {{ width: 250px; border-bottom: 1px solid #000; margin: 0 auto 10px auto; }}
+                    body {{ font-family: Arial, sans-serif; background-color: #f4f6f9; padding: 20px; }}
+                    .container {{ max-width: 700px; margin: auto; background: #fff; padding: 40px; border-radius: 10px; border-top: 10px solid #0a2540; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }}
+                    .header {{ display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px; }}
+                    .logo h1 {{ color: #0a2540; margin: 0; }}
+                    .details {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+                    .details td {{ padding: 10px; border-bottom: 1px solid #eee; }}
+                    .details td:first-child {{ font-weight: bold; color: #555; }}
+                    .monto-box {{ margin-top: 30px; padding: 20px; background: #f8fcf9; border-radius: 8px; text-align: right; }}
+                    .total-line {{ font-size: 22px; color: #2e8540; font-weight: bold; }}
+                    .footer {{ text-align: center; margin-top: 50px; font-size: 12px; color: #888; }}
                 </style>
                 </head>
                 <body>
-                    <div class="factura-container">
-                        <div class="cabecera">
-                            <div class="logo-box">
-                                <h1>⚖️ AboAgrim</h1>
-                                <h2>Abogados & Agrimensores</h2>
-                                <p>Lic. Jhonny Matos. M.A. | Presidente</p>
-                            </div>
-                            <div class="info-box">
-                                <strong>Santiago de los Caballeros</strong><br>
-                                República Dominicana<br>
-                                <strong>Fecha:</strong> {fecha_hoy}<br>
-                                <strong>Factura No:</strong> {num_recibo}
-                            </div>
+                    <div class="container">
+                        <div class="header">
+                            <div class="logo"><h1>⚖️ AboAgrim</h1><p>Lic. Jhonny Matos. M.A.</p></div>
+                            <div style="text-align: right;"><strong>Recibo No:</strong> {num_recibo}<br><strong>Fecha:</strong> {fecha_hoy}</div>
                         </div>
-                        
-                        <div class="titulo-factura">RECIBO DE HONORARIOS</div>
-                        
-                        <table class="tabla-datos">
-                            <tr><td>Facturado a:</td><td>{nombre_final}</td></tr>
-                            <tr><td>Cédula / RNC:</td><td>{cedula_fact if cedula_fact else "N/A"}</td></tr>
-                            <tr><td>Dirección:</td><td>{direccion_fact if direccion_fact else "N/A"}</td></tr>
+                        <h2 style="text-align: center; color: #0a2540;">RECIBO DE PAGO</h2>
+                        <table class="details">
+                            <tr><td>Cliente:</td><td>{nombre_final}</td></tr>
+                            <tr><td>RNC/Cédula:</td><td>{cedula_fact}</td></tr>
                             <tr><td>Concepto:</td><td>{concepto_fact}</td></tr>
-                            <tr><td>Etapa del Proceso:</td><td><strong style="color: #2e8540;">{etapa_pago}</strong></td></tr>
-                            <tr><td>Estado actual:</td><td><strong style="color: #0a2540; text-transform: uppercase;">{estado_fact}</strong></td></tr>
+                            <tr><td>Etapa del Proceso:</td><td>{etapa_pago}</td></tr>
                         </table>
-                        
-                        <div class="total-box">
-                            MONTO: RD$ {monto_fact:,.2f}
+                        <div class="monto-box">
+                            <p>Monto Total del Trabajo: RD$ {monto_total_contrato:,.2f}</p>
+                            <p class="total-line">PAGO RECIBIDO HOY: RD$ {monto_pago_actual:,.2f}</p>
+                            <hr>
+                            <p style="color: #c0392b;">Balance Pendiente: RD$ {pendiente:,.2f}</p>
                         </div>
-                        
-                        <div class="pie-pagina">
-                            <div class="firma-linea"></div>
-                            <strong>Firma Autorizada</strong><br><br>
-                            Este documento es un comprobante de pago emitido por el sistema AboAgrim Pro DMS.<br>
-                            Gracias por confiar sus procesos legales y catastrales en nuestras manos.
+                        <div class="footer">
+                            <div style="width: 200px; border-top: 1px solid #000; margin: 40px auto 10px auto;"></div>
+                            Firma Autorizada - AboAgrim Pro DMS
                         </div>
                     </div>
                 </body>
                 </html>
                 """
-                
-                st.info(f"📧 Recibo Premium generado para {nombre_final}.")
-                st.download_button(
-                    label="⬇️ Descargar Factura Premium (HTML/PDF)", 
-                    data=recibo_html, 
-                    file_name=f"AboAgrim_Factura_{nombre_final.replace(' ', '_')}.html",
-                    mime="text/html"
-                )
-            else:
-                st.warning("⚠️ Llene el nombre y el monto para generar el recibo.")
+                st.download_button("⬇️ Descargar Recibo Detallado", recibo_html, file_name=f"Recibo_{nombre_final}.html", mime="text/html")
 
-    # --- RESTAURACIÓN DE LA TABLA LATERAL ---
     with col_tabla:
         st.subheader("📋 Historial de Pagos")
         try:
-            # El sistema intentará buscar las facturas reales en Supabase
-            res_fact = supabase.table("facturas").select("cliente, concepto, monto, estado").order("fecha", desc=True).limit(8).execute()
-            if res_fact.data:
-                st.dataframe(res_fact.data, use_container_width=True)
-            else:
-                st.info("Aún no hay facturas en la base de datos.")
-        except Exception:
-            # Si hay error o la tabla no existe, muestra estos datos de respaldo
-            st.warning("⚠️ Mostrando datos de prueba. Asegúrese de crear la tabla 'facturas' en Supabase.")
-            datos_pago = [
-                {"Cliente": "Juan Perez", "Monto": "RD$ 25,000", "Estado": "Pagado", "Etapa": "Avance Inicial"},
-                {"Cliente": "Maria Sosa", "Monto": "RD$ 20,000", "Estado": "Pendiente", "Etapa": "Entrega Final"},
-                {"Cliente": "Const. XYZ", "Monto": "RD$ 75,000", "Estado": "Abono", "Etapa": "Sometimiento JI"}
-            ]
-            st.dataframe(datos_pago, use_container_width=True)
+            res_fact = supabase.table("facturas").select("cliente, monto_pago, monto_total, estado, fecha").order("fecha", desc=True).execute()
+            st.dataframe(res_fact.data, use_container_width=True)
+        except:
+            st.info("Conecte la tabla 'facturas' en Supabase para ver el historial real.")
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
