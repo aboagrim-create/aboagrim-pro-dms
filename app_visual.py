@@ -1247,23 +1247,24 @@ with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
     doc_p.render(datos)
     out_p = io.BytesIO(); doc_p.save(out_p)
     zip_file.writestr(file_p, out_p.getvalue())
-                    # 2. Las plantillas extras marcadas en la izquierda
-                    for p_extra in archivos_adicionales:
-                        nombre_limpio = p_extra.split('/')[-1]
-                        doc_e = DocxTemplate(p_extra)
-                        doc_e.render(datos)
-                        out_e = io.BytesIO(); doc_e.save(out_e)
-                        zip_file.writestr(nombre_limpio, out_e.getvalue())
 
-                st.success(f"¡Set de {proceso} preparado con {len(archivos_adicionales)+1} documentos!")
-                st.balloons()
+    # 2. Las plantillas extras marcadas en la izquierda
+    for p_extra in archivos_adicionales:
+        nombre_limpio = p_extra.split('/')[-1]
+        doc_e = DocxTemplate(p_extra)
+        doc_e.render(datos)
+        out_e = io.BytesIO(); doc_e.save(out_e)
+        zip_file.writestr(nombre_limpio, out_e.getvalue())
 
-                st.download_button(
-                    label="⬇️ DESCARGAR EXPEDIENTE COMPLETO",
-                    data=buf.getvalue(),
-                    file_name=f"Expediente_{proceso}_{parcela}.zip",
-                    mime="application/zip"
-                )
+st.success(f"¡Set de {proceso} preparado con {len(archivos_adicionales)+1} documentos!")
+st.balloons()
+
+st.download_button(
+    label="📥 DESCARGAR EXPEDIENTE COMPLETO",
+    data=buf.getvalue(),
+    file_name=f"Expediente_{proceso}_{parcela}.zip",
+    mime="application/zip"
+)
             except Exception as e:
                 st.error(f"Asegúrese de que las rutas de las carpetas sean correctas. Error: {e}")
 # --- EL INTERRUPTOR FINAL ---
