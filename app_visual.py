@@ -843,6 +843,11 @@ def vista_registro_maestro():
 def vista_plantillas_auto():
     st.title("📄 Generador de Plantillas AboAgrim")
     
+    # ESTA LÍNEA ES VITAL: Recupera lo que usted marcó en la barra lateral
+    archivos_adicionales = st.session_state.get('plantillas_elegidas', [])
+    
+    # ... resto del código (el expander de la base de datos y el formulario)
+    
     # --- FUNCIÓN 2: CONEXIÓN A BASE DE DATOS (Expedientes recientes) ---
     with st.expander("🔍 Ver últimos expedientes registrados en la nube"):
         try:
@@ -856,7 +861,6 @@ def vista_plantillas_auto():
             st.write("Conectando con el cerebro digital de AboAgrim...")
 
     # Recuperamos las plantillas de la barra lateral
-    archivos_adicionales = st.session_state.get('plantillas_elegidas', [])
 
     with st.form("form_plantillas_pro"):
         st.subheader("📋 Datos del Expediente y Profesionales")
@@ -926,8 +930,14 @@ def vista_plantillas_auto():
                 )
             except Exception as e:
                 st.error(f"Asegúrese de que las rutas de las carpetas sean correctas. Error: {e}")
+vistas = {
+    "🏠 Mando Central": vista_mando,
+    "👤 Registro Maestro": vista_registro_maestro,
+    "📁 Archivo Digital": vista_archivo_digital,
+    "📄 Plantillas Auto": vista_plantillas_auto, # <-- Esta usará el código nuevo
+    # ... demás vistas
+}
 
-# 2. El motor que arranca la aplicación (ESTA ES LA LÍNEA 923)
 if menu in vistas:
     vistas[menu]()
 def guardar_y_actualizar(tipo_perfil, datos, ventana_origen, menu_desplegable=None):
