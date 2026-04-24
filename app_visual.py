@@ -1243,13 +1243,12 @@ def vista_plantillas_auto():
                 st.success(f"⚖️ Set de {proceso} preparado con {len(archivos_adicionales)+1} documentos!")
                 st.balloons()
 
-                st.download_button(
-                    label="📥 DESCARGAR EXPEDIENTE COMPLETO",
-                    data=buf.getvalue(),
-                    file_name=f"Expediente_{proceso}_{datos['parcela']}.zip",
-                    mime="application/zip"
-                )
-
+                # --- TRUCO LEGAL PARA DESCARGAR DENTRO DEL FORMULARIO ---
+                import base64
+                b64 = base64.b64encode(buf.getvalue()).decode()
+                nombre_zip = f"Expediente_{proceso}_{datos['parcela']}.zip"
+                html_boton = f'<a href="data:application/zip;base64,{b64}" download="{nombre_zip}" style="display: inline-block; padding: 10px 20px; color: white; background-color: #FF4B4B; border-radius: 5px; text-decoration: none; font-weight: bold; text-align: center;">📥 DESCARGAR EXPEDIENTE COMPLETO (.ZIP)</a>'
+                st.markdown(html_boton, unsafe_allow_html=True)
             except Exception as e:
                 st.error(f"⚠️ Error en la generación: {e}")
         else:
