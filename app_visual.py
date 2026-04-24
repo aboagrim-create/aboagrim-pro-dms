@@ -1065,11 +1065,15 @@ def vista_registro_maestro():
             else:
                 with st.sidebar.status("Procesando documentos y guardando en la nube...", expanded=True) as status:
                     try:
-                            # ... (código de guardar datos)
-                            datos_a_guardar = {
-                                "expediente": ...
-                                "provincia": ...
-                            }
+                            # 2. GUARDADO AUTOMÁTICO EN SUPABASE
+                        datos_a_guardar = {
+                            "expediente": st.session_state.get('in_exp', ''),
+                            "nombre_propietario": st.session_state.get('in_np', ''),
+                            "cedula_propietario": st.session_state.get('in_cp', ''),
+                            "parcela": st.session_state.get('in_par', ''),
+                            "municipio": st.session_state.get('in_mun', ''),
+                            "provincia": st.session_state.get('in_prov', '')
+                        }
                         
                         # Fíjese cómo este except baja en línea recta desde el try
                         except Exception as e:
