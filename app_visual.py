@@ -980,19 +980,20 @@ def vista_plantillas_auto():
 # MOTOR DE NAVEGACIÓN (DICCIONARIO FINAL)
 # ==========================================
 vistas = {
-    "🏠 Mando Central": vista_mando,
-    "👤 Registro Maestro": vista_registro_maestro,
-    "📁 Archivo Digital": vista_archivo_digital,
-    "📄 Plantillas Auto": vista_plantillas_auto,
-    "📅 Alertas y Plazos": vista_alertas,
-    "💵 Facturación": vista_facturacion,
-    "⚙️ Configuración": vista_configuracion
+    " 🏠 Mando Central": vista_mando,
+    " 👤 Registro Maestro": vista_registro_maestro,
+    " 📁 Archivo Digital": vista_archivo_digital,
+    " 📄 Plantillas Auto": vista_plantillas_auto,
+    " 📅 Alertas y Plazos": vista_alertas,
+    " 💵 Facturación": vista_facturacion,
+    " ⚙️ Configuración": vista_configuracion
 }
 
 if menu in vistas:
     vistas[menu]()
 else:
     st.error(f"Error de Conexión: La sección '{menu}' no coincide con el diccionario.")
+    st.info("Sugerencia: Verifique que el nombre en el sidebar sea igual al del diccionario 'vistas'.")
 def guardar_y_actualizar(tipo_perfil, datos, ventana_origen, menu_desplegable=None):
     """Guarda en la base de datos y refresca el menú desplegable."""
     
