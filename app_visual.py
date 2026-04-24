@@ -980,8 +980,10 @@ vistas = {
     "🏠 Mando Central": vista_mando,
     "👤 Registro Maestro": vista_registro_maestro,
     "📁 Archivo Digital": vista_archivo_digital,
-    "📄 Plantillas Auto": vista_plantillas_auto, # <-- Esta usará el código nuevo
-    # ... demás vistas
+    "📄 Plantillas Auto": vista_plantillas_auto,
+    "📅 Alertas y Plazos": vista_alertas,
+    "💵 Facturación": vista_facturacion,
+    "⚙️ Configuración": vista_configuracion
 }
 
 if menu in vistas:
