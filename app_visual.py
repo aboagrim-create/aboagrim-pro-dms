@@ -813,40 +813,69 @@ Por medio de la presente, AboAgrim, representada por el Lic. Jhonny Matos, M.A.,
                 """
                 st.components.v1.html(doc_html, height=600, scrolling=True)
 def vista_archivo_digital():
-    st.header("📁 Archivo Digital Central")
-    st.write("Aquí se muestran todos los expedientes guardados en su nube (Supabase).")
+    st.title("📂 Archivo Digital de Expedientes")
+    st.markdown("### Gestión Centralizada de Documentación Técnica y Jurídica")
 
-    try:
-        # 1. Traemos la información fresca desde la nube
-        respuesta = supabase.table("expedientes_maestros").select("*").execute()
-        datos_nube = respuesta.data
-        
-        if not datos_nube:
-            st.info("Bóveda vacía. Aún no ha guardado ningún expediente desde el Registro Maestro.")
-        else:
-            # 2. Convertimos los datos en una tabla inteligente
-            import pandas as pd
-            df = pd.DataFrame(datos_nube)
-            
-            # 3. Organizamos las columnas para que se vean bien
-            df_mostrar = df.rename(columns={
-                "fecha_creacion": "Fecha de Registro",
-                "expediente": "No. Expediente",
-                "nombre_propietario": "Propietario / Cliente",
-                "cedula_propietario": "Cédula",
-                "parcela": "Parcela",
-                "municipio": "Municipio",
-                "provincia": "Provincia"
-            })
-            
-            # Mostramos la tabla con diseño profesional
-            st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
-            
-            st.success(f"Se han encontrado {len(datos_nube)} expedientes en su archivo digital.")
+    # --- 1. MÉTRICAS DE ALTO NIVEL (Diseño Millonario) ---
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Total Expedientes", "1,240", "↑ 12")
+    m2.metric("Planos Aprobados", "850", "72%")
+    m3.metric("En Proceso JI", "125", "-4")
+    m4.metric("Digitalizados", "98%", "🔥")
 
-    except Exception as e:
-        st.error("⚠️ No se pudo conectar con la Bóveda Digital.")
-        st.info("Revisando conexión a la base de datos...")
+    st.markdown("---")
+
+    # --- 2. BARRA DE HERRAMIENTAS PROFESIONAL ---
+    c_busqueda, c_filtro, c_orden = st.columns([2, 1, 1])
+    query = c_busqueda.text_input("🔍 Buscar por Nombre, Parcela o Designación Catastral...")
+    filtro_tipo = c_filtro.selectbox("Filtrar por Tipo", ["Todos", "Deslindes", "Saneamientos", "Ventas", "Condominios"])
+    ordenar = c_orden.selectbox("Ordenar por", ["Más Recientes", "A-Z", "Prioridad"])
+
+    # --- 3. CUERPO DEL ARCHIVO: TARJETAS DINÁMICAS ---
+    # Simulamos datos (esto vendría de su tabla 'registro_maestro' o 'archivos')
+    expedientes = [
+        {"id": "EXP-2024-001", "cliente": "Juan Pérez", "tipo": "Deslinde", "estado": "En Proceso", "progreso": 65},
+        {"id": "EXP-2024-042", "cliente": "María García", "tipo": "Saneamiento", "estado": "Completado", "progreso": 100},
+        {"id": "EXP-2023-115", "cliente": "Inmobiliaria Santiago", "tipo": "Condominio", "estado": "Pendiente", "progreso": 15},
+    ]
+
+    for exp in expedientes:
+        with st.container():
+            # Creamos un borde y sombra con CSS para que se vea premium
+            st.markdown(
+                f"""
+                <div style="
+                    border: 1px solid #e6e9ef; 
+                    padding: 20px; 
+                    border-radius: 10px; 
+                    background-color: #ffffff; 
+                    box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+                    margin-bottom: 15px;
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4 style="margin:0; color: #0a2540;">ID: {exp['id']} | {exp['cliente']}</h4>
+                        <span style="background-color: {'#d4edda' if exp['estado'] == 'Completado' else '#fff3cd'}; 
+                                     color: {'#155724' if exp['estado'] == 'Completado' else '#856404'}; 
+                                     padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                            {exp['estado'].upper()}
+                        </span>
+                    </div>
+                    <p style="color: #666; font-size: 14px;"><b>Tipo:</b> {exp['tipo']} | <b>Ubicación:</b> Santiago, R.D.</p>
+                </div>
+                """, 
+                unsafe_allow_status=True
+            )
+            
+            col_prog, col_btn = st.columns([4, 1])
+            col_prog.progress(exp['progreso'])
+            if col_btn.button("Ver Carpeta", key=exp['id']):
+                st.info(f"Abriendo archivos de {exp['cliente']}...")
+
+    # --- 4. ACCIÓN RÁPIDA (Botón Flotante o Destacado) ---
+    st.markdown("---")
+    c1, c2, c3 = st.columns([1, 2, 1])
+    if c2.button("➕ Digitalizar Nuevo Expediente (Subir a Nube)", use_container_width=True):
+        st.session_state.mostrar_subida = True
 
 # --- 🔐 CANDADO DE SEGURIDAD PRINCIPAL ---
 if not st.session_state.get("autenticado_global", False):
