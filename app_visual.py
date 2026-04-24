@@ -1083,63 +1083,34 @@ def vista_registro_maestro():
                         }
                         
 if btn_guardar:
-        try:
-            # 1. Guardamos en Supabase (usando su tabla expedientes_maestros)
-            res = supabase.table("expedientes_maestros").insert(datos_a_guardar).execute()
-            id_generado = res.data[0]['id']
-            nombre_cliente = st.session_state.get('in_np', 'Sin_Nombre')
+        if st.session_state.get('in_np', '') != '': # Verificamos que haya un nombre escrito
+            try:
+                # 1. Guardamos en Supabase (usando su tabla expedientes_maestros)
+                res = supabase.table("expedientes_maestros").insert(datos_a_guardar).execute()
+                id_generado = res.data[0]['id']
+                nombre_cliente = st.session_state.get('in_np', 'Sin_Nombre')
 
-            # 2. Iniciamos la magia de la nube (Google Drive)
-            with st.status("🏗️ Creando oficina virtual en Google Drive...", expanded=True) as status:
+                # 2. Iniciamos la magia de la nube (Google Drive)
+                with st.status("🏗️ Creando oficina virtual en Google Drive...", expanded=True) as status:
+                    
+                    # ---> IMPORTANTE: PEGUE AQUÍ SU ID DE DRIVE <---
+                    ID_MAESTRA = "SU_ID_AQUÍ" 
+                    
+                    url_carpeta = crear_oficina_virtual(nombre_cliente, id_generado, ID_MAESTRA)
+                    
+                    if url_carpeta:
+                        # Guardamos el link en la base de datos para el Archivo Digital
+                        supabase.table("expedientes_maestros").update({"url_drive": url_carpeta}).eq("id", id_generado).execute()
+                        status.update(label="✅ Oficina Virtual y Carpetas creadas!", state="complete")
                 
-                # ---> IMPORTANTE: PEGUE AQUÍ SU ID DE DRIVE <---
-                ID_MAESTRA = "SU_ID_AQUÍ" 
-                
-                url_carpeta = crear_oficina_virtual(nombre_cliente, id_generado, ID_MAESTRA)
-                
+                st.success(f"⚖️ Expediente de {nombre_cliente} registrado y organizado.")
                 if url_carpeta:
-                    # Guardamos el link en la base de datos para el Archivo Digital
-                    supabase.table("expedientes_maestros").update({"url_drive": url_carpeta}).eq("id", id_generado).execute()
-                    status.update(label="✅ Oficina Virtual y Carpetas creadas!", state="complete")
-            
-            st.success(f"⚖️ Expediente de {nombre_cliente} registrado y organizado.")
-            st.link_button("📂 Ir a la Carpeta del Cliente", url_carpeta)
+                    st.link_button("📂 Ir a la Carpeta del Cliente", url_carpeta)
 
-        except Exception as e:
-            st.error(f"Error al registrar: {e}")
-try:
-        # 1. Guardamos sus datos en Supabase (Atrapamos la respuesta en 'res')
-        res = supabase.table("expedientes_maestros").insert(datos_a_guardar).execute()
-        
-        # Obtenemos el ID nuevo y el nombre del propietario para la carpeta
-        id_generado = res.data[0]['id']
-        nombre_cliente = st.session_state.get('in_np', 'Sin_Nombre')
-
-        # 2. ¡LA MAGIA DE LA NUBE! (Creación de carpetas)
-        with st.status("🏗️ Creando oficina virtual en Google Drive...", expanded=True) as status:
-            # Reemplace el texto de abajo por el ID de su carpeta EXPEDIENTES_ABOAGRIM
-            ID_MAESTRA = "PONGA_AQUI_EL_ID_QUE_COPIO_DE_DRIVE" 
-            
-            url_carpeta = crear_oficina_virtual(nombre_cliente, id_generado, ID_MAESTRA)
-            
-            if url_carpeta:
-                # Actualizamos la tabla expedientes_maestros para guardar el link
-                supabase.table("expedientes_maestros").update({"url_drive": url_carpeta}).eq("id", id_generado).execute()
-                status.update(label="✅ Expediente Digital Organizado con éxito!", state="complete")
-                
-        st.success("⚖️ Registro completado con éxito en la base de datos.")
-        if url_carpeta:
-            st.link_button("📂 Abrir Carpeta en Google Drive", url_carpeta)
-
-    except Exception as e:
-        st.error(f"Error al registrar: {e}")
-
-            st.error(f"Error al registrar: {e}")
-                        
-                        status.update(label="✅ ¡Expediente listo y guardado en la nube!", state="complete", expanded=False)
-                    except Exception as e:
-                        status.update(label="❌ Error al procesar o guardar", state="error")
-                        st.sidebar.error(f"Detalle del error: {e}")
+            except Exception as e:
+                st.error(f"Error al registrar: {e}")
+        else:
+            st.warning("⚠️ Debe ingresar el nombre del propietario para guardar.")
 
         # Botón de descarga Dinámico (ZIP o Word)
         if 'archivo_listo' in st.session_state and st.session_state['archivo_listo']:
