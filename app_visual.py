@@ -2,12 +2,11 @@
 # INTERFAZ GRÁFICA Y SISTEMA EXPERTO LEGAL JI (EDICIÓN PREMIUM FULL)
 # Sistema: AboAgrim Pro DMS 
 # =====================================================================
-from docxtpl import DocxTemplate
+import streamlit as st
+import zipfile
 import io
-import pandas as pd
-import datetime
-import zipfile   # <--- NUEVO
-import io        # <--- NUEVO
+from docxtpl import DocxTemplate
+from database import supabase  # Asegúrese de que esta línea coincida con su db.py
 # ... arriba están los import ...
 
 from database import *
