@@ -844,72 +844,81 @@ def vista_registro_maestro():
 
 def vista_plantillas_auto():
     st.title("📄 Generador de Plantillas AboAgrim")
-    st.info("Complete los datos. Si selecciona varios archivos en la barra lateral, se generará un ZIP.")
+    
+    # --- OPCIÓN 2: CONEXIÓN CON DATOS (Visualización rápida) ---
+    with st.expander("🔍 Ver expedientes recientes en la base de datos"):
+        st.write("Aquí aparecerán sus últimos registros de Supabase próximamente...")
+        # (Aquí conectaremos la tabla en el siguiente paso)
 
-    # 1. Recuperamos lo que usted seleccionó en la barra lateral (Salida de Expedientes)
-    # Asumo que su variable de multiselect se llama 'archivos_seleccionados'
-    # Si tiene otro nombre en su código de la barra lateral, cámbielo aquí:
-    archivos_lista = st.session_state.get('archivos_seleccionados', [])
+    # Recuperamos las plantillas que usted marcó en la barra lateral
+    archivos_adicionales = st.session_state.get('plantillas_elegidas', [])
 
-    with st.form("form_plantillas"):
+    with st.form("form_plantillas_pro"):
+        st.subheader("📋 Datos del Expediente y Profesionales")
         col1, col2 = st.columns(2)
         with col1:
-            nombre = st.text_input("Nombre del Propietario/Solicitante")
-            parcela = st.text_input("Designación Catastral (Parcela)")
-            dc = st.text_input("Distrito Catastral")
+            nombre = st.text_input("Nombre del Propietario", key="f_nom")
+            parcela = st.text_input("Parcela No.", key="f_par")
+            dc = st.text_input("D.C.", key="f_dc")
         with col2:
-            matricula = st.text_input("Matrícula")
-            expediente = st.text_input("No. de Expediente")
-            fecha = st.date_input("Fecha del Documento")
+            matricula = st.text_input("Matrícula Constancia", key="f_mat")
+            expediente = st.text_input("No. Expediente (Res. 790-2022)", key="f_exp")
+            fecha = st.date_input("Fecha de Mensura")
 
-        proceso = st.selectbox("Proceso Principal", ["Saneamiento", "Deslinde", "Refundición", "Subdivisión"])
-        boton = st.form_submit_button("🚀 Generar Expediente Completo")
+        # --- OPCIÓN 3: MODO NOTARIO/ABOGADO (Captura rápida) ---
+        with st.expander("⚖️ Datos de Profesionales Actuantes (Opcional)"):
+            c1, c2 = st.columns(2)
+            nom_notario = c1.text_input("Nombre del Notario")
+            mat_notario = c2.text_input("Matrícula Notario")
+            nom_abogado = c1.text_input("Nombre del Abogado")
+            mat_abogado = c2.text_input("Colegiatura Abogado")
 
-        if boton:
+        proceso = st.selectbox("Proceso a realizar", ["Saneamiento", "Deslinde", "Refundición", "Subdivisión"])
+        
+        btn_magico = st.form_submit_button("🚀 GENERAR EXPEDIENTE COMPLETO (.ZIP)")
+
+        if btn_magico:
             try:
+                # Diccionario Maestro (Incluye datos de Notario para sus Word)
                 datos = {
                     "nombre": nombre, "parcela": parcela, "dc": dc,
                     "matricula": matricula, "expediente": expediente,
-                    "fecha": fecha.strftime("%d/%m/%Y")
+                    "fecha": fecha.strftime("%d/%m/%Y"),
+                    "notario": nom_notario, "mat_not": mat_notario,
+                    "abogado": nom_abogado, "mat_abo": mat_abogado
                 }
 
-                # Creamos un "cubo" en la memoria para guardar el ZIP
                 buf = io.BytesIO()
-                
                 with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
-                    # RUTA BASE: Ajustada a su estructura
+                    # 1. Agregamos el Aviso Principal automáticamente
                     ruta_base = f"plantillas_maestras/Mensuras Catastrales Tecnicas/{proceso}/"
+                    file_p = f"Aviso de Mensura Para {proceso}.docx"
                     
-                    # 1. Siempre incluimos el Aviso de Mensura principal
-                    nombre_principal = f"Aviso de Mensura Para {proceso}.docx"
-                    doc_principal = DocxTemplate(ruta_base + nombre_principal)
-                    doc_principal.render(datos)
-                    
-                    byte_io = io.BytesIO()
-                    doc_principal.save(byte_io)
-                    zip_file.writestr(nombre_principal, byte_io.getvalue())
+                    doc_p = DocxTemplate(ruta_base + file_p)
+                    doc_p.render(datos)
+                    out_p = io.BytesIO(); doc_p.save(out_p)
+                    zip_file.writestr(file_p, out_p.getvalue())
 
-                    # 2. Si seleccionó más archivos en la barra lateral, los incluimos
-                    for archivo in archivos_lista:
-                        # Buscamos el archivo en la misma carpeta del proceso
-                        doc_extra = DocxTemplate(ruta_base + archivo)
-                        doc_extra.render(datos)
-                        
-                        extra_io = io.BytesIO()
-                        doc_extra.save(extra_io)
-                        zip_file.writestr(archivo, extra_io.getvalue())
+                    # 2. Agregamos todo lo que usted seleccionó en la barra lateral
+                    for p_extra in archivos_adicionales:
+                        # Limpiamos la ruta por si glob trae rutas completas
+                        nombre_limpio = p_extra.split('/')[-1]
+                        doc_e = DocxTemplate(p_extra)
+                        doc_e.render(datos)
+                        out_e = io.BytesIO(); doc_e.save(out_e)
+                        zip_file.writestr(nombre_limpio, out_e.getvalue())
 
-                st.success(f"✅ Expediente de {proceso} preparado con {len(archivos_lista) + 1} documentos.")
+                st.success(f"¡Expediente preparado! Se procesaron {len(archivos_adicionales)+1} documentos.")
                 st.balloons()
 
                 st.download_button(
-                    label="⬇️ Descargar Expediente Completo (ZIP)",
+                    label="⬇️ DESCARGAR TODO EL SET (ZIP)",
                     data=buf.getvalue(),
                     file_name=f"Expediente_{proceso}_{parcela}.zip",
                     mime="application/zip"
                 )
             except Exception as e:
-                st.error(f"❌ Error al generar el paquete: {e}")
+                st.error(f"Hubo un problema: {e}")
 # El motor que ejecuta la pantalla seleccionada
 if menu in vistas:
     vistas[menu]()
