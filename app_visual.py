@@ -1082,7 +1082,30 @@ def vista_registro_maestro():
                             "provincia": st.session_state.get('in_prov', '')
                         }
                         
-                        # Enviamos los datos a la tabla 'expedientes_maestros'
+if btn_guardar:
+    try:
+        # Guardamos en Supabase
+        res = supabase.table("expedientes_maestros").insert(datos_a_guardar).execute()
+        id_generado = res.data[0]['id']
+        nombre_cliente = st.session_state.get('in_np', 'Sin_Nombre')
+
+        # Iniciamos la magia de la nube
+        with st.status("🏗️ Creando oficina virtual en Google Drive...", expanded=True) as status:
+            ID_MAESTRA = "SU_ID_AQUÍ" # <--- PEGUE AQUÍ EL ID DEL PASO 1
+            
+            url_carpeta = crear_oficina_virtual(nombre_cliente, id_generado, ID_MAESTRA)
+            
+            if url_carpeta:
+                # Guardamos el link en la base de datos para el Archivo Digital
+                supabase.table("expedientes_maestros").update({"url_drive": url_carpeta}).eq("id", id_generado).execute()
+                status.update(label="✅ Oficina Virtual y Carpetas creadas!", state="complete")
+        
+        st.success(f"⚖️ Expediente de {nombre_cliente} registrado y organizado.")
+        st.link_button("📂 Ir a la Carpeta del Cliente", url_carpeta)
+
+    except Exception as e:
+        st.error(f"Error al registrar: {e}")                        # Enviamos los datos a la tabla 'expedientes_maestros'
+
 try:
         # 1. Guardamos sus datos en Supabase (Atrapamos la respuesta en 'res')
         res = supabase.table("expedientes_maestros").insert(datos_a_guardar).execute()
