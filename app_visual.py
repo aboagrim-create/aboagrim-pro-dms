@@ -1239,15 +1239,14 @@ if menu_id == "Archivo Digital":
 # --- FUNCIÓN 1: GENERACIÓN MASIVA ZIP ---
 buf = io.BytesIO()
 with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
-    # A partir de aquí SÍ llevan espacios porque están DENTRO del with
+    # Estas líneas de adentro SÍ llevan sus 4 espacios automáticos
     ruta_base = f"plantillas_maestras/Mensuras Catastrales Tecnicas/{proceso}/"
     file_p = f"Aviso de Mensura Para {proceso}.docx"
-                    
-                    doc_p = DocxTemplate(ruta_base + file_p)
-                    doc_p.render(datos)
-                    out_p = io.BytesIO(); doc_p.save(out_p)
-                    zip_file.writestr(file_p, out_p.getvalue())
-
+    
+    doc_p = DocxTemplate(ruta_base + file_p)
+    doc_p.render(datos)
+    out_p = io.BytesIO(); doc_p.save(out_p)
+    zip_file.writestr(file_p, out_p.getvalue())
                     # 2. Las plantillas extras marcadas en la izquierda
                     for p_extra in archivos_adicionales:
                         nombre_limpio = p_extra.split('/')[-1]
