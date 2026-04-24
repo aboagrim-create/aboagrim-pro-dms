@@ -740,9 +740,9 @@ with st.sidebar:
         [
             "🏠 Mando Central",
             "👤 Registro Maestro",
-            "📂 Archivo Digital",
-            "📄 Plantillas Auto",  # <--- Esta es la que ya tiene o vamos a usar
-            "🗓️ Alertas y Plazos",
+            "📁 Archivo Digital",
+            "📄 Plantillas Auto",
+            "📅 Alertas y Plazos",
             "💵 Facturación",
             "⚙️ Configuración"
         ]
@@ -980,13 +980,13 @@ def vista_plantillas_auto():
 # MOTOR DE NAVEGACIÓN (DICCIONARIO FINAL)
 # ==========================================
 vistas = {
-    " 🏠 Mando Central": vista_mando,
-    " 👤 Registro Maestro": vista_registro_maestro,
-    " 📁 Archivo Digital": vista_archivo_digital,
-    " 📄 Plantillas Auto": vista_plantillas_auto,
-    " 📅 Alertas y Plazos": vista_alertas,
-    " 💵 Facturación": vista_facturacion,
-    " ⚙️ Configuración": vista_configuracion
+    "🏠 Mando Central": vista_mando,
+    "👤 Registro Maestro": vista_registro_maestro,
+    "📁 Archivo Digital": vista_archivo_digital,
+    "📄 Plantillas Auto": vista_plantillas_auto,
+    "📅 Alertas y Plazos": vista_alertas,
+    "💵 Facturación": vista_facturacion,
+    "⚙️ Configuración": vista_configuracion
 }
 
 if menu in vistas:
