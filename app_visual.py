@@ -17,7 +17,32 @@ if "autenticado_global" not in st.session_state:
 
 if "usuario_actual" not in st.session_state:
     st.session_state.usuario_actual = None
-
+# ==========================================
+# MOTOR DE GENERACIÓN DE DOCUMENTOS WORD
+# ==========================================
+def generar_documento_word(nombre_plantilla, diccionario_datos):
+    """
+    Toma una plantilla de la carpeta 'plantillas_maestras' y la llena con los datos.
+    Devuelve un objeto de memoria (BytesIO) listo para descargar.
+    """
+    import io
+    from docxtpl import DocxTemplate
+    import streamlit as st
+    
+    ruta_plantilla = f"plantillas_maestras/{nombre_plantilla}"
+    
+    try:
+        doc = DocxTemplate(ruta_plantilla)
+        doc.render(diccionario_datos)
+        
+        archivo_salida = io.BytesIO()
+        doc.save(archivo_salida)
+        archivo_salida.seek(0)
+        
+        return archivo_salida
+    except Exception as e:
+        st.error(f"Error al generar {nombre_plantilla}: Verifique que el archivo exista en la carpeta 'plantillas_maestras'. Detalle: {e}")
+        return None
 from supabase import create_client, Client
 
 # --- CONEXIÓN A SUPABASE (CEREBRO DIGITAL) ---
