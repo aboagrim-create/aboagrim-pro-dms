@@ -1187,7 +1187,7 @@ def vista_plantillas_auto():
 
 # --- 2. Lógica de generación (ESTO VA AFUERA DEL FORMULARIO) ---
 # Quítale la indentación para que quede alineado con el 'with st.form(...):' de la línea 1164
-if boton_generar:
+    if boton_generar:
     with st.spinner("Conectando motor de plantillas AboAgrim..."):
         # A. Armamos el diccionario con las variables exactas de tu pantalla
         datos_finales = {
