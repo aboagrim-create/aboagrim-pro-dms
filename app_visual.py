@@ -1180,7 +1180,47 @@ def vista_plantillas_auto():
             mat_notario = c2.text_input("Matrícula Notario")
             nom_abogado = c1.text_input("Nombre Abogado/Apoderado")
             mat_abogado = c2.text_input("Colegiatura Abogado")
+            
+            # --- 1. Botón para enviar el formulario ---
+        # (Esto va alineado con las líneas anteriores dentro del form)
+        boton_generar = st.form_submit_button("⚙️ Preparar Documento")
 
+# --- 2. Lógica de generación (ESTO VA AFUERA DEL FORMULARIO) ---
+# Quítale la indentación para que quede alineado con el 'with st.form(...):' de la línea 1164
+if boton_generar:
+    with st.spinner("Conectando motor de plantillas AboAgrim..."):
+        # A. Armamos el diccionario con las variables exactas de tu pantalla
+        datos_finales = {
+            "prop_nombre": nombre,           # Viene de tu línea 1168
+            "inm_parcela": parcela,          # Viene de tu línea 1169
+            "inm_dc": dc,                    # Viene de tu línea 1170
+            "constancia_anotada_num": matricula, # Viene de tu línea 1172
+            "proc_expediente": expediente,   # Viene de tu línea 1173
+            "proc_fecha_men": str(fecha),    # Viene de tu línea 1174
+            
+            # Datos del Notario y Abogado (Líneas 1179-1182)
+            "notario_nombre": nom_notario,
+            "notario_matricula": mat_notario,
+            "rep_nombre": nom_abogado if nom_abogado else "Lic. Jhonny Matos. M.A.",
+            "rep_abogado_matricula": mat_abogado if mat_abogado else "73501-207-17",
+            
+            # Datos fijos de tu firma
+            "firma_nombre": "Abogados y Agrimensores 'AboAgrim'",
+            "oficina_contactos": "829-826-5888 / 809-691-3333"
+        }
+
+        # B. Llamamos al motor (Asegúrate de tener un archivo llamado así en tu carpeta)
+        archivo_word = generar_documento_word("Aviso_de_Mensura_Para_Saneamiento.docx", datos_finales)
+        
+        # C. Si todo salió bien, mostramos el botón de descarga
+        if archivo_word:
+            st.success("✅ ¡El documento ha sido generado con éxito!")
+            st.download_button(
+                label="⬇️ Descargar Documento en Word",
+                data=archivo_word,
+                file_name=f"Documento_{expediente}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
         proceso = st.selectbox("Tipo de Proceso Catastral", ["Saneamiento", "Deslinde", "Refundición", "Subdivisión"])
         
         btn_magico = st.form_submit_button("🚀 GENERAR EXPEDIENTE COMPLETO (.ZIP)")
