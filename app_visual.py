@@ -7,24 +7,10 @@ import zipfile
 import io
 from docxtpl import DocxTemplate
 # ... arriba están los import ...
-
-
-# Línea 14: Así debe empezar la función
-import streamlit as st
-# --- ESTO VA AL PRINCIPIO DEL ARCHIVO ---
-if "autenticado_global" not in st.session_state:
-    st.session_state.autenticado_global = False
-
-if "usuario_actual" not in st.session_state:
-    st.session_state.usuario_actual = None
 # ==========================================
 # MOTOR DE GENERACIÓN DE DOCUMENTOS WORD
 # ==========================================
 def generar_documento_word(nombre_plantilla, diccionario_datos):
-    """
-    Toma una plantilla de la carpeta 'plantillas_maestras' y la llena con los datos.
-    Devuelve un objeto de memoria (BytesIO) listo para descargar.
-    """
     import io
     from docxtpl import DocxTemplate
     import streamlit as st
@@ -41,8 +27,18 @@ def generar_documento_word(nombre_plantilla, diccionario_datos):
         
         return archivo_salida
     except Exception as e:
-        st.error(f"Error al generar {nombre_plantilla}: Verifique que el archivo exista en la carpeta 'plantillas_maestras'. Detalle: {e}")
+        st.error(f"Error al generar {nombre_plantilla}: {e}")
         return None
+
+# Línea 14: Así debe empezar la función
+import streamlit as st
+# --- ESTO VA AL PRINCIPIO DEL ARCHIVO ---
+if "autenticado_global" not in st.session_state:
+    st.session_state.autenticado_global = False
+
+if "usuario_actual" not in st.session_state:
+    st.session_state.usuario_actual = None
+
 from supabase import create_client, Client
 
 # --- CONEXIÓN A SUPABASE (CEREBRO DIGITAL) ---
@@ -1071,41 +1067,7 @@ def vista_registro_maestro():
         col29, col30 = st.columns(2)
         st.session_state['nom_abogado'] = col29.text_input("Nombre Abogado/Apoderado", key="in_nabo")
         st.session_state['mat_abogado'] = col30.text_input("Colegiatura Abogado", key="in_mabo")
-# --- BARRA LATERAL (SIDEBAR) ---
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("📁 Salida de Expedientes")
 
-    import glob
-    plantillas_disponibles = glob.glob("**/*.docx", recursive=True)
-
-    if len(plantillas_disponibles) == 0:
-        st.sidebar.error("❌ No se encontraron plantillas.")
-    else:
-        # MAGIA AQUÍ: multiselect permite elegir 1 o 10 plantillas al mismo tiempo
-        plantillas_elegidas = st.sidebar.multiselect("📄 Seleccione las Plantillas:", plantillas_disponibles)
-
-        if st.sidebar.button("🛠️ Preparar Expediente"):
-            if not plantillas_elegidas:
-                st.sidebar.warning("⚠️ Seleccione al menos una plantilla.")
-            else:
-                with st.sidebar.status("Procesando documentos y guardando en la nube...", expanded=True) as status:
-                    try:
-                        # 1. Llamamos al Súper Motor para crear el ZIP
-                        archivo, nombre_archivo, tipo_mime = generar_paquete_documentos(st.session_state, plantillas_elegidas)
-                        
-                        st.session_state['archivo_listo'] = archivo
-                        st.session_state['nombre_descarga'] = nombre_archivo
-                        st.session_state['tipo_mime'] = tipo_mime
-
-                        # 2. GUARDADO AUTOMÁTICO EN SUPABASE
-                        datos_a_guardar = {
-                            "expediente": st.session_state.get('in_exp', ''),
-                            "nombre_propietario": st.session_state.get('in_np', ''),
-                            "cedula_propietario": st.session_state.get('in_cp', ''),
-                            "parcela": st.session_state.get('in_par', ''),
-                            "municipio": st.session_state.get('in_mun', ''),
-                            "provincia": st.session_state.get('in_prov', '')
-                        }
                     except Exception as e:
                         st.sidebar.error(f"Error al procesar: {e}")
 
@@ -1209,6 +1171,45 @@ def vista_plantillas_auto():
             # --- 1. Botón para enviar el formulario ---
         # (Esto va alineado con las líneas anteriores dentro del form)
         boton_generar = st.form_submit_button("⚙️ Preparar Documento")
+        # --- SALIDA DE EXPEDIENTES (Integrado en la vista principal) ---
+    st.markdown("---")
+    st.subheader("📁 Salida de Expedientes")
+
+    import glob
+    plantillas_disponibles = glob.glob("**/*.docx", recursive=True)
+
+    if len(plantillas_disponibles) == 0:
+        st.error("❌ No se encontraron plantillas.")
+    else:
+        # MAGIA AQUÍ: multiselect permite elegir 1 o 10 plantillas al mismo tiempo
+        plantillas_elegidas = st.multiselect("📄 Seleccione las Plantillas:", plantillas_disponibles)
+
+        if st.button("🛠️ Preparar Expediente"):
+            if not plantillas_elegidas:
+                st.warning("⚠️ Seleccione al menos una plantilla.")
+            else:
+                with st.status("Procesando documentos y guardando en la nube...", expanded=True) as status:
+                    try:
+                        # 1. Llamamos al Súper Motor para crear el ZIP
+                        archivo, nombre_archivo, tipo_mime = generar_paquete_documentos(st.session_state, plantillas_elegidas)
+
+                        st.session_state['archivo_listo'] = archivo
+                        st.session_state['nombre_descarga'] = nombre_archivo
+                        st.session_state['tipo_mime'] = tipo_mime
+
+                        # 2. GUARDADO AUTOMÁTICO EN SUPABASE
+                        datos_a_guardar = {
+                            "expediente": st.session_state.get('in_exp', ''),
+                            "nombre_propietario": st.session_state.get('in_np', ''),
+                            "cedula_propietario": st.session_state.get('in_cp', ''),
+                            "parcela": st.session_state.get('in_par', ''),
+                            "municipio": st.session_state.get('in_mun', ''),
+                            "provincia": st.session_state.get('in_prov', '')
+                        }
+                        
+                        # Aquí asumo que tienes tu código de inserción en Supabase debajo...
+                    except Exception as e:
+                        st.error(f"Error procesando el expediente: {e}")
 
 # --- 2. Lógica de generación (ESTO VA AFUERA DEL FORMULARIO) ---
 # Quítale la indentación para que quede alineado con el 'with st.form(...):' de la línea 1164
