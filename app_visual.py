@@ -1266,12 +1266,69 @@ vistas = {
     "💵 Facturación": vista_facturacion,
     "⚙️ Configuración": vista_configuracion
 }
+# --- DENTRO DE TU VISTA DE PLANTILLAS ---
 
+if st.button("🚀 Generar Documento"):
+    # A. Preparamos el diccionario con las variables que definimos antes
+    # Sacamos los datos de donde los tengas guardados (session_state o base de datos)
+    datos_para_la_plantilla = {
+        "prop_nombre": st.session_state.get('in_nom_cli', 'Nombre No Definido'),
+        "inm_dc": st.session_state.get('in_dc', ''),
+        "proc_expediente": st.session_state.get('in_exp', ''),
+        "fecha_dia": "25",
+        "fecha_mes": "Abril",
+        "fecha_anio": "2026",
+        # Datos tuyos fijos
+        "rep_nombre": "Lic. Jhonny Matos. M.A.",
+        "rep_cargo": "Presidente Fundador",
+        "firma_nombre": "Abogados y Agrimensores 'AboAgrim'"
+    }
+
+    # B. Llamamos al motor (la función que pegaste arriba de guardar_y_actualizar)
+    # Suponiendo que quieres generar el Aviso de Mensura
+    archivo_preparado = generar_documento_word("Aviso_de_Mensura_Para_Saneamiento.docx", datos_para_la_plantilla)
+
+    if archivo_preparado:
+        # C. Mostramos el botón de descarga para que el archivo baje a tu PC
+        st.download_button(
+            label="💾 Descargar Word Listo",
+            data=archivo_preparado,
+            file_name=f"Aviso_Mensura_{datos_para_la_plantilla['proc_expediente']}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+        st.success("✅ Documento generado con éxito.")
 if menu in vistas:
     vistas[menu]()
 else:
     st.error(f"Error de Conexión: La sección '{menu}' no coincide con el diccionario.")
     st.info("Sugerencia: Verifique que el nombre en el sidebar sea igual al del diccionario 'vistas'.")
+from docxtpl import DocxTemplate
+import io
+
+def generar_documento_word(nombre_plantilla, diccionario_datos):
+    """
+    Toma una plantilla de la carpeta 'plantillas_maestras' y la llena con los datos.
+    Devuelve un objeto de memoria (BytesIO) listo para descargar o subir a Drive.
+    """
+    # 1. Ruta exacta de tu plantilla
+    ruta_plantilla = f"plantillas_maestras/{nombre_plantilla}"
+    
+    try:
+        # 2. Cargar el documento con docxtpl
+        doc = DocxTemplate(ruta_plantilla)
+        
+        # 3. Inyectar el diccionario de variables (El que viene de Supabase o session_state)
+        doc.render(diccionario_datos)
+        
+        # 4. Guardar en memoria (sin crear archivos basura en tu disco duro)
+        archivo_salida = io.BytesIO()
+        doc.save(archivo_salida)
+        archivo_salida.seek(0)
+        
+        return archivo_salida
+    except Exception as e:
+        st.error(f"Error al generar {nombre_plantilla}: {e}")
+        return None
 def guardar_y_actualizar(tipo_perfil, datos, ventana_origen, menu_desplegable=None):
     """Guarda en la base de datos y refresca el menú desplegable."""
     
