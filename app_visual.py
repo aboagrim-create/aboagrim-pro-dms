@@ -1068,8 +1068,6 @@ def vista_registro_maestro():
         st.session_state['nom_abogado'] = col29.text_input("Nombre Abogado/Apoderado", key="in_nabo")
         st.session_state['mat_abogado'] = col30.text_input("Colegiatura Abogado", key="in_mabo")
 
-                    except Exception as e:
-                        st.sidebar.error(f"Error al procesar: {e}")
 
 st.divider() # Esto pone una línea bonita para separar
 btn_guardar = st.button("💾 GUARDAR EXPEDIENTE Y CREAR BÓVEDA", type="primary", use_container_width=True)
