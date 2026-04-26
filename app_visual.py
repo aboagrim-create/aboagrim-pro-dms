@@ -1122,7 +1122,7 @@ def vista_plantillas_auto():
             
             # ⬇️ El botón tampoco toca la pared izquierda
             if st.button(f"🚀 Generar {documento_nombre}"):
-        with st.status("Construyendo documento maestro...", expanded=True):
+                with st.status("Construyendo documento maestro...", expanded=True):
             
             # 1. EL TRADUCTOR
             diccionario_datos = {
