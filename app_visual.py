@@ -1000,6 +1000,31 @@ if btn_guardar:
                     "municipio": st.session_state.get('in_mun', ''),
                     "provincia": st.session_state.get('in_prov', '')
                 }
+                # --- PREPARACIÓN DE LA FICHA MAESTRA (CARÁTULA) ---
+
+datos_resumen = {
+    # El número que el sistema acaba de asignar en Supabase
+    "num_expediente": f"RES-{id_generado}", 
+    
+    # Datos del Cliente
+    "cliente_nombre": nombre_cliente,
+    "cli_correo": st.session_state.get('in_mail', 'No provisto'),
+    "cliente_cedula": st.session_state.get('in_cp'),
+    
+    # Datos Técnicos del Inmueble
+    "inm_direccion": st.session_state.get('in_dir_detallada', 'Santiago, R.D.'),
+    "inm_coordenadas": st.session_state.get('in_coord', 'Verificar en campo'),
+    "inmueble_parcela": st.session_state.get('in_par'),
+    "inmueble_dc": st.session_state.get('in_dc'),
+    
+    # Su Firma Profesional
+    "profesional_a_cargo": "Lic. Jhonny Matos. M.A."
+}
+
+# El sistema genera el Word y lo sube directamente a la carpeta del cliente
+archivo_resumen = generar_documento_word("plantillas_maestras/0_sistema/caratula_maestra.docx", datos_resumen)
+subir_archivo_a_drive(archivo_resumen, f"00_RESUMEN_TECNICO_{nombre_cliente}.docx", id_drive_carpeta)
+                
                 
                 # 1. Guardamos en Supabase (usando su tabla expedientes_maestros)
                 # 1. Guardamos en Supabase (usando su tabla expedientes_maestros)
