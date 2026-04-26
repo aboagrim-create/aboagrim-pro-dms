@@ -1199,14 +1199,14 @@ def vista_plantillas_auto():
         documento_nombre = st.selectbox("2️⃣ Seleccione el Trámite/Actuación:", ["Elija un documento..."] + list(opciones_docs.keys()))
         
         if documento_nombre != "Elija un documento...":
-            # Ruta exacta (ej: 1_mensuras_catastrales/deslinde/aviso_mensura.docx)
-            ruta_archivo_final = opciones_docs[documento_nombre] 
-            
-            if st.button(f"🛠️ Generar {documento_nombre}"):
-                with st.status("Procesando documento en la nube...", expanded=True):
-                    
-                    # Llamamos al motor pasándole la ruta que vino de Supabase
-                    archivo_generado = generar_documento_word(ruta_archivo_final, st.session_state)
+        # ESTA ES LA LÍNEA QUE FALTA:
+        ruta_archivo_final = opciones_docs[documento_nombre] 
+        
+        if st.button(f"🚀 Generar {documento_nombre}"):
+            with st.status("Procesando documento en la nube...", expanded=True):
+                
+                # Ahora sí, aquí usamos la variable:
+                archivo_generado = generar_documento_word(ruta_archivo_final, st.session_state)
                     
                     if archivo_generado:
                         st.success("✅ Documento listo.")
