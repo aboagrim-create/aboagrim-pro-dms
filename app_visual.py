@@ -1224,9 +1224,6 @@ def vista_plantillas_auto():
                 url_carpeta = st.session_state.get('url_drive_actual')
                 id_carpeta_cliente = url_carpeta.split('/')[-1] if url_carpeta else None
 
-                # 2. GENERACIÓN MASIVA ZIP Y SUBIDA A DRIVE DIRECTA
-                buf = io.BytesIO()
-                with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
                     
                     # - Aviso Principal
                     
