@@ -1199,23 +1199,24 @@ def vista_plantillas_auto():
         documento_nombre = st.selectbox("2️⃣ Seleccione el Trámite/Actuación:", ["Elija un documento..."] + list(opciones_docs.keys()))
         
         if documento_nombre != "Elija un documento...":
-        # ESTA ES LA LÍNEA QUE FALTA:
-        ruta_archivo_final = opciones_docs[documento_nombre] 
-        
+    # Fíjate en este espacio vacío a la izquierda:
+    ruta_archivo_final = opciones_docs[documento_nombre] 
+    
         if st.button(f"🚀 Generar {documento_nombre}"):
-            with st.status("Procesando documento en la nube...", expanded=True):
-                
-                # Ahora sí, aquí usamos la variable:
-                archivo_generado = generar_documento_word(ruta_archivo_final, st.session_state)
+            with st.status("Procesando...", expanded=True):
+                # ... todo lo demás sigue igual ...
                     
-                    if archivo_generado:
-                        st.success("✅ Documento listo.")
-                        st.download_button(
-                            label="⬇️ Descargar Documento Final",
-                            data=archivo_generado,
-                            file_name=f"{documento_nombre}.docx",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                        )
+                    # Ahora sí, aquí usamos la variable:
+                    archivo_generado = generar_documento_word(ruta_archivo_final, st.session_state)
+                        
+                        if archivo_generado:
+                            st.success("✅ Documento listo.")
+                            st.download_button(
+                                label="⬇️ Descargar Documento Final",
+                                data=archivo_generado,
+                                file_name=f"{documento_nombre}.docx",
+                                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            )
 
                 url_carpeta = st.session_state.get('url_drive_actual')
                 id_carpeta_cliente = url_carpeta.split('/')[-1] if url_carpeta else None
