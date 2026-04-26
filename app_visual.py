@@ -1258,14 +1258,7 @@ def vista_plantillas_auto():
 
                 # --- TRUCO LEGAL PARA DESCARGAR DENTRO DEL FORMULARIO ---
                 import base64
-                b64 = base64.b64encode(buf.getvalue()).decode()
-                nombre_zip = f"Expediente_{proceso}_{datos['parcela']}.zip"
-                html_boton = f'<a href="data:application/zip;base64,{b64}" download="{nombre_zip}" style="display: inline-block; padding: 10px 20px; color: white; background-color: #FF4B4B; border-radius: 5px; text-decoration: none; font-weight: bold; text-align: center;">📥 DESCARGAR EXPEDIENTE COMPLETO (.ZIP)</a>'
-                st.markdown(html_boton, unsafe_allow_html=True)
-            except Exception as e:
-                st.error(f"⚠️ Error en la generación: {e}")
-        else:
-            st.warning("⚠️ Complete los datos en el Registro Maestro antes de generar.")
+                
 # --- EL INTERRUPTOR FINAL ---
 # ==========================================
 # MOTOR DE NAVEGACIÓN (DICCIONARIO FINAL)
