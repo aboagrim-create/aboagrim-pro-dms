@@ -998,32 +998,32 @@ def vista_registro_maestro():
     with tab1:
         st.subheader("Datos Técnicos y del Inmueble")
         col1, col2, col3 = st.columns(3)
-        st.session_state['exp'] = col1.text_input("No. Expediente", key="in_exp")
-        st.session_state['fecha_men'] = col2.text_input("Fecha Mensura (Ej: 12/11/2025)", key="in_fm")
-        st.session_state['hora_men'] = col3.text_input("Hora Mensura (Ej: 9:00 A.M.)", key="in_hm")
+        # --- TAB 1: INMUEBLE (Reemplazo para líneas 1001-1015) ---
+        exp = col1.text_input("No. Expediente", key="in_exp")
+        fecha_men = col2.text_input("Fecha Mensura (Ej: 12/11/2025)", key="in_fm")
+        hora_men = col3.text_input("Hora Mensura (Ej: 9:00 A.M.)", key="in_hm")
 
-        col4, col5, col6 = st.columns(3)
-        st.session_state['dc'] = col4.text_input("Distrito Catastral (DC)", key="in_dc")
-        st.session_state['parcela'] = col5.text_input("Parcela", key="in_par")
-        st.session_state['area_m2'] = col6.text_input("Área (M²)", key="in_area")
+        dc = col4.text_input("Distrito Catastral (DC)", key="in_dc")
+        parcela = col5.text_input("Parcela", key="in_par")
+        area_m2 = col6.text_input("Área (M²)", key="in_area")
 
-        col7, col8 = st.columns(2)
-        st.session_state['municipio'] = col7.text_input("Municipio", key="in_mun")
-        st.session_state['provincia'] = col8.text_input("Provincia", key="in_prov")
+        municipio = col7.text_input("Municipio", key="in_mun")
+        provincia = col8.text_input("Provincia", key="in_prov")
 
-        st.session_state['ubicacion_det'] = st.text_area("Ubicación Detallada (Ruta para Letreros/Avisos)", key="in_ubi")
-        st.session_state['coordenadas'] = st.text_input("Coordenadas (Ej: 19.494634, -70.893367)", key="in_coord")
+        ubicacion_det = st.text_area("Ubicación Detallada (Ruta para Letreros/Avisos)", key="in_ubi")
+        coordenadas = st.text_input("Coordenadas (Ej: 19.494634, -70.893367)", key="in_coord")
 
     with tab2:
         st.subheader("Datos del Propietario / Reclamante / Comprador")
         col9, col10 = st.columns(2)
-        st.session_state['nom_prop'] = col9.text_input("Nombre Completo", key="in_np")
-        st.session_state['ced_prop'] = col10.text_input("Cédula", key="in_cp")
+        # --- TAB 2: CLIENTE (Reemplazo para líneas 1020-1021) ---
+        nom_prop = col9.text_input("Nombre Completo", key="in_np")
+        ced_prop = col10.text_input("Cédula", key="in_cp")
 
         col11, col12, col13 = st.columns(3)
-        st.session_state['est_prop'] = col11.selectbox("Estado Civil", ["Soltero", "Casado", "Divorciado", "Viudo"], key="in_ep")
-        st.session_state['nac_prop'] = col12.text_input("Nacionalidad", value="Dominicano", key="in_nap")
-        st.session_state['prof_prop'] = col13.text_input("Profesión/Oficio", key="in_prp")
+        est_prop = col11.selectbox("Estado Civil", ["Soltero", "Casado", "Divorciado", "Viudo"], key="in_ep")
+        nac_prop = col12.text_input("Nacionalidad", value="Dominicano", key="in_nap")
+        prof_prop = col13.text_input("Profesión/Oficio", key="in_prp")
         
         st.session_state['dom_prop'] = st.text_input("Domicilio", key="in_dp")
 
