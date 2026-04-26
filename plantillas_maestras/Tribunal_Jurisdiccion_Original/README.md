@@ -1,1 +1,0 @@
-plantillas_maestras/Tribunal_Jurisdiccion_Original/README.MD

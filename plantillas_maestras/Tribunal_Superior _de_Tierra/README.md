@@ -1,1 +1,0 @@
-plantillas_maestras/Tribunal_Superior_de_tierra/README.md

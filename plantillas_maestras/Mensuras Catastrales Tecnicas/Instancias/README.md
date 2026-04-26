@@ -1,1 +1,0 @@
-plantillas_maestras/Mensuras Catastrales Técnicas/Solicitudes/README.md

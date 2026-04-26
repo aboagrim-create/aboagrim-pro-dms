@@ -1,1 +1,0 @@
-plantillas_maestras/Registro_de_Titulos/README.md
