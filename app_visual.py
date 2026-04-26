@@ -1221,37 +1221,6 @@ def vista_plantillas_auto():
                             file_name=f"{documento_nombre}.docx",
                             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                         )
-                url_carpeta = st.session_state.get('url_drive_actual')
-                id_carpeta_cliente = url_carpeta.split('/')[-1] if url_carpeta else None
-
-                    
-                    # - Aviso Principal
-                    
-                    
-                    if id_carpeta_cliente:
-                        subir_archivo_a_drive(out_p.getvalue(), file_p, id_carpeta_cliente)
-
-                    # - Plantillas Extras
-                    for p_extra in archivos_adicionales:
-                        nombre_limpio = p_extra.split('/')[-1]
-                        doc_e = DocxTemplate(p_extra)
-                        doc_e.render(datos)
-                        out_e = io.BytesIO()
-                        doc_e.save(out_e)
-                        zip_file.writestr(nombre_limpio, out_e.getvalue())
-                        
-                        if id_carpeta_cliente:
-                            subir_archivo_a_drive(out_e.getvalue(), nombre_limpio, id_carpeta_cliente)
-
-                # 3. FINAL DEL PROCESO
-                if id_carpeta_cliente:
-                    st.success("✅ Documentos subidos a la Bóveda de Drive.")
-                    
-                st.success(f"⚖️ Set de {proceso} preparado con {len(archivos_adicionales)+1} documentos!")
-                st.balloons()
-
-                # --- TRUCO LEGAL PARA DESCARGAR DENTRO DEL FORMULARIO ---
-                import base64
                 
 # --- EL INTERRUPTOR FINAL ---
 # ==========================================
