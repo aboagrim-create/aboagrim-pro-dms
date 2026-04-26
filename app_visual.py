@@ -1173,14 +1173,46 @@ def vista_plantillas_auto():
     st.markdown("---")
     st.subheader("📁 Salida de Expedientes")
 
-    import glob
-    plantillas_disponibles = glob.glob("**/*.docx", recursive=True)
+    # --- SELECTOR INTELIGENTE POR CATEGORÍAS (Conectado a Supabase) ---
+    try:
+        # 1. Traer categorías únicas de la tabla 'plantillas'
+        query_cats = supabase.table("plantillas").select("carpeta_destino_sugerida").execute()
+        categorias_crudas = [r['carpeta_destino_sugerida'] for r in query_cats.data if r['carpeta_destino_sugerida']]
+        categorias = sorted(list(set(categorias_crudas))) # Quita duplicados
+    except Exception as e:
+        categorias = []
+        st.error("Conectando base de datos de plantillas...")
 
-    if len(plantillas_disponibles) == 0:
-        st.error("❌ No se encontraron plantillas.")
-    else:
-        # MAGIA AQUÍ: multiselect permite elegir 1 o 10 plantillas al mismo tiempo
-        plantillas_elegidas = st.multiselect("📄 Seleccione las Plantillas:", plantillas_disponibles)
+    # 2. Menú desplegable PRINCIPAL (Área de Trabajo)
+    categoria_elegida = st.selectbox("1️⃣ Seleccione el Área o Jurisdicción:", ["Elija una opción..."] + categorias)
+
+    if categoria_elegida != "Elija una opción...":
+        # 3. Filtrar plantillas según la categoría elegida
+        query_docs = supabase.table("plantillas").select("*").eq("carpeta_destino_sugerida", categoria_elegida).execute()
+        opciones_docs = {d['nombre_mostrar']: d['archivo_word'] for d in query_docs.data}
+        
+        # 4. Menú desplegable SECUNDARIO (El documento exacto)
+        documento_nombre = st.selectbox("2️⃣ Seleccione el Trámite/Actuación:", ["Elija un documento..."] + list(opciones_docs.keys()))
+        
+        if documento_nombre != "Elija un documento...":
+            # Esta es la ruta exacta (ej: mensura/aviso.docx) que se mandará al motor
+            ruta_archivo_final = opciones_docs[documento_nombre] 
+            
+            # --- Aquí se conecta con tu botón de Preparar Expediente ---
+            if st.button(f"🛠️ Generar {documento_nombre}"):
+                with st.status("Procesando documento en la nube...", expanded=True):
+                    
+                    # Llamamos al motor pasándole la ruta que vino de Supabase
+                    archivo_generado = generar_documento_word(ruta_archivo_final, st.session_state)
+                    
+                    if archivo_generado:
+                        st.success("✅ Documento listo.")
+                        st.download_button(
+                            label="⬇️ Descargar Documento Final",
+                            data=archivo_generado,
+                            file_name=f"{documento_nombre}.docx",
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        )
 
         if st.button("🛠️ Preparar Expediente"):
             if not plantillas_elegidas:
