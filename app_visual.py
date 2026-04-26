@@ -1198,11 +1198,13 @@ def vista_plantillas_auto():
         # 4. Menú desplegable SECUNDARIO (El documento exacto)
         documento_nombre = st.selectbox("2️⃣ Seleccione el Trámite/Actuación:", ["Elija un documento..."] + list(opciones_docs.keys()))
         
+
+
         if documento_nombre != "Elija un documento...":
         ruta_archivo_final = opciones_docs[documento_nombre]
         
         if st.button(f"🚀 Generar {documento_nombre}"):
-            with st.status("Procesando documento en la nube...", expanded=True):
+            with st.status("Procesando...", expanded=True):
                 archivo_generado = generar_documento_word(ruta_archivo_final, st.session_state)
                 
                 if archivo_generated:
