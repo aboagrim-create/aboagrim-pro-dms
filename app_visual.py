@@ -1121,50 +1121,49 @@ def vista_plantillas_auto():
             ruta_archivo_final = opciones_docs[documento_nombre]
             
             # ⬇️ El botón tampoco toca la pared izquierda
-            if st.button(f"🚀 Generar {documento_nombre}"):
-                with st.status("Construyendo documento maestro...", expanded=True):
+if st.button(f"🚀 Generar {documento_nombre}"):
+    with st.status("Construyendo documento maestro...", expanded=True):
+        
+        diccionario_datos = {
+            "cli_nombre": st.session_state.get('in_np', '_______________'),
+            "cli_cedula": st.session_state.get('in_cp', '_______________'),
+            "cli_estado_civil": st.session_state.get('in_ep', '_______________'),
+            "cli_nacionalidad": st.session_state.get('in_nap', '_______________'),
+            "cli_profesion": st.session_state.get('in_prp', '_______________'),
+            "cli_domicilio": st.session_state.get('in_dp', '_______________'),
             
-            # 1. EL TRADUCTOR
-                diccionario_datos = {
-                    "cli_nombre": st.session_state.get('in_np', '_______________'),
-                    "cli_cedula": st.session_state.get('in_cp', '_______________'),
-                    "cli_estado_civil": st.session_state.get('in_ep', '_______________'),
-                    "cli_nacionalidad": st.session_state.get('in_nap', '_______________'),
-                    "cli_profesion": st.session_state.get('in_prp', '_______________'),
-                    "cli_domicilio": st.session_state.get('in_dp', '_______________'),
-                    
-                    "inm_ciudad": "Santiago de los Caballeros",
-                    "inm_municipio": st.session_state.get('in_mun', 'Santiago'),
-                    "fecha_dia": "26",
-                    "fecha_mes": "Abril",
-                    "fecha_anio": "2026",
-                    
-                    "rep_nombre": "Lic. Jhonny Matos. M.A.",
-                    "rep_cedula": "Escriba_su_cédula_aquí", 
-                    "rep_abogado_matricula": "Escriba_su_colegiatura_aquí",
-                    "oficina_direccion": "oficina principal de AboAgrim en Santiago, República Dominicana",
-                    
-                    "contra_nombre": "___________________",
-                    "sentencia_fecha": "___________________",
-                    "cuota_litis_porcentaje_letras": "TREINTA",
-                    "cuota_litis_porcentaje_num": "30",
-                    
-                    "notario_nombre": "___________________",
-                    "notario_matricula": "_______",
-                    "notario_cedula": "_______________",
-                    "notario_domicilio": "_______________"
-                }
-    
-                archivo_generado = generar_documento_word(ruta_archivo_final, diccionario_datos)
-                
-                if archivo_generado:
-                    st.success("✅ Documento fusionado con el Registro Maestro.")
-                    st.download_button(
-                        label="⬇️ Descargar Documento Final",
-                        data=archivo_generado,
-                        file_name=f"{documento_nombre}_Procesado.docx",
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    )
+            "inm_ciudad": "Santiago de los Caballeros",
+            "inm_municipio": st.session_state.get('in_mun', 'Santiago'),
+            "fecha_dia": "26",
+            "fecha_mes": "Abril",
+            "fecha_anio": "2026",
+            
+            "rep_nombre": "Lic. Jhonny Matos. M.A.",
+            "rep_cedula": "Escriba_su_cédula_aquí", 
+            "rep_abogado_matricula": "Escriba_su_colegiatura_aquí",
+            "oficina_direccion": "oficina principal de AboAgrim en Santiago, República Dominicana",
+            
+            "contra_nombre": "___________________",
+            "sentencia_fecha": "___________________",
+            "cuota_litis_porcentaje_letras": "TREINTA",
+            "cuota_litis_porcentaje_num": "30",
+            
+            "notario_nombre": "___________________",
+            "notario_matricula": "_______",
+            "notario_cedula": "_______________",
+            "notario_domicilio": "_______________"
+        }
+
+        archivo_generado = generar_documento_word(ruta_archivo_final, diccionario_datos)
+        
+        if archivo_generado:
+            st.success("✅ Documento fusionado con el Registro Maestro.")
+            st.download_button(
+                label="⬇️ Descargar Documento Final",
+                data=archivo_generado,
+                file_name=f"{documento_nombre}_Procesado.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
 
             # 2. Le pasamos el Traductor al Motor de Word
             # Fíjese que ahora le pasamos 'diccionario_datos' en vez de 'st.session_state' crudo
