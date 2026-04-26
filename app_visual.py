@@ -997,22 +997,26 @@ def vista_registro_maestro():
 
     with tab1:
         st.subheader("Datos Técnicos y del Inmueble")
+        
+        # Fila 1
         col1, col2, col3 = st.columns(3)
-        # --- TAB 1: INMUEBLE (Reemplazo para líneas 1001-1015) ---
         exp = col1.text_input("No. Expediente", key="in_exp")
         fecha_men = col2.text_input("Fecha Mensura (Ej: 12/11/2025)", key="in_fm")
         hora_men = col3.text_input("Hora Mensura (Ej: 9:00 A.M.)", key="in_hm")
 
+        # Fila 2 (¡Esto era lo que faltaba!)
+        col4, col5, col6 = st.columns(3)
         dc = col4.text_input("Distrito Catastral (DC)", key="in_dc")
         parcela = col5.text_input("Parcela", key="in_par")
         area_m2 = col6.text_input("Área (M²)", key="in_area")
 
+        # Fila 3 (¡Y esto también!)
+        col7, col8 = st.columns(2)
         municipio = col7.text_input("Municipio", key="in_mun")
         provincia = col8.text_input("Provincia", key="in_prov")
 
         ubicacion_det = st.text_area("Ubicación Detallada (Ruta para Letreros/Avisos)", key="in_ubi")
         coordenadas = st.text_input("Coordenadas (Ej: 19.494634, -70.893367)", key="in_coord")
-
     with tab2:
         st.subheader("Datos del Propietario / Reclamante / Comprador")
         col9, col10 = st.columns(2)
