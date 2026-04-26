@@ -991,20 +991,36 @@ btn_guardar = st.button("💾 GUARDAR EXPEDIENTE Y CREAR BÓVEDA", type="primary
 if btn_guardar:
         if st.session_state.get('in_np', '') != '': # Verificamos que haya un nombre escrito
             try:
-                # ---> PEGAR ESTE PAQUETE AQUÍ <---
-                datos_a_guardar = {
-                    "expediente": st.session_state.get('in_exp', ''),
-                    "nombre_propietario": st.session_state.get('in_np', ''),
-                    "cedula_propietario": st.session_state.get('in_cp', ''),
-                    "parcela": st.session_state.get('in_par', ''),
-                    "municipio": st.session_state.get('in_mun', ''),
-                    "provincia": st.session_state.get('in_prov', '')
-                }
-                # --- PREPARACIÓN DE LA FICHA MAESTRA (CARÁTULA) ---
+            # ---> PEGAR ESTE PAQUETE AQUÍ <---
+            datos_a_guardar = {
+                "expediente": st.session_state.get('in_exp', ''),
+                "nombre_propietario": st.session_state.get('in_np', ''),
+                "cedula_propietario": st.session_state.get('in_cp', ''),
+                "parcela": st.session_state.get('in_par', ''),
+                "municipio": st.session_state.get('in_mun', ''),
+                "provincia": st.session_state.get('in_prov', '')
+            }
 
-datos_resumen = {
-    # El número que el sistema acaba de asignar en Supabase
-    "num_expediente": f"RES-{id_generado}", 
+            # 1. Guardamos en Supabase PRIMERO (¡Para que nazca el ID del expediente!)
+            res = supabase.table("expedientes_maestros").insert(datos_a_guardar).execute()
+            id_generado = res.data[0]['id']
+            nombre_cliente = st.session_state.get('in_np', 'Sin_Nombre')
+
+            # 2. PREPARACIÓN DE LA FICHA MAESTRA (CARÁTULA)
+            datos_resumen = {
+                "num_expediente": f"RES-{id_generado}", 
+                "cliente_nombre": nombre_cliente,
+                "cli_correo": st.session_state.get('in_mail', 'No provisto'),
+                "cliente_cedula": st.session_state.get('in_cp'),
+                "inm_direccion": st.session_state.get('in_dir_detallada', 'Santiago, R.D.'),
+                "inm_coordenadas": st.session_state.get('in_coord', 'Verificar en campo'),
+                "inmueble_parcela": st.session_state.get('in_par'),
+                "inmueble_dc": st.session_state.get('in_dc'),
+                "profesional_a_cargo": "Lic. Jhonny Matos. M.A."
+            }
+            
+            # --- Aquí abajo debe continuar su código normal de Google Drive que dice: ---
+            # with st.status("⏳ Creando oficina virtual... 
     
     # Datos del Cliente
     "cliente_nombre": nombre_cliente,
