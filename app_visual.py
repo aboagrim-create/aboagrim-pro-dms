@@ -1228,12 +1228,6 @@ def vista_plantillas_auto():
                     # - Aviso Principal
                     
                     
-                    doc_p = DocxTemplate(ruta_base + file_p)
-                    doc_p.render(datos)
-                    out_p = io.BytesIO()
-                    doc_p.save(out_p)
-                    zip_file.writestr(file_p, out_p.getvalue())
-                    
                     if id_carpeta_cliente:
                         subir_archivo_a_drive(out_p.getvalue(), file_p, id_carpeta_cliente)
 
