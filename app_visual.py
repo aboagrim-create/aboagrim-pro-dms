@@ -1170,10 +1170,14 @@ def vista_plantillas_auto():
         # (Esto va alineado con las líneas anteriores dentro del form)
         boton_generar = st.form_submit_button("⚙️ Preparar Documento")
         # --- SALIDA DE EXPEDIENTES (Integrado en la vista principal) ---
-    st.markdown("---")
-    st.subheader("📁 Salida de Expedientes")
+    
 
-    # --- SELECTOR INTELIGENTE POR CATEGORÍAS (Conectado a Supabase) ---
+# --- 2. Lógica de generación (ESTO VA AFUERA DEL FORMULARIO) ---
+# Quítale la indentación para que quede alineado con el 'with st.form(...):' de la línea 1164
+    # --- 2. Lógica de generación (ESTO VA AFUERA DEL FORMULARIO) ---# --- SELECTOR INTELIGENTE POR CATEGORÍAS (Conectado a Supabase) ---
+    st.markdown("---")
+    st.subheader("📁 Generación de Documentos Especializados")
+
     try:
         # 1. Traer categorías únicas de la tabla 'plantillas'
         query_cats = supabase.table("plantillas").select("carpeta_destino_sugerida").execute()
@@ -1181,7 +1185,7 @@ def vista_plantillas_auto():
         categorias = sorted(list(set(categorias_crudas))) # Quita duplicados
     except Exception as e:
         categorias = []
-        st.error("Conectando base de datos de plantillas...")
+        st.warning("Conectando base de datos de plantillas...")
 
     # 2. Menú desplegable PRINCIPAL (Área de Trabajo)
     categoria_elegida = st.selectbox("1️⃣ Seleccione el Área o Jurisdicción:", ["Elija una opción..."] + categorias)
@@ -1195,10 +1199,9 @@ def vista_plantillas_auto():
         documento_nombre = st.selectbox("2️⃣ Seleccione el Trámite/Actuación:", ["Elija un documento..."] + list(opciones_docs.keys()))
         
         if documento_nombre != "Elija un documento...":
-            # Esta es la ruta exacta (ej: mensura/aviso.docx) que se mandará al motor
+            # Ruta exacta (ej: 1_mensuras_catastrales/deslinde/aviso_mensura.docx)
             ruta_archivo_final = opciones_docs[documento_nombre] 
             
-            # --- Aquí se conecta con tu botón de Preparar Expediente ---
             if st.button(f"🛠️ Generar {documento_nombre}"):
                 with st.status("Procesando documento en la nube...", expanded=True):
                     
@@ -1213,87 +1216,6 @@ def vista_plantillas_auto():
                             file_name=f"{documento_nombre}.docx",
                             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                         )
-
-        if st.button("🛠️ Preparar Expediente"):
-            if not plantillas_elegidas:
-                st.warning("⚠️ Seleccione al menos una plantilla.")
-            else:
-                with st.status("Procesando documentos y guardando en la nube...", expanded=True) as status:
-                    try:
-                        # 1. Llamamos al Súper Motor para crear el ZIP
-                        archivo, nombre_archivo, tipo_mime = generar_paquete_documentos(st.session_state, plantillas_elegidas)
-
-                        st.session_state['archivo_listo'] = archivo
-                        st.session_state['nombre_descarga'] = nombre_archivo
-                        st.session_state['tipo_mime'] = tipo_mime
-
-                        # 2. GUARDADO AUTOMÁTICO EN SUPABASE
-                        datos_a_guardar = {
-                            "expediente": st.session_state.get('in_exp', ''),
-                            "nombre_propietario": st.session_state.get('in_np', ''),
-                            "cedula_propietario": st.session_state.get('in_cp', ''),
-                            "parcela": st.session_state.get('in_par', ''),
-                            "municipio": st.session_state.get('in_mun', ''),
-                            "provincia": st.session_state.get('in_prov', '')
-                        }
-                        
-                        # Aquí asumo que tienes tu código de inserción en Supabase debajo...
-                    except Exception as e:
-                        st.error(f"Error procesando el expediente: {e}")
-
-# --- 2. Lógica de generación (ESTO VA AFUERA DEL FORMULARIO) ---
-# Quítale la indentación para que quede alineado con el 'with st.form(...):' de la línea 1164
-    # --- 2. Lógica de generación (ESTO VA AFUERA DEL FORMULARIO) ---
-    if boton_generar:
-        with st.spinner("Conectando motor de plantillas AboAgrim..."):
-            # A. Armamos el diccionario con las variables de tu pantalla
-            datos_finales = {
-                "nom_prop": nombre,             # Viene de tu línea 1168
-                "dc": dc,                       # Viene de tu línea 1170
-                "exp": expediente,              # Viene de tu línea 1173
-                "fecha_men": str(fecha),        # Viene de tu línea 1174
-                "municipio": "Santiago",        # Se puede dejar fijo o agregar al form
-                "provincia": "Santiago",
-                "hora_men": "09:00 A.M.",
-                "ubicacion_det": "Ver plano de mensura",
-                "coordenadas": "N/A",
-                "area_m2": "0.00"
-            }
-
-            # B. Llamamos al motor (El nombre del archivo debe ser exacto al de tu carpeta)
-            archivo_word = generar_documento_word("Tu_Nombre_Real.docx", datos_finales)
-            
-            # C. Si todo salió bien, mostramos el botón de descarga
-            if archivo_word:
-                st.success("✅ ¡El documento ha sido generado con éxito!")
-                st.download_button(
-                    label="⬇️ Descargar Documento en Word",
-                    data=archivo_word,
-                    file_name=f"Aviso_Mensura_{expediente}.docx",
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                )
-        proceso = st.selectbox("Tipo de Proceso Catastral", ["Saneamiento", "Deslinde", "Refundición", "Subdivisión"])
-        
-        btn_magico = st.form_submit_button("🚀 GENERAR EXPEDIENTE COMPLETO (.ZIP)")
-
-        if btn_magico:
-            try:
-                # 1. El "Cerebro" que llena los espacios {{ }} en sus Word
-                datos = {
-                    "nombre": st.session_state.get('in_np', ''),
-                    "cedula": st.session_state.get('in_cp', ''),
-                    "parcela": st.session_state.get('in_par', ''),
-                    "municipio": st.session_state.get('in_mun', ''),
-                    "provincia": st.session_state.get('in_prov', ''),
-                    "expediente": st.session_state.get('in_exp', ''),
-                    "fecha": fecha.strftime("%d de %B del %Y"),
-                    "notario": nom_notario,
-                    "mat_not": mat_notario,
-                    "abogado": nom_abogado,
-                    "mat_abo": mat_abogado,
-                    "profesional": "Lic. Jhonny Matos. M.A.",
-                    "cargo": "Presidente fundador AboAgrim"
-                }
 
                 url_carpeta = st.session_state.get('url_drive_actual')
                 id_carpeta_cliente = url_carpeta.split('/')[-1] if url_carpeta else None
