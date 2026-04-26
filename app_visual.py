@@ -1201,20 +1201,22 @@ def vista_plantillas_auto():
 
 
         if documento_nombre != "Elija un documento...":
-        ruta_archivo_final = opciones_docs[documento_nombre]
-        
+        # ⬇️ Mira cómo esto ya no toca la pared izquierda
+            ruta_archivo_final = opciones_docs[documento_nombre]
+            
+            # ⬇️ El botón tampoco toca la pared izquierda
             if st.button(f"🚀 Generar {documento_nombre}"):
-                with st.status("Procesando...", expanded=True):
+                with st.status("Procesando documento en la nube...", expanded=True):
                     archivo_generado = generar_documento_word(ruta_archivo_final, st.session_state)
-                
-                if archivo_generated:
-                    st.success("✅ Documento listo.")
-                    st.download_button(
-                        label="⬇️ Descargar Documento Final",
-                        data=archivo_generado,
-                        file_name=f"{documento_nombre}.docx",
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    )
+                    
+                    if archivo_generado:
+                        st.success("✅ Documento listo.")
+                        st.download_button(
+                            label="⬇️ Descargar Documento Final",
+                            data=archivo_generado,
+                            file_name=f"{documento_nombre}.docx",
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        )
                 url_carpeta = st.session_state.get('url_drive_actual')
                 id_carpeta_cliente = url_carpeta.split('/')[-1] if url_carpeta else None
 
