@@ -1121,7 +1121,7 @@ def vista_plantillas_auto():
             ruta_archivo_final = opciones_docs[documento_nombre]
             
             # ⬇️ El botón tampoco toca la pared izquierda
-if st.button(f"🚀 Generar {documento_nombre}"):
+if st.button("🚀 Generar Documento"):
     with st.status("Construyendo documento maestro...", expanded=True):
         
         diccionario_datos = {
@@ -1161,7 +1161,7 @@ if st.button(f"🚀 Generar {documento_nombre}"):
             st.download_button(
                 label="⬇️ Descargar Documento Final",
                 data=archivo_generado,
-                file_name=f"{documento_nombre}_Procesado.docx",
+                file_name="Contrato_Generado.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
 
@@ -1169,14 +1169,7 @@ if st.button(f"🚀 Generar {documento_nombre}"):
             # Fíjese que ahora le pasamos 'diccionario_datos' en vez de 'st.session_state' crudo
             archivo_generado = generar_documento_word(ruta_archivo_final, diccionario_datos)
             
-            if archivo_generado:
-                st.success("✅ Documento fusionado con el Registro Maestro.")
-                st.download_button(
-                    label="⬇️ Descargar Documento Final",
-                    data=archivo_generado,
-                    file_name=f"{documento_nombre}_Procesado.docx",
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                )
+
                 
 # --- EL INTERRUPTOR FINAL ---
 # ==========================================
