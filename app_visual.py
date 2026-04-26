@@ -1225,8 +1225,7 @@ def vista_plantillas_auto():
                 with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
                     
                     # - Aviso Principal
-                    ruta_base = f"plantillas_maestras/Mensuras Catastrales Tecnicas/{proceso}/"
-                    file_p = f"Aviso de Mensura Para {proceso}.docx"
+                    
                     
                     doc_p = DocxTemplate(ruta_base + file_p)
                     doc_p.render(datos)
