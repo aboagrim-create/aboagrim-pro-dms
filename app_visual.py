@@ -1039,23 +1039,15 @@ if btn_guardar:
         else:
             st.warning("⚠️ El nombre del propietario es obligatorio para crear el expediente.")
                 
-                st.success(f"⚖️ Expediente de {nombre_cliente} registrado y organizado.")
-                if url_carpeta:
-                    st.link_button("📂 Ir a la Carpeta del Cliente", url_carpeta)
 
-            except Exception as e:
-                st.error(f"Error al registrar: {e}")
-        else:
-            st.warning("⚠️ Debe ingresar el nombre del propietario para guardar.")
-
-        # Botón de descarga Dinámico (ZIP o Word)
-        if 'archivo_listo' in st.session_state and st.session_state['archivo_listo']:
-            st.sidebar.download_button(
-                label="📥 DESCARGAR AHORA EN PC",
-                data=st.session_state['archivo_listo'],
-                file_name=st.session_state.get('nombre_descarga', 'Paquete.zip'),
-                mime=st.session_state.get('tipo_mime', 'application/zip')
-            )
+    # Botón de descarga Dinámico (ZIP o Word)
+    if 'archivo_listo' in st.session_state and st.session_state['archivo_listo']:
+        st.sidebar.download_button(
+            label="📥 DESCARGAR AHORA EN PC",
+            data=st.session_state['archivo_listo'],
+            file_name=st.session_state.get('nombre_descarga', 'Paquete.zip'),
+            mime=st.session_state.get('tipo_mime', 'application/zip')
+        )
 # Supongamos que esta es su función de conexión (ajuste según su db.py)
 # from database import ejecutar_query 
 
