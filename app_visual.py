@@ -1306,7 +1306,7 @@ def vista_registro_maestro():
                         "telefono": telefono,
                         "domicilio": domicilio,
                         "tipo_persona": "Jurídica" if es_compania else "Física",
-                        "datos_adicionales": datos_extras_dict # Se guarda como JSON en Supabase
+                        "datos_adicionales": datos_adicionales
                     }
                     
                     # Insertamos en Supabase
