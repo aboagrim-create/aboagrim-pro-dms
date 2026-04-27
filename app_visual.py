@@ -1332,43 +1332,42 @@ def vista_registro_maestro():
                     st.error(f"❌ Error al guardar en el servidor: {e}")
 
 # =========================================================
-# ENRUTADOR PRINCIPAL (EL MOTOR DEFINITIVO)
+# ENRUTADOR CON CONTROL DE ACCESO (RBAC)
 # =========================================================
+
+# Definimos qué roles pueden ver qué módulos
+rol_usuario = st.session_state.get("rol", "Pasante")
+
+# Módulos permitidos para todos
+modulos = ["🏠 Mando Central", "👤 Registro Maestro", "📁 Archivo Digital", "📄 Plantillas Auto"]
+
+# Módulos exclusivos (Solo Abogados, Agrimensores y el Presidente)
+if rol_usuario in ["Abogado", "Agrimensor", "Presidente Fundador"]:
+    modulos.append("📅 Alertas y Plazos")
+    modulos.append("💵 Facturación")
+
+# Módulo Maestro (Solo para el Presidente Fundador)
+if rol_usuario == "Presidente Fundador":
+    modulos.append("⚙️ Configuración")
+
+# Dibujamos el menú con las opciones permitidas
 with st.sidebar:
-    st.title("🛰️ AboAgrim Pro")
-    st.markdown("**Panel de Navegación**")
-    st.divider()
-    
-    # Aquí creamos la variable 'menu' que el sistema necesita
-    menu = st.radio(
-        "Seleccione un módulo:",
-        [
-            "🏠 Mando Central",
-            "👤 Registro Maestro",
-            "📁 Archivo Digital",
-            "📄 Plantillas Auto",
-            "📅 Alertas y Plazos",
-            "💵 Facturación",
-            "⚙️ Configuración"
-        ]
-    )
+    st.markdown(f"**Usuario:** {st.session_state.get('usuario', 'Invitado')}")
+    st.caption(f"**Rol:** {rol_usuario}")
+    menu = st.radio("Navegación:", modulos)
+
+# Lógica de visualización
 if menu == "🏠 Mando Central":
     vista_mando_central()
-
 elif menu == "👤 Registro Maestro":
     vista_registro_maestro()
-
 elif menu == "📁 Archivo Digital":
     vista_archivo_digital()
-
 elif menu == "📄 Plantillas Auto":
     vista_plantillas_auto()
-
 elif menu == "📅 Alertas y Plazos":
-    st.info("Alertas y Plazos (En construcción)")
-
+    st.info("Módulo de Alertas en desarrollo.")
 elif menu == "💵 Facturación":
-    st.info("Facturación (En construcción)")
-
+    st.info("Módulo de Facturación en desarrollo.")
 elif menu == "⚙️ Configuración":
-    vista_configuracion() # <--- ¡Solo una vez y llamando a la función real!
+    vista_configuracion()
