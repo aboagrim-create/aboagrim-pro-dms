@@ -11,11 +11,9 @@ from docxtpl import DocxTemplate
 # MOTOR DE GENERACIÓN DE DOCUMENTOS WORD
 # ==========================================
 def generar_documento_word(nombre_plantilla, diccionario_datos):
-    import io
-    from docxtpl import DocxTemplate
-    import streamlit as st
+
     
-    ruta_plantilla = f"plantillas_maestras/{nombre_plantilla}"
+    ruta_plantilla = nombre_plantilla
     
     try:
         doc = DocxTemplate(ruta_plantilla)
