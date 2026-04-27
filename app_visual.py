@@ -394,66 +394,144 @@ from datetime import datetime
 
 def vista_facturacion():
     st.title("💵 Facturación y Alertas de Cobro")
-    st.subheader("Control de Honorarios y Recuperación de Cartera")
+    st.subheader("Control de Honorarios y Recuperación de Cartera | AboAgrim Pro")
     st.divider()
 
-    # --- 1. PESTAÑAS DE CONTROL ---
-    tab_nueva, tab_alertas = st.tabs(["📄 Emitir Factura", "🚨 Alertas de Cobro (15+ días)"])
+    tab_nueva, tab_alertas = st.tabs(["📄 Emitir Factura", "🚨 Alertas de Cobro"])
 
     with tab_nueva:
-        # [Aquí mantenemos su código anterior de generación de factura...]
-        # (Para ahorrar espacio, asumimos que ya tiene el formulario de items)
-        st.info("Complete el formulario para generar el PDF y registrar la deuda en el sistema.")
-        
-        # AGREGAMOS EL BOTÓN DE GUARDADO REAL
-        if st.button("💾 Emitir, Guardar y Descargar", type="primary"):
-            # Lógica para guardar en Supabase
-            try:
-                nueva_factura = {
-                    "expediente": codigo_exp,
-                    "monto_total": total_final,
-                    "estado": "Pendiente"
-                }
-                supabase.table("facturas").insert(nueva_factura).execute()
-                st.success(f"✅ Factura registrada en la cuenta de {nombre_cli}.")
-                # (Aquí iría su código de descarga del PDF que ya tenemos)
-            except Exception as e:
-                st.error(f"Error al registrar deuda: {e}")
+        # --- 1. SELECCIÓN DE EXPEDIENTE ---
+        try:
+            res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, cedula_propietario").execute()
+            dict_exp = {f"{e['expediente']} - {e['nombre_propietario']}": e for e in res_exp.data} if res_exp.data else {}
+            
+            exp_sel = st.selectbox("Vincular a Expediente:", ["Seleccione..."] + list(dict_exp.keys()))
+            
+            if exp_sel == "Seleccione...":
+                st.info("Seleccione un expediente para comenzar la facturación.")
+                return
+            
+            # Variables ahora definidas correctamente y disponibles para todo el bloque
+            codigo_exp = exp_sel.split(" - ")[0]
+            nombre_cli = exp_sel.split(" - ")[1]
+            identidad = dict_exp[exp_sel].get('cedula_propietario', '')
+            fecha_factura = st.date_input("Fecha de Emisión", datetime.now())
+            
+        except Exception as e:
+            st.error(f"Error al conectar con expedientes: {e}")
+            return
 
-    # --- 2. EL SISTEMA DE ALERTAS (Lo sugerido) ---
+        st.write("---")
+
+        # --- 2. GESTIÓN DE SERVICIOS ---
+        st.markdown("### 📝 Detalle de Servicios")
+        if "items_factura" not in st.session_state:
+            st.session_state.items_factura = []
+
+        with st.container(border=True):
+            c_i1, c_i2, c_i3 = st.columns([3, 1, 1])
+            with c_i1: desc_serv = st.text_input("Descripción del Trabajo:")
+            with c_i2: monto_serv = st.number_input("Costo (RD$):", min_value=0.0, step=500.0)
+            with c_i3:
+                st.write(" ")
+                if st.button("➕ Añadir", use_container_width=True):
+                    if desc_serv and monto_serv > 0:
+                        st.session_state.items_factura.append({"desc": desc_serv, "monto": monto_serv})
+                        st.rerun()
+
+        subtotal = sum(item['monto'] for item in st.session_state.items_factura)
+        if st.session_state.items_factura:
+            for i, item in enumerate(st.session_state.items_factura):
+                c1, c2, c3 = st.columns([3, 1, 1])
+                c1.write(f"• {item['desc']}")
+                c2.write(f"RD$ {item['monto']:,.2f}")
+                if c3.button("🗑️", key=f"del_{i}"):
+                    st.session_state.items_factura.pop(i)
+                    st.rerun()
+
+            st.write("---")
+            aplicar_itbis = st.checkbox("✅ Aplicar ITBIS (18%)", value=True)
+            itbis = (subtotal * 0.18) if aplicar_itbis else 0.0
+            total_final = subtotal + itbis
+
+            cr1, cr2, cr3 = st.columns(3)
+            cr1.metric("Sub-Total", f"RD$ {subtotal:,.2f}")
+            cr2.metric("ITBIS", f"RD$ {itbis:,.2f}" if aplicar_itbis else "EXENTO")
+            cr3.metric("TOTAL A PAGAR", f"RD$ {total_final:,.2f}")
+
+            # --- 3. GUARDAR EN BD Y GENERAR PDF ---
+            if st.button("💾 Emitir, Guardar en Sistema y Descargar PDF", type="primary", use_container_width=True):
+                try:
+                    # 3.1 Guardar de forma segura en Supabase
+                    nueva_factura = {
+                        "expediente": codigo_exp,
+                        "monto_total": total_final,
+                        "estado": "Pendiente",
+                        "fecha_emision": str(fecha_factura)
+                    }
+                    supabase.table("facturas").insert(nueva_factura).execute()
+                    st.success(f"✅ Factura registrada en el sistema. La alerta de cobro está activa para el caso {codigo_exp}.")
+                    
+                    # 3.2 Generar PDF Institucional
+                    pdf = FPDF()
+                    pdf.add_page()
+                    pdf.set_font("Arial", 'B', 24)
+                    pdf.set_text_color(0, 51, 102)
+                    pdf.cell(100, 10, "AboAgrim", ln=False)
+                    pdf.set_font("Arial", '', 10)
+                    pdf.set_text_color(100, 100, 100)
+                    pdf.cell(90, 5, "Lic. Jhonny Matos. M.A.", ln=True, align='R')
+                    pdf.set_font("Arial", 'B', 10)
+                    pdf.set_text_color(184, 134, 11)
+                    pdf.cell(100, 5, "ABOGADOS Y AGRIMENSORES", ln=False)
+                    pdf.set_font("Arial", '', 9)
+                    pdf.set_text_color(100, 100, 100)
+                    pdf.cell(90, 5, "Presidente Fundador", ln=True, align='R')
+                    pdf.ln(15)
+                    
+                    pdf.set_font("Arial", 'B', 16)
+                    pdf.set_text_color(0, 51, 102)
+                    pdf.cell(0, 10, "FACTURA DE SERVICIOS", ln=True, align='C')
+                    pdf.ln(5)
+                    
+                    pdf.set_font("Arial", '', 11)
+                    pdf.set_text_color(0, 0, 0)
+                    pdf.cell(0, 8, f"Cliente: {nombre_cli} | Expediente: {codigo_exp}", ln=True)
+                    pdf.cell(0, 8, f"Total General: RD$ {total_final:,.2f}", ln=True)
+                    
+                    pdf_bytes = pdf.output(dest='S').encode('latin-1')
+                    st.download_button("📥 Descargar PDF Premium", pdf_bytes, f"Factura_{codigo_exp}.pdf", "application/pdf")
+                    
+                except Exception as e:
+                    st.error(f"Error al guardar en la base de datos: {e}")
+
     with tab_alertas:
         st.markdown("### ⚠️ Facturas Pendientes de Cobro")
-        st.caption("El sistema identifica automáticamente las facturas que superan los 15 días de emisión.")
-        
+        st.caption("El sistema muestra las facturas emitidas que aún no han sido saldadas.")
         try:
-            # Consultamos las facturas pendientes
-            res = supabase.table("facturas").select("*, expedientes_maestros(nombre_propietario)").eq("estado", "Pendiente").execute()
+            # Consulta directa y simplificada para evitar bloqueos
+            res = supabase.table("facturas").select("*").eq("estado", "Pendiente").execute()
             
             if res.data:
                 for f in res.data:
-                    fecha_emision = datetime.strptime(f['fecha_emision'], '%Y-%m-%d').date()
-                    dias_transcurridos = (datetime.now().date() - fecha_emision).days
+                    # Calculamos los días
+                    f_emision = datetime.strptime(f['fecha_emision'], '%Y-%m-%d').date()
+                    dias = (datetime.now().date() - f_emision).days
                     
-                    nombre_cliente = f['expedientes_maestros']['nombre_propietario']
-                    
-                    # Filtro de Alerta: 15 días
-                    if dias_transcurridos >= 15:
-                        with st.container(border=True):
-                            c1, c2, c3 = st.columns([2, 1, 1])
-                            with c1:
-                                st.error(f"🔴 **ATRASADA: {nombre_cliente}**")
-                                st.caption(f"Expediente: {f['expediente']} | Emitida hace {dias_transcurridos} días")
-                            with c2:
-                                st.write(f"**RD$ {f['monto_total']:,.2f}**")
-                            with c3:
-                                if st.button("💰 Marcar como Pagada", key=f"pay_{f['id']}"):
-                                    supabase.table("facturas").update({"estado": "Pagado"}).eq("id", f['id']).execute()
-                                    st.rerun()
+                    with st.container(border=True):
+                        c1, c2, c3 = st.columns([2, 1, 1])
+                        c1.error(f"🔴 **Expediente Vinculado: {f['expediente']}**")
+                        c1.caption(f"Emitida hace {dias} días")
+                        c2.write(f"**RD$ {f['monto_total']:,.2f}**")
+                        
+                        # Botón para limpiar la deuda
+                        if c3.button("💰 Marcar Pagada", key=f"pay_{f['id']}"):
+                            supabase.table("facturas").update({"estado": "Pagado"}).eq("id", f['id']).execute()
+                            st.rerun()
             else:
-                st.success("✅ No hay facturas atrasadas. La cartera está al día.")
-        
+                st.success("✅ No hay facturas pendientes. La cartera está al día.")
         except Exception as e:
-            st.warning("Asegúrese de haber creado la tabla 'facturas' en Supabase.")
+            st.error(f"Detalle técnico de la tabla: {e}")
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
