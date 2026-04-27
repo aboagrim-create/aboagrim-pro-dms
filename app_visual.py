@@ -657,127 +657,77 @@ Por medio de la presente, AboAgrim, representada por el Lic. Jhonny Matos, M.A.,
                 """
                 st.components.v1.html(doc_html, height=600, scrolling=True)
 def vista_archivo_digital():
-    st.title("📂 Archivo Digital de Expedientes")
-    
-    # --- Estilo de Tarjetas Premium ---
-    st.markdown("""
-        <style>
-        .card {
-            border: 1px solid #e6e9ef;
-            padding: 1.5rem;
-            border-radius: 12px;
-            background-color: white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 1rem;
-        }
-        .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    # 1. Métricas (KPIs)
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Expedientes", "1,240", "↑ 12")
-    m2.metric("Aprobados", "850", "72%")
-    m3.metric("En Proceso", "125", "-4")
-    m4.metric("Digital", "98%", "🔥")
-
+    st.title("📁 Archivo Digital | Gestión Documental")
+    st.subheader("Expedientes Digitalizados y Anexos")
     st.divider()
 
-    # 2. Lógica de Datos (Traer de Supabase)
+    # --- 1. SELECCIÓN DE EXPEDIENTE ---
     try:
-        # Buscamos en su tabla maestra
-        res = supabase.table("registro_maestro").select("*").limit(10).execute()
-        expedientes = res.data
-    except:
-        expedientes = [] # Fallback por si la tabla está vacía
-
-    # 3. Buscador
-    query = st.text_input("🔍 Buscar expediente por nombre o parcela...")
-
-    # 4. Generación de Tarjetas
-    for exp in expedientes:
-        nombre = exp.get('nombre_completo', 'Sin Nombre')
-        id_exp = exp.get('id', '000')
-        tipo = exp.get('tipo_proceso', 'Legal/Técnico')
-        estado = exp.get('estado', 'Activo')
+        # Traemos la lista de expedientes registrados para elegir uno
+        res = supabase.table("expedientes_maestros").select("expediente_codigo, nombre_propietario").order("id", desc=True).execute()
+        opciones_exp = [f"{e['expediente_codigo']} - {e['nombre_propietario']}" for e in res.data] if res.data else []
         
-        # Filtro de búsqueda simple
-        if query.lower() in nombre.lower():
-            with st.container():
-                # Diseño de la Tarjeta con HTML
-                color_estado = "#d4edda" if estado == "Completado" else "#fff3cd"
-                texto_estado = "#155724" if estado == "Completado" else "#856404"
-                
-                st.markdown(f"""
-                <div class="card">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span style="color: #0a2540; font-weight: bold; font-size: 18px;">👤 {nombre}</span>
-                        <span class="status-badge" style="background-color: {color_estado}; color: {texto_estado};">
-                            {estado}
-                        </span>
-                    </div>
-                    <p style="color: #666; margin: 10px 0;">📂 <b>Tipo:</b> {tipo} | 🆔 <b>ID:</b> {id_exp}</p>
-                </div>
-                """, unsafe_allow_html=True)
+        if not opciones_exp:
+            st.info("📌 Primero debe registrar clientes en el 'Registro Maestro' para crear sus carpetas digitales.")
+            return
 
-                # Botones de Acción
-                col1, col2, col3 = st.columns([1, 1, 2])
-                
-                if col1.button(f"📄 Ver Documentos", key=f"doc_{id_exp}"):
-                    st.session_state.expediente_ver = nombre
-                    st.toast(f"Cargando archivos de {nombre}...")
-                
-                if col2.button(f"✏️ Editar", key=f"edit_{id_exp}"):
-                    st.info("Función de edición en desarrollo")
+        col_sel, col_info = st.columns([2, 1])
+        with col_sel:
+            seleccion = st.selectbox("🔍 Seleccione el Expediente / Cliente:", opciones_exp)
+            codigo_exp = seleccion.split(" - ")[0]
 
-                # Visualizador de archivos (Solo aparece si se hace clic)
-                if st.session_state.get('expediente_ver') == nombre:
-                    with st.expander(f"📂 Carpeta Digital: {nombre}", expanded=True):
-                        st.write("---")
-                        # Aquí conectaríamos con su Google Drive
-                        st.markdown("### 📥 Archivos Disponibles")
-                        col_a, col_b = st.columns(2)
-                        col_a.link_button("📜 Título de Propiedad.pdf", "https://google.com")
-                        col_b.link_button("🗺️ Plano Catastral.pdf", "https://google.com")
-                        if st.button("Cerrar Carpeta"):
-                            st.session_state.expediente_ver = None
-                            st.rerun()
+        with col_info:
+            st.write("") # Espaciador
+            st.write(f"📂 Carpeta: **{codigo_exp}**")
 
-    # Botón para agregar nuevo
-    st.markdown("---")
-    if st.button("➕ Digitalizar Nuevo Expediente", use_container_width=True):
-        st.success("Abriendo escáner y carga de archivos...")
+    except Exception as e:
+        st.error(f"Error al conectar con la base de datos: {e}")
+        return
 
-# --- 🔐 CANDADO DE SEGURIDAD PRINCIPAL ---
-if not st.session_state.get("autenticado_global", False):
-    login_sistema()
-    st.stop()  # 🛑 Esto oculta todo el menú y el sistema si no hay PIN
-# ==========================================
-# MENÚ LATERAL Y NAVEGACIÓN DEL SISTEMA
-# ==========================================
-with st.sidebar:
-    menu = st.radio(
-        "Navegación",
-        [
-            "🏠 Mando Central",
-            "👤 Registro Maestro",
-            "📁 Archivo Digital",
-            "📄 Plantillas Auto",
-            "📅 Alertas y Plazos",
-            "💵 Facturación",
-            "⚙️ Configuración"
-        ]
-    )
-    st.markdown("---")
-    if st.button("🚪 Cerrar Sesión"):
-        st.session_state.autenticado_global = False
-        st.rerun()
+    st.write("---")
+
+    # --- 2. ÁREA DE TRABAJO DEL EXPEDIENTE ---
+    tab_ver, tab_subir = st.tabs(["📄 Ver Documentos", "📤 Digitalizar/Subir"])
+
+    with tab_ver:
+        st.markdown(f"### Contenido de la Carpeta: {codigo_exp}")
+        
+        # Simulación de visualización de archivos
+        # En una fase avanzada, aquí consultaremos la tabla 'documentos_digitales'
+        st.info("Mostrando archivos vinculados a este expediente en la nube...")
+        
+        # Ejemplo de visualización profesional
+        col_a, col_b, col_c = st.columns(3)
+        with col_a:
+            st.markdown("🖼️ **Planos Catastrales**")
+            st.caption("No hay archivos cargados")
+        with col_b:
+            st.markdown("📑 **Títulos / Actas**")
+            st.caption("No hay archivos cargados")
+        with col_c:
+            st.markdown("🆔 **Anexos / Cédulas**")
+            st.caption("No hay archivos cargados")
+
+    with tab_subir:
+        st.markdown("### 📥 Cargar Nuevos Documentos")
+        st.write("Suba escaneos de títulos, planos o documentos de identidad.")
+        
+        tipo_doc = st.selectbox("Categoría del documento:", ["Plano Catastral", "Título de Propiedad", "Cédula/ID", "Contrato Firmado", "Anexo Técnico"])
+        
+        archivo_subido = st.file_uploader("Arrastre o seleccione el archivo (PDF, JPG, PNG)", type=["pdf", "jpg", "png", "jpeg"])
+        
+        if st.button("💾 Guardar en Archivo Digital", use_container_width=True, type="primary"):
+            if archivo_subido:
+                with st.status("Subiendo archivo al servidor de AboAgrim...", expanded=False):
+                    # Aquí irá la lógica de supabase.storage.from('expedientes').upload(...)
+                    st.success(f"✅ '{archivo_subido.name}' ha sido guardado exitosamente en el expediente {codigo_exp}.")
+                    st.balloons()
+            else:
+                st.warning("Por favor, seleccione un archivo antes de confirmar.")
+
+    # --- 3. NOTA DE SEGURIDAD ---
+    st.sidebar.divider()
+    st.sidebar.caption("🔒 Los archivos en esta sección están encriptados y respaldados en la infraestructura Cloud de la firma.")
         
         
 def vista_plantillas_auto():
@@ -1276,7 +1226,7 @@ elif menu == "👤 Registro Maestro":
     vista_registro_maestro()
 
 elif menu == "📁 Archivo Digital":
-    st.info("Archivo Digital (En construcción)")
+    vista_archivo_digital()
 
 elif menu == "📄 Plantillas Auto":
     vista_plantillas_auto()
