@@ -938,21 +938,7 @@ def vista_plantillas_auto():
 
     except Exception as e:
         st.error(f"❌ Error al buscar en la base de datos: {e}")
-vistas = {
-    "🏠 Mando Central": vista_mando,
-    "👤 Registro Maestro": vista_registro_maestro,
-    "📁 Archivo Digital": vista_archivo_digital,
-    "📄 Plantillas Auto": vista_plantillas_auto,
-    "📅 Alertas y Plazos": vista_alertas,
-    "💵 Facturación": vista_facturacion,
-    "⚙️ Configuración": vista_configuracion
-}
 
-if menu in vistas:
-    vistas[menu]()
-else:
-    st.error(f"Error de Conexión: La sección '{menu}' no coincide con el diccionario.")
-    st.info("Sugerencia: Verifique que el nombre en el sidebar sea igual al del diccionario 'vistas'.")
 
 def generar_documento_word(nombre_plantilla, diccionario_datos):
     """
@@ -1087,3 +1073,18 @@ def automatizar_nube_cliente(nombre_cliente, id_expediente):
         return "https://drive.google.com/..." # Simulación de retorno
     except Exception as e:
         return None
+vistas = {
+    "🏠 Mando Central": vista_mando,
+    "👤 Registro Maestro": vista_registro_maestro,
+    "📁 Archivo Digital": vista_archivo_digital,
+    "📄 Plantillas Auto": vista_plantillas_auto,
+    "📅 Alertas y Plazos": vista_alertas,
+    "💵 Facturación": vista_facturacion,
+    "⚙️ Configuración": vista_configuracion
+}
+
+if menu in vistas:
+    vistas[menu]()
+else:
+    st.error(f"Error de Conexión: La sección '{menu}' no coincide con el diccionario.")
+    st.info("Sugerencia: Verifique que el nombre en el sidebar sea igual al del diccionario 'vistas'.")
