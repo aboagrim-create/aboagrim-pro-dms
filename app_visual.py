@@ -1221,8 +1221,8 @@ elif menu == "📂 Archivo Digital":
     vista_archivo_digital()
 
 elif menu == "📄 Plantillas Auto":
-    st.info("Módulo de Plantillas Automáticas en construcción. Próximamente.")
-    # vista_plantillas_auto()
+    # Borre el st.info que había antes y deje solo esta línea:
+    vista_plantillas_auto()
 
 elif menu == "📅 Alertas y Plazos":
     vista_alertas_plazos()
