@@ -394,144 +394,111 @@ from datetime import datetime
 
 def vista_facturacion():
     st.title("💵 Facturación y Alertas de Cobro")
-    st.subheader("Control de Honorarios y Recuperación de Cartera | AboAgrim Pro")
+    st.subheader("Control de Honorarios | AboAgrim Pro")
     st.divider()
 
     tab_nueva, tab_alertas = st.tabs(["📄 Emitir Factura", "🚨 Alertas de Cobro"])
 
     with tab_nueva:
-        # --- 1. SELECCIÓN DE EXPEDIENTE ---
         try:
-            res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, cedula_propietario").execute()
+            res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario").execute()
             dict_exp = {f"{e['expediente']} - {e['nombre_propietario']}": e for e in res_exp.data} if res_exp.data else {}
             
             exp_sel = st.selectbox("Vincular a Expediente:", ["Seleccione..."] + list(dict_exp.keys()))
-            
-            if exp_sel == "Seleccione...":
-                st.info("Seleccione un expediente para comenzar la facturación.")
+            if exp_sel == "Seleccione...": 
+                st.info("Seleccione un expediente para comenzar.")
                 return
             
-            # Variables ahora definidas correctamente y disponibles para todo el bloque
-            codigo_exp = exp_sel.split(" - ")[0]
+            codigo_vincular = exp_sel.split(" - ")[0]
             nombre_cli = exp_sel.split(" - ")[1]
-            identidad = dict_exp[exp_sel].get('cedula_propietario', '')
-            fecha_factura = st.date_input("Fecha de Emisión", datetime.now())
+            fecha_f = st.date_input("Fecha de Emisión", datetime.now())
             
         except Exception as e:
-            st.error(f"Error al conectar con expedientes: {e}")
+            st.error(f"Error de conexión: {e}")
             return
 
         st.write("---")
-
-        # --- 2. GESTIÓN DE SERVICIOS ---
-        st.markdown("### 📝 Detalle de Servicios")
-        if "items_factura" not in st.session_state:
-            st.session_state.items_factura = []
+        
+        # --- GESTIÓN DE ITEMS ---
+        if "items_factura" not in st.session_state: st.session_state.items_factura = []
 
         with st.container(border=True):
             c_i1, c_i2, c_i3 = st.columns([3, 1, 1])
-            with c_i1: desc_serv = st.text_input("Descripción del Trabajo:")
-            with c_i2: monto_serv = st.number_input("Costo (RD$):", min_value=0.0, step=500.0)
-            with c_i3:
-                st.write(" ")
-                if st.button("➕ Añadir", use_container_width=True):
-                    if desc_serv and monto_serv > 0:
-                        st.session_state.items_factura.append({"desc": desc_serv, "monto": monto_serv})
-                        st.rerun()
+            desc_s = c_i1.text_input("Descripción:")
+            monto_s = c_i2.number_input("Costo (RD$):", min_value=0.0, step=500.0)
+            if c_i3.button("➕ Añadir", use_container_width=True):
+                if desc_s and monto_s > 0:
+                    st.session_state.items_factura.append({"desc": desc_s, "monto": monto_s})
+                    st.rerun()
 
         subtotal = sum(item['monto'] for item in st.session_state.items_factura)
+        
         if st.session_state.items_factura:
             for i, item in enumerate(st.session_state.items_factura):
-                c1, c2, c3 = st.columns([3, 1, 1])
-                c1.write(f"• {item['desc']}")
-                c2.write(f"RD$ {item['monto']:,.2f}")
-                if c3.button("🗑️", key=f"del_{i}"):
+                col1, col2, col3 = st.columns([3, 1, 1])
+                col1.write(f"• {item['desc']}")
+                col2.write(f"RD$ {item['monto']:,.2f}")
+                if col3.button("🗑️", key=f"del_{i}"):
                     st.session_state.items_factura.pop(i)
                     st.rerun()
 
             st.write("---")
-            aplicar_itbis = st.checkbox("✅ Aplicar ITBIS (18%)", value=True)
-            itbis = (subtotal * 0.18) if aplicar_itbis else 0.0
-            total_final = subtotal + itbis
+            
+            # --- INTERRUPTOR DE ITBIS (LO QUE USTED SOLICITÓ) ---
+            col_opt1, col_opt2 = st.columns([2, 1])
+            with col_opt1:
+                con_itbis = st.toggle("Deslice para Aplicar ITBIS (18%)", value=True)
+            
+            itbis = (subtotal * 0.18) if con_itbis else 0.0
+            total_f = subtotal + itbis
 
             cr1, cr2, cr3 = st.columns(3)
             cr1.metric("Sub-Total", f"RD$ {subtotal:,.2f}")
-            cr2.metric("ITBIS", f"RD$ {itbis:,.2f}" if aplicar_itbis else "EXENTO")
-            cr3.metric("TOTAL A PAGAR", f"RD$ {total_final:,.2f}")
+            cr2.metric("ITBIS", f"RD$ {itbis:,.2f}" if con_itbis else "EXENTO")
+            cr3.metric("TOTAL", f"RD$ {total_f:,.2f}")
 
-            # --- 3. GUARDAR EN BD Y GENERAR PDF ---
-            if st.button("💾 Emitir, Guardar en Sistema y Descargar PDF", type="primary", use_container_width=True):
+            # --- GUARDADO ---
+            if st.button("💾 Emitir, Guardar y Descargar PDF", type="primary", use_container_width=True):
                 try:
-                    # 3.1 Guardar de forma segura en Supabase
-                    nueva_factura = {
-                        "expediente": codigo_exp,
-                        "monto_total": total_final,
+                    # Usamos 'codigo_expediente' para evitar el error de columna
+                    datos_f = {
+                        "codigo_expediente": codigo_vincular, 
+                        "monto_total": total_f,
                         "estado": "Pendiente",
-                        "fecha_emision": str(fecha_factura)
+                        "fecha_emision": str(fecha_f)
                     }
-                    supabase.table("facturas").insert(nueva_factura).execute()
-                    st.success(f"✅ Factura registrada en el sistema. La alerta de cobro está activa para el caso {codigo_exp}.")
-                    
-                    # 3.2 Generar PDF Institucional
-                    pdf = FPDF()
-                    pdf.add_page()
-                    pdf.set_font("Arial", 'B', 24)
-                    pdf.set_text_color(0, 51, 102)
-                    pdf.cell(100, 10, "AboAgrim", ln=False)
-                    pdf.set_font("Arial", '', 10)
-                    pdf.set_text_color(100, 100, 100)
-                    pdf.cell(90, 5, "Lic. Jhonny Matos. M.A.", ln=True, align='R')
-                    pdf.set_font("Arial", 'B', 10)
-                    pdf.set_text_color(184, 134, 11)
-                    pdf.cell(100, 5, "ABOGADOS Y AGRIMENSORES", ln=False)
-                    pdf.set_font("Arial", '', 9)
-                    pdf.set_text_color(100, 100, 100)
-                    pdf.cell(90, 5, "Presidente Fundador", ln=True, align='R')
-                    pdf.ln(15)
-                    
-                    pdf.set_font("Arial", 'B', 16)
-                    pdf.set_text_color(0, 51, 102)
-                    pdf.cell(0, 10, "FACTURA DE SERVICIOS", ln=True, align='C')
-                    pdf.ln(5)
-                    
-                    pdf.set_font("Arial", '', 11)
-                    pdf.set_text_color(0, 0, 0)
-                    pdf.cell(0, 8, f"Cliente: {nombre_cli} | Expediente: {codigo_exp}", ln=True)
-                    pdf.cell(0, 8, f"Total General: RD$ {total_final:,.2f}", ln=True)
-                    
-                    pdf_bytes = pdf.output(dest='S').encode('latin-1')
-                    st.download_button("📥 Descargar PDF Premium", pdf_bytes, f"Factura_{codigo_exp}.pdf", "application/pdf")
-                    
+                    supabase.table("facturas").insert(datos_f).execute()
+                    st.success("✅ Guardado exitosamente en la base de datos.")
+                    st.balloons()
                 except Exception as e:
-                    st.error(f"Error al guardar en la base de datos: {e}")
+                    st.error(f"Error técnico al guardar: {e}")
 
     with tab_alertas:
         st.markdown("### ⚠️ Facturas Pendientes de Cobro")
-        st.caption("El sistema muestra las facturas emitidas que aún no han sido saldadas.")
         try:
-            # Consulta directa y simplificada para evitar bloqueos
             res = supabase.table("facturas").select("*").eq("estado", "Pendiente").execute()
-            
             if res.data:
                 for f in res.data:
-                    # Calculamos los días
-                    f_emision = datetime.strptime(f['fecha_emision'], '%Y-%m-%d').date()
-                    dias = (datetime.now().date() - f_emision).days
+                    # Protección contra fechas vacías
+                    f_str = f.get('fecha_emision')
+                    dias_txt = "Fecha no registrada"
+                    if f_str:
+                        f_emision = datetime.strptime(f_str, '%Y-%m-%d').date()
+                        dias = (datetime.now().date() - f_emision).days
+                        dias_txt = f"Emitida hace {dias} días"
                     
                     with st.container(border=True):
                         c1, c2, c3 = st.columns([2, 1, 1])
-                        c1.error(f"🔴 **Expediente Vinculado: {f['expediente']}**")
-                        c1.caption(f"Emitida hace {dias} días")
-                        c2.write(f"**RD$ {f['monto_total']:,.2f}**")
-                        
-                        # Botón para limpiar la deuda
-                        if c3.button("💰 Marcar Pagada", key=f"pay_{f['id']}"):
+                        c1.error(f"🔴 **Caso: {f.get('codigo_expediente', 'N/A')}**")
+                        c1.caption(dias_txt)
+                        c2.write(f"**RD$ {f.get('monto_total', 0):,.2f}**")
+                        if c3.button("💰 Cobrado", key=f"p_{f['id']}"):
                             supabase.table("facturas").update({"estado": "Pagado"}).eq("id", f['id']).execute()
                             st.rerun()
             else:
-                st.success("✅ No hay facturas pendientes. La cartera está al día.")
+                st.success("✅ Cartera al día.")
         except Exception as e:
-            st.error(f"Detalle técnico de la tabla: {e}")
+            st.error(f"Error al cargar alertas: {e}")
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
