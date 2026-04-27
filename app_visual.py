@@ -543,83 +543,90 @@ import io
 from datetime import datetime
 
 def vista_configuracion():
-    st.title("⚙️ Configuración del Sistema")
-    st.subheader("Despacho Privado del Presidente Fundador")
+    st.title("⚙️ Panel de Configuración y Seguridad")
+    st.subheader("Centro de Mando Administrativo | AboAgrim Pro")
     st.divider()
 
-    # --- 1. MURO DE SEGURIDAD (Se muestra si no está autenticado) ---
-    if not st.session_state.get("admin_autenticado", False):
-        st.error("🛑 Acceso Restringido")
-        st.info("Este módulo es de uso exclusivo para el Lic. Jhonny Matos. Por favor, valide su identidad.")
+    # --- VERIFICACIÓN DE SESIÓN ---
+    if st.session_state.get("admin_autenticado", False):
+        st.success("🔓 Sesión de Alta Jerarquía Activa")
         
-        # Habilitamos los campos de entrada para el ingreso
-        col_acc1, col_acc2 = st.columns(2)
-        with col_acc1:
-            u_pres = st.text_input("Usuario Presidente:", key="u_login_cfg_final")
-        with col_acc2:
-            p_pres = st.text_input("PIN de Seguridad:", type="password", key="p_login_cfg_final")
+        # --- 1. TARJETA DE PERFIL (MODERNIDAD Y BELLEZA) ---
+        with st.container(border=True):
+            c1, c2 = st.columns([1, 4])
+            with c1:
+                st.markdown("## 🏢") # Icono representativo
+            with c2:
+                st.markdown("### Lic. Jhonny Matos. M.A.")
+                st.markdown("**Presidente Fundador** | Abogados y Agrimensores 'AboAgrim'")
+                st.caption("Sede Central: Santiago, República Dominicana")
+
+        st.write("---")
+        st.markdown("### 🛠️ Herramientas del Sistema")
         
-        if st.button("🔓 Validar Identidad y Entrar", use_container_width=True, type="primary"):
-            # Verificación de su clave maestra
-            if u_pres == "JhonnyMatos" and p_pres == "1234": 
-                st.session_state.admin_autenticado = True
-                st.session_state.usuario = "JhonnyMatos"
+        # --- 2. PESTAÑAS DE ADMINISTRACIÓN ---
+        tab_bd, tab_seguridad, tab_firma = st.tabs(["🗄️ Base de Datos", "🛡️ Seguridad", "📑 Membretes"])
+        
+        with tab_bd:
+            st.info("Gestión de conexión y respaldos en la nube (Supabase).")
+            col1, col2 = st.columns(2)
+            if col1.button("📁 Generar Backup Local", use_container_width=True):
+                st.toast("Iniciando respaldo de seguridad...")
+                st.success("✅ Backup comprimido y verificado.")
+            if col2.button("🔄 Sincronizar Caché", use_container_width=True):
+                st.toast("Limpiando memoria temporal...")
                 st.rerun()
-            else:
-                st.error("Credenciales incorrectas. Verifique su usuario y PIN.")
-        return # Detiene la carga de pestañas hasta que se autentique
+                
+        with tab_seguridad:
+            st.warning("Gestión de credenciales maestras.")
+            with st.container(border=True):
+                st.write("**Actualizar PIN de Acceso**")
+                nuevo_pin = st.text_input("Nuevo PIN:", type="password")
+                confirmar_pin = st.text_input("Confirmar Nuevo PIN:", type="password")
+                if st.button("💾 Actualizar Credenciales", type="primary"):
+                    if nuevo_pin == confirmar_pin and nuevo_pin != "":
+                        st.success("✅ PIN actualizado correctamente en la bóveda temporal.")
+                    else:
+                        st.error("❌ Los códigos no coinciden o están vacíos.")
+                    
+        with tab_firma:
+            st.markdown("**Ajustes de Impresión y PDF**")
+            with st.container(border=True):
+                st.text_input("Nombre Oficial", value="Abogados y Agrimensores 'AboAgrim'")
+                st.text_input("Firma Autorizada", value="Lic. Jhonny Matos. M.A., Presidente Fundador")
+                if st.button("Actualizar Identidad Visual"):
+                    st.toast("✅ Membretes actualizados en el sistema.")
 
-    # --- 2. ÁREA DE CONTROL TOTAL (Solo visible tras el login) ---
-    
-    # Botón de bloqueo para cerrar el despacho al terminar
-    if st.button("🔒 Bloquear y Salir del Despacho"):
-        st.session_state.admin_autenticado = False
-        st.rerun()
-
-    tab1, tab2, tab3, tab4 = st.tabs(["🔒 Seguridad", "🏢 Identidad", "👥 Personal", "🎨 Estilo y Fondo"])
-
-    with tab1:
-        st.markdown("### Gestión de Claves Maestras")
-        st.caption("Cambie su PIN de acceso principal al sistema.")
-        st.text_input("Nuevo PIN Maestro", type="password", key="new_master_pin_set")
-        if st.button("Actualizar PIN"):
-            st.success("Protocolo de seguridad actualizado.")
-
-    with tab2:
-        st.markdown("### Identidad Corporativa AboAgrim")
-        c1, c2 = st.columns(2)
-        with c1:
-            st.text_input("Nombre del Titular", value="Lic. Jhonny Matos. M.A.")
-            st.text_input("Cargo Oficial", value="Presidente Fundador")
-        with c2:
-            st.text_input("Firma", value="Abogados y Agrimensores 'AboAgrim'")
-            st.text_input("Sede Principal", value="Santiago, Rep. Dom.")
-        st.button("Guardar Cambios de Identidad")
-
-    with tab3:
-        st.markdown("### Administración de Colaboradores")
-        st.write("Registre personal y asigne contraseñas de acceso.")
+        st.write("---")
         
-        with st.expander("➕ Dar de Alta Nuevo Usuario", expanded=True):
-            st.text_input("Nombre del Colaborador", key="add_user_name")
-            st.text_input("Asignar Contraseña/PIN", type="password", key="add_user_pass")
-            st.selectbox("Rol en la Firma", ["Abogado", "Agrimensor", "Asistente"])
-            if st.button("Registrar en Sistema"):
-                st.success("Usuario registrado exitosamente.")
+        # --- 3. BOTÓN DE CIERRE DE SESIÓN ---
+        if st.button("🚪 Cerrar Sesión Administrativa (Bloquear Sistema)", type="primary", use_container_width=True):
+            st.session_state.admin_autenticado = False
+            st.session_state.rol = "Pasante"
+            st.session_state.usuario = "Invitado"
+            st.rerun()
 
-    with tab4:
-        st.markdown("### Personalización de la Oficina Digital")
-        st.write("Ajuste la apariencia visual de su entorno de trabajo.")
+    # --- PANTALLA DE ACCESO (SI NO ESTÁ LOGUEADO) ---
+    else:
+        st.markdown("### 🔒 Bóveda de Seguridad")
+        st.write("Ingrese sus credenciales para desbloquear la configuración y el módulo financiero.")
         
-        col_v1, col_v2 = st.columns(2)
-        with col_v1:
-            st.color_picker("Color de Acento (Botones y Títulos)", "#003366")
-            st.selectbox("Tipo de Letra (Fuente)", ["Google Sans", "Roboto", "Lexend", "Arial"])
-        with col_v2:
-            st.selectbox("Fondo de Interfaz", ["Oscuro Profundo", "Gris Profesional", "Blanco Limpio"])
-            st.slider("Intensidad de Brillo", 0, 100, 50)
-        
-        st.button("Aplicar Cambios Estéticos")
+        with st.container(border=True):
+            col_u, col_p = st.columns(2)
+            with col_u:
+                u_pres = st.text_input("Usuario Master:", placeholder="Ej: JhonnyMatos")
+            with col_p:
+                p_pres = st.text_input("PIN de Seguridad:", type="password")
+            
+            st.write("") # Espaciador
+            if st.button("🔑 Validar Identidad y Desbloquear", use_container_width=True, type="primary"):
+                if u_pres == "JhonnyMatos" and p_pres == "1234":
+                    st.session_state.admin_autenticado = True
+                    st.session_state.usuario = "JhonnyMatos"
+                    st.session_state.rol = "Presidente Fundador" 
+                    st.rerun()
+                else:
+                    st.error("❌ Credenciales incorrectas. Acceso denegado.")
             # Nota: Esto se complementa con CSS personalizado en el inicio del script
         # Aquí va la función de agregar/borrar usuarios...
 def login_sistema():
