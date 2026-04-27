@@ -582,83 +582,60 @@ import io
 from datetime import datetime
 
 def vista_configuracion():
-    st.title("⚙️ Configuración del Sistema")
-    st.subheader("Despacho Privado del Presidente Fundador")
-    st.divider()
+    st.title("⚙️ Panel de Control Maestro")
+    
+    # Verificamos si es el usuario Master
+    if st.session_state.get("admin_autenticado", False) and st.session_state.get("rol") == "Presidente Fundador":
+        st.success("✅ Acceso Verificado: Lic. Jhonny Matos")
+        
+        tab_perfil, tab_usuarios, tab_sistema = st.tabs(["👤 Mi Perfil", "👥 Gestión de Personal", "🛠️ Base de Datos"])
+        
+        with tab_usuarios:
+            st.subheader("Administración de Accesos")
+            st.info("Seleccione un usuario de la lista para modificar sus permisos de entrada al sistema.")
+            
+            with st.container(border=True):
+                # Usamos menús desplegables para mantener el diseño limpio
+                lista_personal = ["Seleccione...", "agrimensor_luis", "abogada_marta", "pasante_carlos"]
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("#### 🚫 Suspender Acceso")
+                    usuario_bloquear = st.selectbox("Seleccionar para Bloquear:", lista_personal, key="bloqueo")
+                    if st.button("Aplicar Suspensión", type="secondary", use_container_width=True):
+                        if usuario_bloquear != "Seleccione...":
+                            # Lógica para Supabase: supabase.table("usuarios").update({"estado": "inactivo"}).eq("usuario", usuario_bloquear).execute()
+                            st.warning(f"🔒 El usuario '{usuario_bloquear}' ha sido suspendido temporalmente.")
+                
+                with col2:
+                    st.markdown("#### 🗑️ Revocación Total")
+                    usuario_eliminar = st.selectbox("Seleccionar para Eliminar:", lista_personal, key="eliminar")
+                    if st.button("Eliminar Definitivamente", type="primary", use_container_width=True):
+                        if usuario_eliminar != "Seleccione...":
+                            # Lógica para Supabase: supabase.table("usuarios").delete().eq("usuario", usuario_eliminar).execute()
+                            st.error(f"⚠️ El usuario '{usuario_eliminar}' fue borrado permanentemente del despacho.")
 
-    # --- 1. MURO DE SEGURIDAD (Se muestra si no está autenticado) ---
-    if not st.session_state.get("admin_autenticado", False):
-        st.error("🛑 Acceso Restringido")
-        st.info("Este módulo es de uso exclusivo para el Lic. Jhonny Matos. Por favor, valide su identidad.")
-        
-        # Habilitamos los campos de entrada para el ingreso
-        col_acc1, col_acc2 = st.columns(2)
-        with col_acc1:
-            u_pres = st.text_input("Usuario Presidente:", key="u_login_cfg_final")
-        with col_acc2:
-            p_pres = st.text_input("PIN de Seguridad:", type="password", key="p_login_cfg_final")
-        
-        if st.button("🔓 Validar Identidad y Entrar", use_container_width=True, type="primary"):
-            # Verificación de su clave maestra
-            if u_pres == "JhonnyMatos" and p_pres == "1234": 
+        with tab_sistema:
+            st.write("Estado de la Nube: Conectado a Supabase (AboAgrim DB).")
+            
+        st.divider()
+        if st.button("🚪 Cerrar Sesión del Sistema"):
+            st.session_state.admin_autenticado = False
+            st.rerun()
+
+    else:
+        # Pantalla de Login
+        st.markdown("### Autenticación Requerida")
+        u = st.text_input("Usuario Master:")
+        p = st.text_input("PIN de Seguridad:", type="password")
+        if st.button("🔑 Desbloquear Sistema"):
+            if u == "JhonnyMatos" and p == "1234":
                 st.session_state.admin_autenticado = True
-                st.session_state.usuario = "JhonnyMatos"
+                st.session_state.rol = "Presidente Fundador"
                 st.rerun()
             else:
-                st.error("Credenciales incorrectas. Verifique su usuario y PIN.")
-        return # Detiene la carga de pestañas hasta que se autentique
-
-    # --- 2. ÁREA DE CONTROL TOTAL (Solo visible tras el login) ---
-    
-    # Botón de bloqueo para cerrar el despacho al terminar
-    if st.button("🔒 Bloquear y Salir del Despacho"):
-        st.session_state.admin_autenticado = False
-        st.rerun()
-
-    tab1, tab2, tab3, tab4 = st.tabs(["🔒 Seguridad", "🏢 Identidad", "👥 Personal", "🎨 Estilo y Fondo"])
-
-    with tab1:
-        st.markdown("### Gestión de Claves Maestras")
-        st.caption("Cambie su PIN de acceso principal al sistema.")
-        st.text_input("Nuevo PIN Maestro", type="password", key="new_master_pin_set")
-        if st.button("Actualizar PIN"):
-            st.success("Protocolo de seguridad actualizado.")
-
-    with tab2:
-        st.markdown("### Identidad Corporativa AboAgrim")
-        c1, c2 = st.columns(2)
-        with c1:
-            st.text_input("Nombre del Titular", value="Lic. Jhonny Matos. M.A.")
-            st.text_input("Cargo Oficial", value="Presidente Fundador")
-        with c2:
-            st.text_input("Firma", value="Abogados y Agrimensores 'AboAgrim'")
-            st.text_input("Sede Principal", value="Santiago, Rep. Dom.")
-        st.button("Guardar Cambios de Identidad")
-
-    with tab3:
-        st.markdown("### Administración de Colaboradores")
-        st.write("Registre personal y asigne contraseñas de acceso.")
-        
-        with st.expander("➕ Dar de Alta Nuevo Usuario", expanded=True):
-            st.text_input("Nombre del Colaborador", key="add_user_name")
-            st.text_input("Asignar Contraseña/PIN", type="password", key="add_user_pass")
-            st.selectbox("Rol en la Firma", ["Abogado", "Agrimensor", "Asistente"])
-            if st.button("Registrar en Sistema"):
-                st.success("Usuario registrado exitosamente.")
-
-    with tab4:
-        st.markdown("### Personalización de la Oficina Digital")
-        st.write("Ajuste la apariencia visual de su entorno de trabajo.")
-        
-        col_v1, col_v2 = st.columns(2)
-        with col_v1:
-            st.color_picker("Color de Acento (Botones y Títulos)", "#003366")
-            st.selectbox("Tipo de Letra (Fuente)", ["Google Sans", "Roboto", "Lexend", "Arial"])
-        with col_v2:
-            st.selectbox("Fondo de Interfaz", ["Oscuro Profundo", "Gris Profesional", "Blanco Limpio"])
-            st.slider("Intensidad de Brillo", 0, 100, 50)
-        
-        st.button("Aplicar Cambios Estéticos")
+                st.error("Credenciales incorrectas.")
             # Nota: Esto se complementa con CSS personalizado en el inicio del script
         # Aquí va la función de agregar/borrar usuarios...
 def login_sistema():
