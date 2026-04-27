@@ -682,38 +682,58 @@ def vista_configuracion():
         
         # --- TAB 2: GESTIÓN DE PERSONAL ---
         with tab_usuarios:
-            st.subheader("Control de Accesos al Despacho")
+            st.subheader("👥 Control de Acceso y Personal")
+            st.info("Desde aquí puede registrar nuevos colaboradores y gestionar sus permisos.")
             
-            # SECCIÓN: AGREGAR NUEVO USUARIO
-            with st.expander("➕ Agregar Nuevo Miembro al Equipo", expanded=False):
-                with st.form("form_nuevo_user"):
-                    col_u1, col_u2 = st.columns(2)
-                    new_user = col_u1.text_input("Nombre de Usuario (Login):")
-                    new_pass = col_u2.text_input("Contraseña Temporal:", type="password")
-                    new_rol = st.selectbox("Asignar Rol:", ["Abogado", "Agrimensor", "Pasante", "Secretaría"])
+            # BOTÓN Y FORMULARIO PARA AGREGAR USUARIOS
+            with st.expander("➕ REGISTRAR NUEVO USUARIO", expanded=True):
+                with st.form("form_alta_usuario", clear_on_submit=True):
+                    c_u1, c_u2 = st.columns(2)
+                    nombre_full = c_u1.text_input("Nombre Completo:", placeholder="Ej: Lic. Marcos Pérez")
+                    user_login = c_u2.text_input("Nombre de Usuario (Login):", placeholder="ejemplo123")
                     
-                    if st.form_submit_button("✅ Registrar en el Sistema"):
-                        if new_user and new_pass:
-                            # Aquí iría la lógica: supabase.table("usuarios").insert(...).execute()
-                            st.success(f"Usuario '{new_user}' creado exitosamente como {new_rol}.")
+                    c_u3, c_u4 = st.columns(2)
+                    pass_temp = c_u3.text_input("Contraseña Temporal:", type="password")
+                    rol_asignado = c_u4.selectbox("Rol en el Despacho:", ["Abogado", "Agrimensor", "Secretaría", "Pasante"])
+                    
+                    email_user = st.text_input("Correo Electrónico:")
+                    
+                    # Botón de ejecución
+                    btn_registrar = st.form_submit_button("🚀 Crear Usuario y Activar Acceso")
+                    
+                    if btn_registrar:
+                        if nombre_full and user_login and pass_temp:
+                            # Lógica para guardar en Supabase (Se activará al conectar la tabla 'usuarios')
+                            # supabase.table("usuarios").insert({
+                            #     "nombre": nombre_full, "login": user_login, 
+                            #     "pass": pass_temp, "rol": rol_asignado, "email": email_user
+                            # }).execute()
+                            st.success(f"✅ ¡Éxito! El usuario '{user_login}' ha sido creado como {rol_asignado}.")
+                            st.balloons()
                         else:
-                            st.warning("Complete todos los campos.")
+                            st.error("⚠️ Por favor, complete los campos obligatorios (Nombre, Login y Contraseña).")
 
             st.divider()
             
-            # SECCIÓN: ELIMINAR/BLOQUEAR (La que ya teníamos mejorada)
-            st.markdown("#### 🚫 Suspender o Eliminar Accesos")
+            # SECCIÓN DE GESTIÓN (BLOQUEAR / ELIMINAR)
+            st.markdown("#### ⚙️ Administración de Usuarios Existentes")
             with st.container(border=True):
-                lista_demo = ["Seleccione...", "agrimensor_luis", "abogada_marta", "pasante_carlos"]
-                col_b1, col_b2 = st.columns(2)
+                # Simulamos una lista de usuarios actuales
+                lista_usuarios = ["Seleccione...", "Lic. María García (Abogada)", "Ing. Luis Torres (Agrimensor)"]
                 
-                u_bloq = col_b1.selectbox("Bloquear Usuario:", lista_demo, key="b1")
-                if col_b1.button("🔒 Suspender Acceso", use_container_width=True):
-                    if u_bloq != "Seleccione...": st.warning(f"Acceso suspendido para {u_bloq}.")
+                col_adm1, col_adm2 = st.columns(2)
                 
-                u_del = col_b2.selectbox("Eliminar Usuario:", lista_demo, key="d1")
-                if col_b2.button("🗑️ Borrar Permanente", type="primary", use_container_width=True):
-                    if u_del != "Seleccione...": st.error(f"Usuario {u_del} eliminado.")
+                with col_adm1:
+                    u_block = st.selectbox("Bloquear temporalmente a:", lista_usuarios)
+                    if st.button("🔒 Bloquear Acceso", use_container_width=True):
+                        if "Seleccione" not in u_block:
+                            st.warning(f"Acceso restringido para: {u_block}")
+                
+                with col_adm2:
+                    u_del = st.selectbox("Eliminar definitivamente a:", lista_usuarios, key="del_u")
+                    if st.button("🗑️ Eliminar del Sistema", type="primary", use_container_width=True):
+                        if "Seleccione" not in u_del:
+                            st.error(f"El usuario {u_del} ha sido borrado permanentemente.")
 
         # --- TAB 3: ESTADO DE LA BASE DE DATOS ---
         with tab_sistema:
