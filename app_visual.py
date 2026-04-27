@@ -295,83 +295,90 @@ def vista_plantillas():
 # =====================================================================
 # MÓDULO 5: ALERTAS Y PLAZOS
 # =====================================================================
-def vista_alertas():
-    st.title("📅 Control de Alertas y Plazos")
-    st.info("Gestione sus audiencias, plazos de objeción y vencimientos de mensura.")
-    
-    col1, col2 = st.columns([1, 2])
-    
-    with col1:
-        st.subheader("Nueva Alerta")
-        tipo = st.selectbox("Tipo de Plazo", ["Audiencia", "Plazo JI", "Cierre Mensura", "Pago Impuestos"])
-        fecha_alerta = st.date_input("Fecha límite")
-        nota = st.text_area("Descripción corta")
-        if st.button("Guardar Recordatorio"):
-            st.success("Alerta programada correctamente")
-            
-    with col2:
-        st.subheader("Próximos Vencimientos")
-        # Aquí luego jalaremos los datos de Supabase
-        st.warning("⚠️ Audiencia de Saneamiento - Parcela 102 - Faltan 3 días")
-        st.info("📅 Entrega de Planos - Parcela 55 - 15 de Mayo")
-    
-    PLAZOS_LEGALES = {
-        "Presentación de trabajos (60 días)": 60,
-        "Prórroga trabajos (30 días)": 30,
-        "Subsanar observaciones técnicas (15 días)": 15,
-        "Autorización de Mensura (90 días)": 90,
-        "Recurso jerárquico Dirección Nacional (15 días)": 15,
-        "Subsanar faltas en RT (15 días)": 15,
-        "Certificación Estado Jurídico (30 días)": 30,
-        "Recurso de Apelación (30 días)": 30,
-        "Recurso de Casación (30 días)": 30,
-        "Litis: Octava para inventario (15 días)": 15,
-        "Revisión por Causa de Fraude (1 año)": 365,
-        "Perención de Instancia (3 años)": 1095,
-        "Respuesta instancias administrativas (15 días)": 15
-    }
+from datetime import datetime
 
-    with st.expander("🔔 Programar Alerta Legal Automática", expanded=True):
-        c1, c2 = st.columns(2)
-        tipo = c1.selectbox("Trámite:", list(PLAZOS_LEGALES.keys()))
-        f_ini = c1.date_input("Fecha Inicio:")
-        exp = c1.text_input("No. Expediente:")
-        cli = c2.text_input("Cliente:")
-        org = c2.text_input("Órgano / Responsable:")
-        notas = st.text_area("Notas del procedimiento:")
-        
-        if st.button("🚀 Activar Blindaje Legal"):
-            import datetime
-            vence = f_ini + datetime.timedelta(days=PLAZOS_LEGALES[tipo])
-            datos = {
-                "fecha_cita": str(vence),
-                "expediente": exp,
-                "cliente": cli,
-                "ubicacion": tipo,
-                "tecnico_asignado": org,
-                "notas": f"INICIO: {f_ini}. {notas}",
-                "categoria": "FATAL"
-            }
-            try:
-                supabase.table("agenda_mensuras").insert(datos).execute()
-                st.success(f"✅ ¡Alerta programada para el {vence}!")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Error: {e}")
-
+def vista_alertas_plazos():
+    st.title("📅 Alertas y Plazos Judiciales")
+    st.subheader("Control de Audiencias y Vencimientos | AboAgrim Pro")
     st.divider()
-    st.subheader("🚩 Monitor de Plazos y Caducidades")
+
+    st.markdown("### 🔔 Radar de Compromisos Legales")
+    st.write("El sistema monitorea las fechas de audiencia registradas en sus expedientes maestros y calcula los días restantes automáticamente.")
     
     try:
-        res = supabase.table("agenda_mensuras").select("*").order("fecha_cita").execute()
+        # Consultamos los expedientes asegurándonos de que la columna f_audiencia exista
+        # Traemos solo los que tienen una fecha asignada
+        res = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, tribunal, jurisdiccion, f_audiencia").not_is_null("f_audiencia").execute()
+        
         if res.data:
-            import pandas as pd
-            from datetime import date
-            df = pd.DataFrame(res.data)
-            df['fecha_cita'] = pd.to_datetime(df['fecha_cita']).dt.date
+            hoy = datetime.now().date()
+            alertas_urgentes = []
+            alertas_proximas = []
+            alertas_futuras = []
+
+            # Clasificación de expedientes
+            for caso in res.data:
+                # Ignorar si la fecha viene vacía
+                if not caso.get('f_audiencia'):
+                    continue
+                    
+                fecha_aud = datetime.strptime(caso['f_audiencia'], '%Y-%m-%d').date()
+                dias_restantes = (fecha_aud - hoy).days
+
+                if dias_restantes < 0:
+                    estado = "Vencida / Pasada"
+                    alertas_urgentes.append((caso, dias_restantes, estado))
+                elif dias_restantes <= 7:
+                    estado = "¡Inminente! (Próximos 7 días)"
+                    alertas_urgentes.append((caso, dias_restantes, estado))
+                elif dias_restantes <= 30:
+                    estado = "Próxima (Este mes)"
+                    alertas_proximas.append((caso, dias_restantes, estado))
+                else:
+                    estado = "A futuro"
+                    alertas_futuras.append((caso, dias_restantes, estado))
             
-            # Formateo de la tabla
-            df_v = df.rename(columns={"fecha_cita":"Vencimiento", "ubicacion":"Trámite", "expediente":"Exp."})
+            # --- RENDERIZADO VISUAL ---
+            
+            # 🔴 ZONA ROJA: Menos de 7 días o Vencidas
+            if alertas_urgentes:
+                st.error("🔴 **ALERTAS ROJAS - ATENCIÓN INMEDIATA**")
+                for caso, dias, est in alertas_urgentes:
+                    with st.container(border=True):
+                        c1, c2 = st.columns([3, 1])
+                        c1.markdown(f"**⚖️ {caso.get('tribunal', 'Tribunal no especificado')}** ({caso.get('jurisdiccion', 'N/A')})")
+                        c1.write(f"**Expediente:** {caso['expediente']} | **Cliente:** {caso['nombre_propietario']}")
+                        if dias < 0:
+                            c2.error(f"Hace {abs(dias)} días")
+                        else:
+                            c2.error(f"Faltan {dias} días")
+            
+            # 🟡 ZONA AMARILLA: 8 a 30 días
+            if alertas_proximas:
+                st.warning("🟡 **ALERTAS AMARILLAS - PRÓXIMAS AUDIENCIAS (ESTE MES)**")
+                for caso, dias, est in alertas_proximas:
+                    with st.container(border=True):
+                        c1, c2 = st.columns([3, 1])
+                        c1.markdown(f"**Expediente:** {caso['expediente']} | **Cliente:** {caso['nombre_propietario']}")
+                        c1.caption(f"Fecha pautada: {caso['f_audiencia']}")
+                        c2.warning(f"En {dias} días")
+
+            # 🟢 ZONA VERDE: Más de 30 días
+            if alertas_futuras:
+                st.success("🟢 **ALERTAS VERDES - CON TIEMPO DE PREPARACIÓN**")
+                with st.expander("Ver audiencias a más de un mes de distancia"):
+                    for caso, dias, est in alertas_futuras:
+                        st.write(f"• **{caso['expediente']}** ({caso['nombre_propietario']}) - Programada para el {caso['f_audiencia']} *(Faltan {dias} días)*")
+            
+            if not (alertas_urgentes or alertas_proximas or alertas_futuras):
+                st.info("✅ Todos los casos registrados con fecha tienen el campo de audiencia vacío.")
+
+        else:
+            st.info("✅ No hay audiencias registradas actualmente en el Registro Maestro.")
+
+    except Exception as e:
+        st.error(f"Falta configurar la base de datos: {e}")
+        st.info("💡 Asegúrese de tener la columna 'f_audiencia' (tipo date) y 'tribunal' (tipo text) en su tabla 'expedientes_maestros' de Supabase.")
             
             # Aplicamos colores de forma segura
             def resaltar(s):
@@ -1314,7 +1321,7 @@ elif menu == "📄 Plantillas Auto":
     vista_plantillas_auto()
 
 elif menu == "📅 Alertas y Plazos":
-    st.info("Módulo de Alertas y Plazos Operativo")
+    vista_alertas_plazos() # <--- Reemplace el st.info que había antes por esta llamada
 
 elif menu == "💵 Facturación":
     vista_facturacion()  # <--- Aquí está la llamada real
