@@ -42,6 +42,45 @@ if "tema_color" in st.session_state:
     </style>
     """
     st.markdown(custom_css, unsafe_allow_html=True)
+
+# ==========================================
+# 👔 ESTILO VISUAL PROFESIONAL (CSS)
+# ==========================================
+st.markdown("""
+    <style>
+    /* Fondo principal elegante (Gris oscuro/Azul noche) */
+    .stApp {
+        background-color: #0b0f19;
+    }
+    
+    /* Contenedores y formularios con borde sutil */
+    div[data-testid="stForm"], div[data-testid="stContainer"] {
+        background-color: #131a2a;
+        border: 1px solid #1e293b;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    
+    /* Títulos con el color institucional */
+    h1, h2, h3 {
+        color: #e2e8f0;
+        font-family: 'Helvetica Neue', sans-serif;
+    }
+    
+    /* Botones ejecutivos */
+    .stButton>button {
+        border-radius: 6px;
+        font-weight: 600;
+        border: 1px solid #334155;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        border-color: #d4af37; /* Toque dorado elegante al pasar el ratón */
+        color: #d4af37;
+    }
+    </style>
+""", unsafe_allow_html=True)
 # ==========================================
 # MOTOR DE GENERACIÓN DE DOCUMENTOS WORD
 # ==========================================
