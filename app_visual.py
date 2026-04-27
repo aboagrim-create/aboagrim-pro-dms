@@ -904,71 +904,61 @@ with st.sidebar:
         
 def vista_plantillas_auto():
     st.title("📄 Fábrica de Documentos AboAgrim")
-    st.write("Seleccione un expediente existente para generar sus documentos legales al instante.")
+    st.write("Seleccione un expediente para generar sus documentos legales al instante.")
 
     try:
-        # 1. Buscamos todos los expedientes en su base de datos (Supabase)
+        # 1. Buscamos los expedientes registrados
         res = supabase.table("expedientes_maestros").select("id, nombre_propietario").order("id", desc=True).execute()
         
         if not res.data:
-            st.warning("⚠️ No hay expedientes registrados todavía. Vaya a Registro Maestro para crear uno.")
+            st.warning("⚠️ No hay expedientes registrados aún.")
             return
 
-        # 2. Preparamos la lista para que usted los vea bonitos en pantalla
         opciones_exp = {f"RES-{e['id']} | {e['nombre_propietario']}": e['id'] for e in res.data}
 
-        # --- DISEÑO DE LA PANTALLA ---
         col1, col2 = st.columns(2)
-        
         with col1:
-            seleccion = st.selectbox("🔍 1. Busque al Cliente/Expediente:", list(opciones_exp.keys()))
+            seleccion = st.selectbox("🔍 1. Busque al Cliente:", list(opciones_exp.keys()))
             id_seleccionado = opciones_exp[seleccion]
             
         with col2:
-            tipo_doc = st.selectbox("📝 2. ¿Qué documento desea generar?", 
-                                    ["Carátula Maestra", 
-                                     "Contrato Cuota Litis", 
-                                     "Poder Especial", 
-                                     "Aviso de Mensura"])
+            tipo_doc = st.selectbox("📝 2. ¿Qué documento desea?", 
+                                    ["Carátula Maestra", "Contrato Cuota Litis", "Aviso de Mensura"])
 
-        st.divider() # Una línea separadora elegante
+        st.divider()
 
-        # 3. El botón de Acción Final
+        # 3. El botón definitivo (Línea 931)
         if st.button("🚀 Fabricar Documento", type="primary", use_container_width=True):
             try:
-                # Traemos los datos del cliente elegido
+                # Traemos los datos de Judith o el cliente seleccionado
                 res_datos = supabase.table("expedientes_maestros").select("*").eq("id", id_seleccionado).single().execute()
                 datos_cliente = res_datos.data
 
-                # Mapeo de sus carpetas reales
+                # Mapa de sus plantillas reales
                 rutas = {
                     "Carátula Maestra": "plantillas_maestras/0_sistema/caratula_maestra.docx",
                     "Contrato Cuota Litis": "plantillas_maestras/4_actos_y_contratos/cuota_litis/poder_cuota_litis/contrato_poder_cuota_litis.docx",
                     "Aviso de Mensura": "plantillas_maestras/1_mensuras_catastrales/saneamiento/Aviso_de_Mensura.docx"
                 }
 
-                ruta_seleccionada = rutas.get(tipo_doc)
-
-                if ruta_seleccionada:
-                    # El motor 'docxtpl' entra en acción
-                    archivo_binario = generar_documento_word(ruta_seleccionada, datos_cliente)
-                    
+                ruta_final = rutas.get(tipo_doc)
+                if ruta_final:
+                    # Llamamos al motor de Word
+                    archivo_binario = generar_documento_word(ruta_final, datos_cliente)
                     if archivo_binario:
-                        st.success(f"✅ ¡{tipo_doc} generado para {datos_cliente['nombre_propietario']}!")
-                        # El botón que le entrega el trabajo listo
-                        st.download_button(
-                            label="📥 DESCARGAR DOCUMENTO LISTO",
-                            data=archivo_binario,
-                            file_name=f"{tipo_doc}_{datos_cliente['nombre_propietario']}.docx",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                            use_container_width=True
-                        )
+                        st.success(f"✅ ¡{tipo_doc} generado con éxito!")
+                        st.download_button("📥 DESCARGAR DOCUMENTO", archivo_binario, f"{tipo_doc}.docx", use_container_width=True)
                 else:
-                    st.error("⚠️ No se encontró la ruta de esa plantilla en el servidor.")
+                    st.error("⚠️ No se encontró la ruta de la plantilla.")
+            
+            except Exception as e_intern:
+                st.error(f"❌ Error interno en la fábrica: {e_intern}")
 
-            except Exception as e:
-                st.error(f"❌ Error en la fábrica: {e}")
+    # Este e_extern debe estar alineado con el inicio de la función, un paso a la izquierda
+    except Exception as e_extern:
+        st.error(f"❌ Error al cargar los expedientes: {e_extern}")
 
+# Aquí debajo empieza su def generar_documento_word...
 
 def generar_documento_word(nombre_plantilla, diccionario_datos):
     """
