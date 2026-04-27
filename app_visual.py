@@ -904,36 +904,21 @@ def vista_plantillas_auto():
     if 'cant_profesionales' not in st.session_state: st.session_state.cant_profesionales = 0
     if 'cant_apoderados' not in st.session_state: st.session_state.cant_apoderados = 0
 
-    # ==========================================
-    # EL DICCIONARIO MAESTRO JI (COMPLETO)
-    # ==========================================
     TRAMITES_JI = {
         "📍 Mensuras Catastrales": [
-            "Actualización de Mensura", "Corrección Mensura Desplazada", 
-            "Depósito de Documentos Físicos", "Desafectación de Dominio Público", 
-            "Deslinde", "División para Constitución de Condominio", 
-            "Modificación Condominio", "Oposición Expediente Técnico", 
-            "Plano Definitivo", "Prórroga de Autorización", 
-            "Recurso Jerárquico", "Refundición", 
-            "Regularización Parcelaria", "Saneamiento", 
-            "Solicitud de Autorización", "Solicitud de Reconsideración", 
-            "Subdivisión", "Urbanización Parcelaria"
+            "Actualización de Mensura", "Corrección Mensura Desplazada", "Desafectación de Dominio Público", 
+            "Deslinde", "División para Constitución de Condominio", "Modificación Condominio", 
+            "Oposición Expediente Técnico", "Plano Definitivo", "Prórroga de Autorización", 
+            "Refundición", "Regularización Parcelaria", "Saneamiento", "Subdivisión", "Urbanización Parcelaria"
         ],
         "📜 Registro de Títulos": [
-            "Transferencia de Inmueble", "Transferencia de Mejoras",
-            "Hipoteca Convencional", "Hipoteca Judicial", "Hipoteca Legal de la Mujer Casada",
-            "Cancelación de Hipoteca Convencional", "Cancelación de Hipoteca Judicial",
-            "Certificación del Estado Jurídico del Inmueble", "Certificación con Reserva de Prioridad",
-            "Actualización de Generales", "Duplicado por Pérdida o Deterioro", 
-            "Constitución de Régimen de Condominio", "Corrección de Certificado de Título",
-            "Embargo Inmobiliario", "Cancelación de Embargo Inmobiliario",
-            "Constitución de Bien de Familia", "Cancelación de Bien de Familia",
-            "Privilegio de Honorarios de Abogados", "Cancelación de Privilegio de Honorarios",
-            "Adjudicación", "Anotación Preventiva"
+            "Transferencia de Inmueble", "Transferencia de Mejoras", "Hipoteca Convencional", 
+            "Cancelación de Hipoteca Convencional", "Certificación del Estado Jurídico del Inmueble", 
+            "Actualización de Generales", "Duplicado por Pérdida o Deterioro", "Constitución de Régimen de Condominio", 
+            "Embargo Inmobiliario", "Privilegio de Honorarios de Abogados", "Anotación Preventiva"
         ],
         "⚖️ Tribunales de Tierras": [
-            "Determinación de Herederos", "Litis Sobre Derechos Registrados", 
-            "Certificaciones", "Recurso de Apelación", 
+            "Determinación de Herederos", "Litis Sobre Derechos Registrados", "Recurso de Apelación", 
             "Partición Amigable Entre Esposos", "Partición Amigable con Determinación de Herederos", 
             "Renuncia de Bien de Familia", "Solicitud de Transferencias Administrativas", 
             "Solicitud de Desglose como Instancia Principal Administrativa", "Revisión por Causa de Fraude"
@@ -977,6 +962,25 @@ def vista_plantillas_auto():
             ji_coordenadas = st.text_input("Coordenadas (UTM/WGS84)")
 
         # ==========================================
+        # 1.5 BLOQUE DINÁMICO DE LITIGIO (SOLO TRIBUNALES)
+        # ==========================================
+        ji_demandante = ji_demandado = ji_sala = ji_juez = ji_rol = ji_audiencia = ""
+        
+        if jurisdiccion == "⚖️ Tribunales de Tierras":
+            st.write("---")
+            st.markdown("### ⚖️ Módulo de Litigios (Exclusivo Tribunal)")
+            lt1, lt2, lt3 = st.columns(3)
+            with lt1:
+                ji_demandante = st.text_input("Parte Demandante / Recurrente")
+                ji_demandado = st.text_input("Parte Demandada / Recurrida")
+            with lt2:
+                ji_sala = st.text_input("Sala / Cámara", placeholder="Ej: Segunda Sala")
+                ji_juez = st.text_input("Magistrado / Juez Apoderado")
+            with lt3:
+                ji_rol = st.text_input("Número de Rol / Cuaderno")
+                ji_audiencia = st.text_input("Fecha de Próxima Audiencia", placeholder="DD/MM/AAAA")
+
+        # ==========================================
         # 2. CAMPOS EXTRA DINÁMICOS (JI)
         # ==========================================
         st.write("---")
@@ -996,7 +1000,7 @@ def vista_plantillas_auto():
             if nombre_campo: datos_extras_dict[nombre_campo.replace(" ", "_").lower()] = valor_campo
 
         # ==========================================
-        # 3. PROFESIONALES ACTUANTES DINÁMICOS (CON GENERALES)
+        # 3. PROFESIONALES ACTUANTES DINÁMICOS
         # ==========================================
         st.write("---")
         st.subheader("👥 Profesionales Actuantes")
@@ -1023,10 +1027,9 @@ def vista_plantillas_auto():
                 "nombre": n, "rol": r, "colegiatura": c, 
                 "cedula": p_ced, "estado_civil": p_ec, "domicilio": p_dom
             })
-            st.write("") 
 
         # ==========================================
-        # 4. APODERADOS / REPRESENTANTES DINÁMICOS (CON GENERALES)
+        # 4. APODERADOS / REPRESENTANTES DINÁMICOS
         # ==========================================
         st.write("---")
         st.subheader("🤝 Representantes o Apoderados")
@@ -1053,7 +1056,6 @@ def vista_plantillas_auto():
                 "nombre": an, "cedula": ac, "representa": ar,
                 "nacionalidad": a_nac, "estado_civil": a_ec, "domicilio": a_dom
             })
-            st.write("") 
 
         st.divider()
 
@@ -1071,21 +1073,16 @@ def vista_plantillas_auto():
                     
                     contexto_word = {
                         **res_db.data,
-                        "parcela": ji_parcela,
-                        "dc": ji_dc,
-                        "solar_manzana": ji_solar_manzana,
-                        "matricula": ji_matricula,
-                        "libro_folio": ji_libro,
-                        "fecha_emision": ji_fecha_emision,
-                        "expediente_ji": ji_exp_ji,
-                        "ubicacion_inmueble": ji_ubicacion,
-                        "area": ji_area,
-                        "coordenadas": ji_coordenadas,
-                        "firma_presidente": "Lic. Jhonny Matos. M.A.",
-                        "cargo_presidente": "Presidente Fundador",
+                        "parcela": ji_parcela, "dc": ji_dc, "solar_manzana": ji_solar_manzana,
+                        "matricula": ji_matricula, "libro_folio": ji_libro, "fecha_emision": ji_fecha_emision,
+                        "expediente_ji": ji_exp_ji, "ubicacion_inmueble": ji_ubicacion, "area": ji_area, "coordenadas": ji_coordenadas,
+                        # Datos de Litigio
+                        "demandante": ji_demandante, "demandado": ji_demandado, "sala_camara": ji_sala,
+                        "juez_apoderado": ji_juez, "no_rol": ji_rol, "fecha_audiencia": ji_audiencia,
+                        # Firmas
+                        "firma_presidente": "Lic. Jhonny Matos. M.A.", "cargo_presidente": "Presidente Fundador",
                         **datos_extras_dict,
-                        "profesionales": profesionales_lista,
-                        "apoderados": apoderados_lista
+                        "profesionales": profesionales_lista, "apoderados": apoderados_lista
                     }
 
                     archivo_bin = generar_documento_word(ruta_final, contexto_word)
@@ -1097,25 +1094,23 @@ def vista_plantillas_auto():
                     st.error(f"❌ Error al fabricar: {e}")
 
         # ==========================================
-        # 6. MÓDULO DE MANTENIMIENTO (CON PIN)
+        # 6. MANTENIMIENTO CON PIN
         # ==========================================
         st.write("---")
         with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS"):
-            pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password")
-            PIN_SECRETO = "1234" # Cambie esto por su PIN real
-            
+            pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_p_auto")
+            PIN_SECRETO = "1234" 
             if pin_ingresado == PIN_SECRETO:
                 maint_col1, maint_col2 = st.columns(2)
                 import os
                 with maint_col1:
-                    st.markdown("**📤 Subir o Actualizar**")
+                    st.markdown("**📤 Subir**")
                     destino = st.radio("Carpeta:", ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"])
                     archivo_subido = st.file_uploader("Elija el archivo .docx", type=["docx"])
                     if st.button("💾 Guardar"):
                         if archivo_subido:
                             os.makedirs(f"plantillas_maestras/{destino}", exist_ok=True)
-                            with open(f"plantillas_maestras/{destino}/{archivo_subido.name}", "wb") as f:
-                                f.write(archivo_subido.getbuffer())
+                            with open(f"plantillas_maestras/{destino}/{archivo_subido.name}", "wb") as f: f.write(archivo_subido.getbuffer())
                             st.success(f"✅ Guardado en {destino}.")
                 with maint_col2:
                     st.markdown("**🗑️ Borrar**")
@@ -1126,7 +1121,6 @@ def vista_plantillas_auto():
                     if st.button("🗑️ ELIMINAR"):
                         if archivo_a_borrar:
                             os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
-                            st.error(f"🗑️ Eliminado.")
                             st.rerun()
 
     except Exception as e:
