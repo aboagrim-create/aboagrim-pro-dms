@@ -1319,3 +1319,28 @@ def vista_registro_maestro():
                     st.rerun()
                 except Exception as e:
                     st.error(f"❌ Error al guardar en el servidor: {e}")
+# =========================================================
+# ENRUTADOR PRINCIPAL (ESTO VA AL FINAL DE TODO EL ARCHIVO)
+# =========================================================
+
+if menu == "🏠 Mando Central":
+    st.info("Mando Central (En construcción)")
+    # vista_mando_central() # Quite el # cuando la tenga lista
+
+elif menu == "👤 Registro Maestro":
+    vista_registro_maestro()
+
+elif menu == "📁 Archivo Digital":
+    st.info("Archivo Digital (En construcción)")
+
+elif menu == "📄 Plantillas Auto":
+    vista_plantillas_auto() # Nuestra obra maestra blindada
+
+elif menu == "📅 Alertas y Plazos":
+    st.info("Alertas y Plazos (En construcción)")
+
+elif menu == "💵 Facturación":
+    st.info("Facturación (En construcción)")
+
+elif menu == "⚙️ Configuración":
+    st.info("Configuración (En construcción)")
