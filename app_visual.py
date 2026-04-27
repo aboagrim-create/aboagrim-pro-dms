@@ -470,13 +470,12 @@ def vista_facturacion():
     tab_emitir, tab_historial = st.tabs(["📄 Emitir Nueva Factura", "📊 Historial y Alertas"])
     
     with tab_emitir:
-        c1, c2 = st.columns([1.5, 1.5]) # Dividimos la pantalla a la mitad
+        c1, c2 = st.columns([1.5, 1.5])
         
         with c1:
             with st.container(border=True):
                 st.markdown("### 📝 Parámetros de Cobro")
                 
-                # Intentamos traer los expedientes de la base de datos
                 try:
                     res_e = supabase.table("expedientes_maestros").select("expediente, nombre_propietario").execute()
                     list_e = [f"{e['expediente']} - {e['nombre_propietario']}" for e in res_e.data] if res_e.data else []
@@ -494,26 +493,31 @@ def vista_facturacion():
                 ])
                 metodo_pago = colB.selectbox("Método de Ingreso:", ["Transferencia Bancaria", "Efectivo", "Cheque", "Depósito"])
                 
-                concepto = st.text_input("Concepto / Descripción:", placeholder="Ej: Avance para trabajos de campo e hitos...")
-                monto = st.number_input("Monto a Cobrar (RD$):", min_value=0.0, step=1000.0, format="%.2f")
+                concepto = st.text_input("Concepto / Descripción:", placeholder="Ej: Trabajo de campo y georreferenciación...")
+                
+                # --- NUEVAS CASILLAS DE MONTO ---
+                st.markdown("---")
+                col_m1, col_m2 = st.columns(2)
+                monto_pago = col_m1.number_input("Monto a Pagar Hoy (RD$):", min_value=0.0, step=1000.0, format="%.2f")
+                monto_pendiente = col_m2.number_input("Monto Restante (RD$):", min_value=0.0, step=1000.0, format="%.2f")
                 
                 if st.button("✨ Generar Factura Profesional", type="primary", use_container_width=True):
-                    if expediente != "Seleccione..." and monto > 0:
+                    if expediente != "Seleccione..." and monto_pago > 0:
                         st.session_state['factura_activa'] = True
                         st.session_state['datos_fac'] = {
                             "expediente": expediente, "tipo": tipo_pago, "metodo": metodo_pago, 
-                            "concepto": concepto, "monto": monto, "fecha": datetime.now().strftime("%d/%m/%Y")
+                            "concepto": concepto, "pago": monto_pago, "resta": monto_pendiente,
+                            "fecha": datetime.now().strftime("%d/%m/%Y")
                         }
                     else:
-                        st.warning("Debe seleccionar un expediente y poner un monto mayor a 0.")
+                        st.warning("Debe seleccionar un expediente y poner un monto de pago mayor a 0.")
         
         with c2:
-            # Aquí ocurre la magia: Renderizado visual de la factura
             if st.session_state.get('factura_activa', False):
                 dfact = st.session_state['datos_fac']
                 num_fac = f"FAC-{datetime.now().strftime('%y%m%d%H%M')}"
                 
-                # --- DISEÑO CSS DE LA FACTURA FÍSICA ---
+                # --- DISEÑO DE FACTURA CON BALANCE PENDIENTE ---
                 factura_html = f"""
                 <div style="background: white; padding: 40px; border-radius: 8px; color: #1e293b; box-shadow: 0 10px 25px rgba(0,0,0,0.5); font-family: 'Arial', sans-serif; margin-bottom: 20px;">
                     <div style="text-align: center; border-bottom: 3px solid #0b0f19; padding-bottom: 20px; margin-bottom: 20px;">
@@ -524,70 +528,53 @@ def vista_facturacion():
                     
                     <div style="display: flex; justify-content: space-between; margin-bottom: 25px; font-size: 15px;">
                         <div>
-                            <b style="color:#0b0f19;">Comprobante No:</b> {num_fac}<br>
-                            <b style="color:#0b0f19;">Fecha de Emisión:</b> {dfact['fecha']}
+                            <b style="color:#0b0f19;">No. Factura:</b> {num_fac}<br>
+                            <b style="color:#0b0f19;">Fecha:</b> {dfact['fecha']}
                         </div>
-                        <div style="text-align: right; background-color: #f1f5f9; padding: 10px; border-radius: 5px;">
+                        <div style="text-align: right;">
                             <b style="color:#0b0f19;">Modalidad:</b> {dfact['tipo']}<br>
-                            <b style="color:#0b0f19;">Vía de Pago:</b> {dfact['metodo']}
+                            <b style="color:#0b0f19;">Vía:</b> {dfact['metodo']}
                         </div>
                     </div>
                     
-                    <div style="background: #f8fafc; padding: 20px; border-left: 5px solid #d4af37; margin-bottom: 30px;">
-                        <b style="color:#0b0f19; display:block; margin-bottom: 8px;">A nombre de / Expediente:</b>
-                        <span style="font-size: 16px;">{dfact['expediente']}</span>
-                        
-                        <b style="color:#0b0f19; display:block; margin-top: 15px; margin-bottom: 8px;">Concepto del Servicio:</b>
-                        <span style="font-size: 16px;">{dfact['concepto']}</span>
+                    <div style="background: #f8fafc; padding: 20px; border-left: 5px solid #d4af37; margin-bottom: 25px;">
+                        <b style="color:#0b0f19;">Cliente / Expediente:</b><br>{dfact['expediente']}<br><br>
+                        <b style="color:#0b0f19;">Concepto:</b><br>{dfact['concepto']}
                     </div>
                     
-                    <div style="text-align: right; font-size: 28px; color: #0b0f19; border-top: 2px dashed #cbd5e1; padding-top: 20px; font-weight: bold;">
-                        <span style="font-size: 16px; color: #64748b; vertical-align: middle; margin-right: 10px;">TOTAL RECIBIDO:</span> 
-                        RD$ {dfact['monto']:,.2f}
-                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                        <tr style="border-bottom: 2px solid #e2e8f0;">
+                            <td style="padding: 10px 0; font-size: 18px; color: #0b0f19;">MONTO RECIBIDO:</td>
+                            <td style="padding: 10px 0; text-align: right; font-size: 20px; font-weight: bold; color: #0b0f19;">RD$ {dfact['pago']:,.2f}</td>
+                        </tr>
+                        <tr style="color: #64748b;">
+                            <td style="padding: 10px 0; font-size: 16px;">BALANCE PENDIENTE:</td>
+                            <td style="padding: 10px 0; text-align: right; font-size: 16px; font-weight: bold; color: #ef4444;">RD$ {dfact['resta']:,.2f}</td>
+                        </tr>
+                    </table>
                     
                     <div style="text-align: center; margin-top: 40px; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px;">
-                        Plaza Jasansa, Calle Boy Scout 83, Santiago, República Dominicana.<br>
-                        Contactos: 829-826-5888 | 809-691-3333 | Aboagrim@gmail.com
+                        Plaza Jasansa, Calle Boy Scout 83, Santiago, R.D.<br>
+                        Contactos: 829-826-5888 | 809-691-3333
                     </div>
                 </div>
                 """
                 
-                # Mostramos la factura en pantalla
                 st.markdown(factura_html, unsafe_allow_html=True)
                 
-                # --- BOTONES DINÁMICOS DE ACCIÓN ---
-                st.markdown("#### 🚀 Acciones Ejecutivas")
+                st.markdown("#### 🚀 Acciones Rápidas")
                 col_wa, col_dl, col_gd = st.columns(3)
                 
-                # 1. WhatsApp Automático
-                mensaje_wa = f"Saludos desde *AboAgrim*. Le confirmamos la recepción de su pago por *RD$ {dfact['monto']:,.2f}* por concepto de {dfact['tipo']} ({dfact['concepto']}). Gracias por confiar en nuestros servicios."
+                # WhatsApp con el desglose de lo pendiente
+                mensaje_wa = f"Saludos desde *AboAgrim*. Confirmamos el pago de *RD$ {dfact['pago']:,.2f}*. Su balance restante es de *RD$ {dfact['resta']:,.2f}*. Gracias por su confianza."
                 link_wa = f"https://wa.me/?text={mensaje_wa.replace(' ', '%20')}"
-                col_wa.link_button("🟢 Enviar WhatsApp", link_wa, use_container_width=True)
                 
-                # 2. Descargar / Imprimir
-                if col_dl.button("🖨️ Imprimir / PDF", use_container_width=True):
-                    st.toast("Use Ctrl+P (o Cmd+P) en su navegador y seleccione 'Guardar como PDF' para obtener la mejor calidad visual de esta factura.", icon="💡")
-                
-                # 3. Guardar en Expediente (Nube)
-                if col_gd.button("☁️ Guardar a Drive", use_container_width=True):
-                    st.success("Copia digital respaldada en el Archivo Maestro.")
-                    st.balloons()
+                col_wa.link_button("🟢 WhatsApp", link_wa, use_container_width=True)
+                col_dl.button("🖨️ PDF / Imprimir", use_container_width=True)
+                col_gd.button("☁️ Guardar en Drive", use_container_width=True)
             else:
-                st.info("👈 Complete los datos a la izquierda para generar la factura mágica.")
+                st.info("👈 Complete los montos para visualizar la factura.")
 
-    with tab_historial:
-        st.write("Aquí se conectará el historial completo de honorarios.")
-# =====================================================================
-# MÓDULO 6: FACTURACIÓN
-# =====================================================================
-from fpdf import FPDF
-import io
-from datetime import datetime
-
-from fpdf import FPDF
-import io
-from datetime import datetime
 
 def vista_configuracion():
     st.title("⚙️ Panel de Control Maestro")
