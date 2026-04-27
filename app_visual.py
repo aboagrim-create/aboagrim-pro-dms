@@ -299,87 +299,77 @@ from datetime import datetime
 
 from datetime import datetime
 
+from datetime import datetime, timedelta
+
 def vista_alertas_plazos():
-    st.title("📅 Alertas y Plazos Judiciales")
-    st.subheader("Control de Audiencias y Vencimientos | AboAgrim Pro")
+    st.title("📅 Alertas y Plazos Legales (Ley 108-05)")
+    st.subheader("Control Normativo JI 2026 | AboAgrim Pro")
     st.divider()
 
-    st.markdown("### 🔔 Radar de Compromisos Legales")
-    st.write("El sistema monitorea las fechas de audiencia registradas en sus expedientes maestros y calcula los días restantes automáticamente.")
-    
     try:
-        # Consulta simplificada: traemos todo y filtramos en Python para evitar errores de versión
-        res = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, tribunal, jurisdiccion, f_audiencia").execute()
+        # Traemos la data necesaria del Registro Maestro
+        res = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, tipo_acto, f_audiencia, f_creacion, jurisdiccion").execute()
         
-        if res.data:
-            hoy = datetime.now().date()
-            alertas_urgentes = []
-            alertas_proximas = []
-            alertas_futuras = []
+        if not res.data:
+            st.info("✅ Sin expedientes activos para monitorear.")
+            return
 
-            # Clasificación de expedientes
+        hoy = datetime.now().date()
+        
+        # Categorías de Alertas
+        tab_tecnico, tab_judicial, tab_admin = st.tabs([
+            "🛠️ Plazos Técnicos (Mensuras)", 
+            "⚖️ Plazos Judiciales (Tribunales)", 
+            "📝 Plazos Administrativos (Registro)"
+        ])
+
+        with tab_tecnico:
+            st.markdown("### 📏 Vigencia de Autorizaciones y Mensuras")
+            st.caption("Control según Reglamento General de Mensuras Catastrales.")
+            
             for caso in res.data:
-                # Si el caso no tiene fecha de audiencia, lo saltamos
-                if not caso.get('f_audiencia'):
-                    continue
+                # Plazo de Autorización (60 días según normativa para ejecutar trabajos)
+                f_ini = datetime.strptime(caso['f_creacion'][:10], '%Y-%m-%d').date()
+                vencimiento_aut = f_ini + timedelta(days=60)
+                dias_restantes = (vencimiento_aut - hoy).days
+
+                if dias_restantes <= 15:
+                    with st.container(border=True):
+                        c1, c2 = st.columns([3, 1])
+                        c1.error(f"🔴 **EXP: {caso['expediente']}** - {caso['nombre_propietario']}")
+                        c1.write(f"Plazo fatal para depositar Mensura (60 días).")
+                        c2.metric("Días Restantes", dias_restantes)
+                        if st.button("Extender Plazo", key=f"ext_{caso['expediente']}"):
+                            st.toast("Solicitud de prórroga generada...")
+
+        with tab_judicial:
+            st.markdown("### 🏛️ Audiencias y Recursos")
+            st.caption("Control según Reglamento de los Tribunales de Tierras.")
+            
+            for caso in res.data:
+                if caso.get('f_audiencia'):
+                    f_aud = datetime.strptime(caso['f_audiencia'], '%Y-%m-%d').date()
                     
-                fecha_aud = datetime.strptime(caso['f_audiencia'], '%Y-%m-%d').date()
-                dias_restantes = (fecha_aud - hoy).days
+                    # Alerta de Audiencia
+                    dias_aud = (f_aud - hoy).days
+                    if dias_aud <= 7:
+                        st.error(f"⚠️ **AUDIENCIA INMINENTE:** Exp {caso['expediente']} en {dias_aud} días.")
+                    
+                    # Plazo de Apelación (30 días desde notificación de sentencia)
+                    # Aquí el sistema asume 30 días si hubiera una fecha de sentencia cargada
+                    st.info(f"ℹ️ **Recordatorio:** El plazo de apelación en Jurisdicción Original es de 30 días.")
 
-                if dias_restantes < 0:
-                    estado = "Vencida / Pasada"
-                    alertas_urgentes.append((caso, dias_restantes, estado))
-                elif dias_restantes <= 7:
-                    estado = "¡Inminente! (Próximos 7 días)"
-                    alertas_urgentes.append((caso, dias_restantes, estado))
-                elif dias_restantes <= 30:
-                    estado = "Próxima (Este mes)"
-                    alertas_proximas.append((caso, dias_restantes, estado))
-                else:
-                    estado = "A futuro"
-                    alertas_futuras.append((caso, dias_restantes, estado))
+        with tab_admin:
+            st.markdown("### 📜 Recursos Administrativos y Registro")
+            st.caption("Control según Reglamento General de Registros de Títulos.")
             
-            # --- RENDERIZADO VISUAL ---
-            
-            # 🔴 ZONA ROJA: Menos de 7 días o Vencidas
-            if alertas_urgentes:
-                st.error("🔴 **ALERTAS ROJAS - ATENCIÓN INMEDIATA**")
-                for caso, dias, est in alertas_urgentes:
-                    with st.container(border=True):
-                        c1, c2 = st.columns([3, 1])
-                        c1.markdown(f"**⚖️ {caso.get('tribunal', 'Tribunal no especificado')}** ({caso.get('jurisdiccion', 'N/A')})")
-                        c1.write(f"**Expediente:** {caso['expediente']} | **Cliente:** {caso['nombre_propietario']}")
-                        if dias < 0:
-                            c2.error(f"Hace {abs(dias)} días")
-                        else:
-                            c2.error(f"Faltan {dias} días")
-            
-            # 🟡 ZONA AMARILLA: 8 a 30 días
-            if alertas_proximas:
-                st.warning("🟡 **ALERTAS AMARILLAS - PRÓXIMAS AUDIENCIAS (ESTE MES)**")
-                for caso, dias, est in alertas_proximas:
-                    with st.container(border=True):
-                        c1, c2 = st.columns([3, 1])
-                        c1.markdown(f"**Expediente:** {caso['expediente']} | **Cliente:** {caso['nombre_propietario']}")
-                        c1.caption(f"Fecha pautada: {caso['f_audiencia']}")
-                        c2.warning(f"En {dias} días")
-
-            # 🟢 ZONA VERDE: Más de 30 días
-            if alertas_futuras:
-                st.success("🟢 **ALERTAS VERDES - CON TIEMPO DE PREPARACIÓN**")
-                with st.expander("Ver audiencias a más de un mes de distancia"):
-                    for caso, dias, est in alertas_futuras:
-                        st.write(f"• **{caso['expediente']}** ({caso['nombre_propietario']}) - Programada para el {caso['f_audiencia']} *(Faltan {dias} días)*")
-            
-            if not (alertas_urgentes or alertas_proximas or alertas_futuras):
-                st.info("✅ Todos los casos registrados con fecha tienen el campo de audiencia vacío.")
-
-        else:
-            st.info("✅ No hay audiencias registradas actualmente en el Registro Maestro.")
+            with st.expander("Ver Plazos Fatales de Recursos"):
+                st.write("**Recurso de Reconsideración:** 15 días hábiles.")
+                st.write("**Recurso Jerárquico:** 30 días después de la respuesta de reconsideración.")
+                st.write("**Vigencia de Certificación de Cargas:** 30 días.")
 
     except Exception as e:
-        st.error(f"Falta configurar la base de datos: {e}")
-        st.info("💡 Asegúrese de tener la columna 'f_audiencia' (tipo date) y 'tribunal' (tipo text) en su tabla 'expedientes_maestros' de Supabase.")
+        st.error(f"Error en el radar legal: {e}")
             
 
 from fpdf import FPDF
