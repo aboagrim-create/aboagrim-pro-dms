@@ -1311,37 +1311,47 @@ if usuario_actual == "JhonnyMatos":
 
 rol_usuario = st.session_state.get("rol", "Pasante")
 
-# Módulos básicos (¡Alertas liberado para todo el equipo!)
-modulos = ["🏠 Mando Central", "👤 Registro Maestro", "📂 Archivo Digital", "📄 Plantillas Auto", "📅 Alertas y Plazos"]
+# --- MÓDULOS DEL SISTEMA ---
+modulos = [
+    "🏠 Mando Central", 
+    "👤 Registro Maestro", 
+    "📂 Archivo Digital", 
+    "📄 Plantillas Auto", 
+    "📅 Alertas y Plazos"
+]
 
-# Filtro de jerarquía (Ahora solo protegemos el módulo financiero)
+# Filtro de jerarquía para módulos financieros
 if rol_usuario in ["Abogado", "Agrimensor", "Presidente Fundador"]:
     modulos.append("💵 Facturación")
 
-# LA CLAVE: Siempre mostramos Configuración si no está logueado como admin
-# para que pueda poner su PIN y entrar.
+# La configuración siempre visible para loguearse, o si es el presdente
 if rol_usuario == "Presidente Fundador" or not admin_activo:
     modulos.append("⚙️ Configuración")
 
+# Renderizado de la barra lateral
 with st.sidebar:
     st.markdown(f"**Firmado como:** {usuario_actual if usuario_actual else 'Invitado'}")
     st.caption(f"**Nivel de Acceso:** {rol_usuario}")
     menu = st.radio("Ir a:", modulos)
 
-# --- LÓGICA DE CARGA DE FUNCIONES (ENRUTADOR FINAL) ---
+# ==========================================
+# 🚦 ENRUTADOR PRINCIPAL DEL SISTEMA
+# ==========================================
+
 if menu == "🏠 Mando Central":
-    # vista_mando_central()
     st.info("Bienvenido al Mando Central de AboAgrim Pro")
+    # Si tiene la función de mando central, quite el "#" de la línea de abajo:
+    # vista_mando_central()
 
 elif menu == "👤 Registro Maestro":
     vista_registro_maestro()
 
-elif menu == "📂 Archivo Digital":  # <-- ¡Aquí estaba la diferencia de la carpeta!
+elif menu == "📂 Archivo Digital":
     vista_archivo_digital()
 
 elif menu == "📄 Plantillas Auto":
+    st.info("Módulo de Plantillas Automáticas en construcción. Próximamente.")
     # vista_plantillas_auto()
-    st.info("Módulo de plantillas en construcción.")
 
 elif menu == "📅 Alertas y Plazos":
     vista_alertas_plazos()
