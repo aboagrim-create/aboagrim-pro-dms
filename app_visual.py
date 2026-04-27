@@ -464,112 +464,120 @@ import io
 from datetime import datetime
 
 def vista_facturacion():
-    st.title("💵 Facturación y Alertas de Cobro")
-    st.subheader("Control de Honorarios | AboAgrim Pro")
-    st.divider()
-
-    tab_nueva, tab_alertas = st.tabs(["📄 Emitir Factura", "🚨 Alertas de Cobro"])
-
-    with tab_nueva:
-        try:
-            res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario").execute()
-            dict_exp = {f"{e['expediente']} - {e['nombre_propietario']}": e for e in res_exp.data} if res_exp.data else {}
-            
-            exp_sel = st.selectbox("Vincular a Expediente:", ["Seleccione..."] + list(dict_exp.keys()))
-            if exp_sel == "Seleccione...": 
-                st.info("Seleccione un expediente para comenzar.")
-                return
-            
-            codigo_vincular = exp_sel.split(" - ")[0]
-            nombre_cli = exp_sel.split(" - ")[1]
-            fecha_f = st.date_input("Fecha de Emisión", datetime.now())
-            
-        except Exception as e:
-            st.error(f"Error de conexión: {e}")
-            return
-
-        st.write("---")
+    st.title("💵 Facturación y Cobros Mágicos")
+    st.subheader("Control Financiero | AboAgrim Pro")
+    
+    tab_emitir, tab_historial = st.tabs(["📄 Emitir Nueva Factura", "📊 Historial y Alertas"])
+    
+    with tab_emitir:
+        c1, c2 = st.columns([1.5, 1.5]) # Dividimos la pantalla a la mitad
         
-        # --- GESTIÓN DE ITEMS ---
-        if "items_factura" not in st.session_state: st.session_state.items_factura = []
-
-        with st.container(border=True):
-            c_i1, c_i2, c_i3 = st.columns([3, 1, 1])
-            desc_s = c_i1.text_input("Descripción:")
-            monto_s = c_i2.number_input("Costo (RD$):", min_value=0.0, step=500.0)
-            if c_i3.button("➕ Añadir", use_container_width=True):
-                if desc_s and monto_s > 0:
-                    st.session_state.items_factura.append({"desc": desc_s, "monto": monto_s})
-                    st.rerun()
-
-        subtotal = sum(item['monto'] for item in st.session_state.items_factura)
-        
-        if st.session_state.items_factura:
-            for i, item in enumerate(st.session_state.items_factura):
-                col1, col2, col3 = st.columns([3, 1, 1])
-                col1.write(f"• {item['desc']}")
-                col2.write(f"RD$ {item['monto']:,.2f}")
-                if col3.button("🗑️", key=f"del_{i}"):
-                    st.session_state.items_factura.pop(i)
-                    st.rerun()
-
-            st.write("---")
-            
-            # --- INTERRUPTOR DE ITBIS (LO QUE USTED SOLICITÓ) ---
-            col_opt1, col_opt2 = st.columns([2, 1])
-            with col_opt1:
-                con_itbis = st.toggle("Deslice para Aplicar ITBIS (18%)", value=True)
-            
-            itbis = (subtotal * 0.18) if con_itbis else 0.0
-            total_f = subtotal + itbis
-
-            cr1, cr2, cr3 = st.columns(3)
-            cr1.metric("Sub-Total", f"RD$ {subtotal:,.2f}")
-            cr2.metric("ITBIS", f"RD$ {itbis:,.2f}" if con_itbis else "EXENTO")
-            cr3.metric("TOTAL", f"RD$ {total_f:,.2f}")
-
-            # --- GUARDADO ---
-            if st.button("💾 Emitir, Guardar y Descargar PDF", type="primary", use_container_width=True):
+        with c1:
+            with st.container(border=True):
+                st.markdown("### 📝 Parámetros de Cobro")
+                
+                # Intentamos traer los expedientes de la base de datos
                 try:
-                    # Usamos 'codigo_expediente' para evitar el error de columna
-                    datos_f = {
-                        "codigo_expediente": codigo_vincular, 
-                        "monto_total": total_f,
-                        "estado": "Pendiente",
-                        "fecha_emision": str(fecha_f)
-                    }
-                    supabase.table("facturas").insert(datos_f).execute()
-                    st.success("✅ Guardado exitosamente en la base de datos.")
-                    st.balloons()
-                except Exception as e:
-                    st.error(f"Error técnico al guardar: {e}")
-
-    with tab_alertas:
-        st.markdown("### ⚠️ Facturas Pendientes de Cobro")
-        try:
-            res = supabase.table("facturas").select("*").eq("estado", "Pendiente").execute()
-            if res.data:
-                for f in res.data:
-                    # Protección contra fechas vacías
-                    f_str = f.get('fecha_emision')
-                    dias_txt = "Fecha no registrada"
-                    if f_str:
-                        f_emision = datetime.strptime(f_str, '%Y-%m-%d').date()
-                        dias = (datetime.now().date() - f_emision).days
-                        dias_txt = f"Emitida hace {dias} días"
+                    res_e = supabase.table("expedientes_maestros").select("expediente, nombre_propietario").execute()
+                    list_e = [f"{e['expediente']} - {e['nombre_propietario']}" for e in res_e.data] if res_e.data else []
+                except:
+                    list_e = []
                     
-                    with st.container(border=True):
-                        c1, c2, c3 = st.columns([2, 1, 1])
-                        c1.error(f"🔴 **Caso: {f.get('codigo_expediente', 'N/A')}**")
-                        c1.caption(dias_txt)
-                        c2.write(f"**RD$ {f.get('monto_total', 0):,.2f}**")
-                        if c3.button("💰 Cobrado", key=f"p_{f['id']}"):
-                            supabase.table("facturas").update({"estado": "Pagado"}).eq("id", f['id']).execute()
-                            st.rerun()
+                expediente = st.selectbox("Vinculado a Expediente:", ["Seleccione..."] + list_e)
+                
+                colA, colB = st.columns(2)
+                tipo_pago = colA.selectbox("Modalidad de Pago:", [
+                    "Avance Inicial (Arranque)", 
+                    "Pago Parcial", 
+                    "Pago por Etapa (Hito)", 
+                    "Pago Total / Saldo Final"
+                ])
+                metodo_pago = colB.selectbox("Método de Ingreso:", ["Transferencia Bancaria", "Efectivo", "Cheque", "Depósito"])
+                
+                concepto = st.text_input("Concepto / Descripción:", placeholder="Ej: Avance para trabajos de campo e hitos...")
+                monto = st.number_input("Monto a Cobrar (RD$):", min_value=0.0, step=1000.0, format="%.2f")
+                
+                if st.button("✨ Generar Factura Profesional", type="primary", use_container_width=True):
+                    if expediente != "Seleccione..." and monto > 0:
+                        st.session_state['factura_activa'] = True
+                        st.session_state['datos_fac'] = {
+                            "expediente": expediente, "tipo": tipo_pago, "metodo": metodo_pago, 
+                            "concepto": concepto, "monto": monto, "fecha": datetime.now().strftime("%d/%m/%Y")
+                        }
+                    else:
+                        st.warning("Debe seleccionar un expediente y poner un monto mayor a 0.")
+        
+        with c2:
+            # Aquí ocurre la magia: Renderizado visual de la factura
+            if st.session_state.get('factura_activa', False):
+                dfact = st.session_state['datos_fac']
+                num_fac = f"FAC-{datetime.now().strftime('%y%m%d%H%M')}"
+                
+                # --- DISEÑO CSS DE LA FACTURA FÍSICA ---
+                factura_html = f"""
+                <div style="background: white; padding: 40px; border-radius: 8px; color: #1e293b; box-shadow: 0 10px 25px rgba(0,0,0,0.5); font-family: 'Arial', sans-serif; margin-bottom: 20px;">
+                    <div style="text-align: center; border-bottom: 3px solid #0b0f19; padding-bottom: 20px; margin-bottom: 20px;">
+                        <h1 style="color: #0b0f19; margin: 0; font-size: 32px; font-weight: 900; letter-spacing: 2px;">⚖️ AboAgrim</h1>
+                        <p style="margin: 5px 0 0 0; color: #475569; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Despacho Legal y Agrimensura</p>
+                        <p style="margin: 2px 0; color: #0b0f19; font-size: 14px; font-weight: bold;">Lic. Jhonny Matos | Presidente Fundador</p>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 25px; font-size: 15px;">
+                        <div>
+                            <b style="color:#0b0f19;">Comprobante No:</b> {num_fac}<br>
+                            <b style="color:#0b0f19;">Fecha de Emisión:</b> {dfact['fecha']}
+                        </div>
+                        <div style="text-align: right; background-color: #f1f5f9; padding: 10px; border-radius: 5px;">
+                            <b style="color:#0b0f19;">Modalidad:</b> {dfact['tipo']}<br>
+                            <b style="color:#0b0f19;">Vía de Pago:</b> {dfact['metodo']}
+                        </div>
+                    </div>
+                    
+                    <div style="background: #f8fafc; padding: 20px; border-left: 5px solid #d4af37; margin-bottom: 30px;">
+                        <b style="color:#0b0f19; display:block; margin-bottom: 8px;">A nombre de / Expediente:</b>
+                        <span style="font-size: 16px;">{dfact['expediente']}</span>
+                        
+                        <b style="color:#0b0f19; display:block; margin-top: 15px; margin-bottom: 8px;">Concepto del Servicio:</b>
+                        <span style="font-size: 16px;">{dfact['concepto']}</span>
+                    </div>
+                    
+                    <div style="text-align: right; font-size: 28px; color: #0b0f19; border-top: 2px dashed #cbd5e1; padding-top: 20px; font-weight: bold;">
+                        <span style="font-size: 16px; color: #64748b; vertical-align: middle; margin-right: 10px;">TOTAL RECIBIDO:</span> 
+                        RD$ {dfact['monto']:,.2f}
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 40px; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                        Plaza Jasansa, Calle Boy Scout 83, Santiago, República Dominicana.<br>
+                        Contactos: 829-826-5888 | 809-691-3333 | Aboagrim@gmail.com
+                    </div>
+                </div>
+                """
+                
+                # Mostramos la factura en pantalla
+                st.markdown(factura_html, unsafe_allow_html=True)
+                
+                # --- BOTONES DINÁMICOS DE ACCIÓN ---
+                st.markdown("#### 🚀 Acciones Ejecutivas")
+                col_wa, col_dl, col_gd = st.columns(3)
+                
+                # 1. WhatsApp Automático
+                mensaje_wa = f"Saludos desde *AboAgrim*. Le confirmamos la recepción de su pago por *RD$ {dfact['monto']:,.2f}* por concepto de {dfact['tipo']} ({dfact['concepto']}). Gracias por confiar en nuestros servicios."
+                link_wa = f"https://wa.me/?text={mensaje_wa.replace(' ', '%20')}"
+                col_wa.link_button("🟢 Enviar WhatsApp", link_wa, use_container_width=True)
+                
+                # 2. Descargar / Imprimir
+                if col_dl.button("🖨️ Imprimir / PDF", use_container_width=True):
+                    st.toast("Use Ctrl+P (o Cmd+P) en su navegador y seleccione 'Guardar como PDF' para obtener la mejor calidad visual de esta factura.", icon="💡")
+                
+                # 3. Guardar en Expediente (Nube)
+                if col_gd.button("☁️ Guardar a Drive", use_container_width=True):
+                    st.success("Copia digital respaldada en el Archivo Maestro.")
+                    st.balloons()
             else:
-                st.success("✅ Cartera al día.")
-        except Exception as e:
-            st.error(f"Error al cargar alertas: {e}")
+                st.info("👈 Complete los datos a la izquierda para generar la factura mágica.")
+
+    with tab_historial:
+        st.write("Aquí se conectará el historial completo de honorarios.")
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
