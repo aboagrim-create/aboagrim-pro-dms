@@ -390,9 +390,6 @@ def vista_alertas():
 
 from fpdf import FPDF
 import io
-
-from fpdf import FPDF
-import io
 from datetime import datetime
 
 def vista_facturacion():
@@ -403,7 +400,6 @@ def vista_facturacion():
     # --- 1. SELECCIÓN Y DATOS DEL CONTRIBUYENTE ---
     with st.expander("👤 Datos del Cliente y Facturación", expanded=True):
         try:
-            # Recuperamos los expedientes para vincular la factura
             res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, cedula_propietario").execute()
             dict_exp = {f"{e['expediente']} - {e['nombre_propietario']}": e for e in res_exp.data} if res_exp.data else {}
             
@@ -413,11 +409,7 @@ def vista_facturacion():
                 tipo_p = st.radio("Tipo de Persona:", ["Física", "Jurídica"], horizontal=True)
             
             with col_c2:
-                # Si selecciona un expediente, autocompletamos la identificación
-                id_sugerida = ""
-                if exp_sel != "Seleccione...":
-                    id_sugerida = dict_exp[exp_sel].get('cedula_propietario', '')
-                
+                id_sugerida = dict_exp[exp_sel].get('cedula_propietario', '') if exp_sel != "Seleccione..." else ""
                 identidad = st.text_input("RNC / Cédula del Cliente:", value=id_sugerida)
                 fecha_factura = st.date_input("Fecha de Emisión", datetime.now())
 
@@ -427,27 +419,25 @@ def vista_facturacion():
 
     st.write("---")
 
-    # --- 2. GESTIÓN DINÁMICA DE SERVICIOS (AGREGAR/BORRAR) ---
+    # --- 2. GESTIÓN DINÁMICA DE SERVICIOS ---
     st.markdown("### 📝 Detalle de Servicios Legales y Técnicos")
     
     if "items_factura" not in st.session_state:
         st.session_state.items_factura = []
 
-    # Interfaz para añadir servicios
     with st.container(border=True):
         c_i1, c_i2, c_i3 = st.columns([3, 1, 1])
         with c_i1:
-            desc_serv = st.text_input("Descripción del Trabajo:", placeholder="Ej: Saneamiento Parcela 209, Santiago")
+            desc_serv = st.text_input("Descripción del Trabajo:", placeholder="Ej: Saneamiento Parcela 209")
         with c_i2:
             monto_serv = st.number_input("Costo (RD$):", min_value=0.0, step=100.0)
         with c_i3:
-            st.write(" ") # Espaciador
+            st.write(" ")
             if st.button("➕ Agregar", use_container_width=True):
                 if desc_serv and monto_serv > 0:
                     st.session_state.items_factura.append({"desc": desc_serv, "monto": monto_serv})
                     st.rerun()
 
-    # Tabla de edición y visualización
     subtotal = 0
     if st.session_state.items_factura:
         for i, item in enumerate(st.session_state.items_factura):
@@ -460,78 +450,161 @@ def vista_facturacion():
                     st.rerun()
             subtotal += item['monto']
         
-        # Cálculos finales
-        itbis = subtotal * 0.18  # 18% ITBIS estándar
+        st.write("---")
+        
+        col_it1, col_it2 = st.columns([2, 1])
+        with col_it1:
+            aplicar_itbis = st.checkbox("✅ Aplicar ITBIS (18%) a esta factura", value=True)
+        
+        itbis = (subtotal * 0.18) if aplicar_itbis else 0.0
         total_final = subtotal + itbis
 
-        # Resumen Financiero
-        st.write("---")
         cr1, cr2, cr3 = st.columns(3)
         cr1.metric("Sub-Total", f"RD$ {subtotal:,.2f}")
-        cr2.metric("ITBIS (18%)", f"RD$ {itbis:,.2f}")
+        cr2.metric("ITBIS (18%)", f"RD$ {itbis:,.2f}" if aplicar_itbis else "EXENTO")
         cr3.metric("TOTAL A PAGAR", f"RD$ {total_final:,.2f}")
 
-        # --- 3. GENERACIÓN DE DOCUMENTO PDF PROFESIONAL ---
-        if st.button("📄 Generar Factura Oficial y Guardar", type="primary", use_container_width=True):
+        st.divider()
+
+        # --- 3. CONDICIONES DE PAGO ---
+        st.markdown("### 💳 Condiciones de Liquidación")
+        modalidad = st.radio(
+            "Seleccione cómo el cliente pagará esta factura:", 
+            ["Pago Único (Total)", "Avance Inicial y Saldo", "Pago por Etapas (Acuerdo de Trabajo)"], 
+            horizontal=True
+        )
+
+        texto_condiciones = ""
+
+        if modalidad == "Pago Único (Total)":
+            texto_condiciones = f"El cliente se compromete a saldar el monto total de RD$ {total_final:,.2f} contra entrega de los trabajos o documentos correspondientes."
+        elif modalidad == "Avance Inicial y Saldo":
+            avance = st.number_input("Monto del Avance (RD$):", min_value=0.0, max_value=float(total_final), step=1000.0)
+            saldo = total_final - avance
+            st.metric("Balance Restante", f"RD$ {saldo:,.2f}")
+            texto_condiciones = f"Avance Inicial Recibido: RD$ {avance:,.2f} \nBalance Pendiente: RD$ {saldo:,.2f} (Pagadero al concluir el servicio)."
+        elif modalidad == "Pago por Etapas (Acuerdo de Trabajo)":
+            etapas = st.text_area("Hitos de pago:", "1. Inicio de trabajos: 30%\n2. Aprobación Técnica (Mensuras): 40%\n3. Entrega de Título Definitivo: 30%")
+            texto_condiciones = f"Pago estructurado bajo los siguientes hitos:\n{etapas}"
+
+        # --- 4. GENERADOR DE PDF PREMIUM ---
+        if st.button("📄 Generar Factura Oficial", type="primary", use_container_width=True):
             pdf = FPDF()
             pdf.add_page()
             
-            # Encabezado Corporativo
+            # --- DISEÑO DEL MEMBRETE ---
+            # Nombre de la Firma (Izquierda)
+            pdf.set_font("Arial", 'B', 24)
+            pdf.set_text_color(0, 51, 102) # Azul Marino
+            pdf.cell(100, 10, "AboAgrim", ln=False, align='L')
+            
+            # Datos del Presidente (Derecha)
+            pdf.set_font("Arial", '', 10)
+            pdf.set_text_color(100, 100, 100) # Gris elegante
+            pdf.cell(90, 5, "Lic. Jhonny Matos. M.A.", ln=True, align='R')
+            
+            # Subtítulo Firma y Cargo
+            pdf.set_font("Arial", 'B', 10)
+            pdf.set_text_color(184, 134, 11) # Oro/Dorado
+            pdf.cell(100, 5, "ABOGADOS Y AGRIMENSORES", ln=False, align='L')
+            
+            pdf.set_font("Arial", '', 9)
+            pdf.set_text_color(100, 100, 100)
+            pdf.cell(90, 5, "Presidente Fundador", ln=True, align='R')
+            
+            pdf.cell(190, 5, "Santiago de los Caballeros, Rep. Dom.", ln=True, align='R')
+            
+            # Línea divisoria dorada
+            pdf.set_draw_color(184, 134, 11) # Oro
+            pdf.set_line_width(0.8)
+            pdf.line(10, 32, 200, 32)
+            pdf.set_line_width(0.2) # Restaurar grosor
+            pdf.ln(15)
+            
+            # --- TÍTULO DEL DOCUMENTO ---
             pdf.set_font("Arial", 'B', 16)
-            pdf.set_text_color(0, 51, 102) # Azul Marino Institucional
-            pdf.cell(0, 10, "ABOGADOS Y AGRIMENSORES 'ABOAGRIM'", ln=True, align='C')
-            
-            pdf.set_font("Arial", '', 11)
-            pdf.set_text_color(0, 0, 0)
-            pdf.cell(0, 5, "Lic. Jhonny Matos. M.A. | Presidente Fundador", ln=True, align='C')
-            pdf.cell(0, 5, "Santiago de los Caballeros, Rep. Dom.", ln=True, align='C')
-            pdf.ln(10)
-            
-            # Bloque de Información del Cliente
-            pdf.set_fill_color(240, 240, 240)
-            pdf.set_font("Arial", 'B', 12)
-            pdf.cell(0, 10, f" FACTURA DE SERVICIOS - {fecha_factura}", 1, ln=True, fill=True)
-            pdf.set_font("Arial", '', 11)
-            pdf.cell(0, 8, f"Cliente: {exp_sel if exp_sel != 'Seleccione...' else 'Cliente General'}", ln=True)
-            pdf.cell(0, 8, f"Identificación (RNC/Cédula): {identidad}", ln=True)
-            pdf.cell(0, 8, f"Tipo de Contribuyente: Persona {tipo_p}", ln=True)
+            pdf.set_text_color(0, 51, 102)
+            titulo_doc = "ACUERDO DE HONORARIOS Y SERVICIOS" if modalidad == "Pago por Etapas (Acuerdo de Trabajo)" else "FACTURA DE SERVICIOS"
+            pdf.cell(0, 10, titulo_doc, ln=True, align='C')
             pdf.ln(5)
             
-            # Tabla de Items
-            pdf.set_font("Arial", 'B', 11)
-            pdf.cell(140, 10, "Descripción del Servicio", 1, 0, 'C', fill=True)
-            pdf.cell(50, 10, "Monto (RD$)", 1, 1, 'C', fill=True)
+            # --- CAJA DE DATOS DEL CLIENTE ---
+            pdf.set_fill_color(245, 245, 250) # Fondo azul ultra claro
+            pdf.set_draw_color(200, 200, 200) # Borde gris claro
+            pdf.set_font("Arial", 'B', 10)
+            pdf.set_text_color(0, 0, 0)
             
-            pdf.set_font("Arial", '', 11)
-            for item in st.session_state.items_factura:
-                pdf.cell(140, 10, item['desc'], 1)
-                pdf.cell(50, 10, f"{item['monto']:,.2f}", 1, 1, 'R')
+            cliente_nombre = exp_sel.split(" - ")[1] if exp_sel != "Seleccione..." else "Cliente General"
+            codigo_exp = exp_sel.split(" - ")[0] if exp_sel != "Seleccione..." else "N/A"
             
-            # Totales
-            pdf.ln(2)
-            pdf.set_font("Arial", 'B', 11)
-            pdf.cell(140, 10, "SUB-TOTAL", 0, 0, 'R')
-            pdf.cell(50, 10, f"RD$ {subtotal:,.2f}", 1, 1, 'R')
-            pdf.cell(140, 10, "ITBIS (18%)", 0, 0, 'R')
-            pdf.cell(50, 10, f"RD$ {itbis:,.2f}", 1, 1, 'R')
-            pdf.cell(140, 10, "TOTAL GENERAL", 0, 0, 'R')
+            pdf.cell(190, 8, " INFORMACIÓN DEL CLIENTE Y EXPEDIENTE", border=1, ln=True, fill=True)
+            pdf.set_font("Arial", '', 10)
+            pdf.cell(95, 8, f" Cliente: {cliente_nombre}", border='L,B', ln=False)
+            pdf.cell(95, 8, f" Fecha de Emisión: {fecha_factura.strftime('%d/%m/%Y')}", border='R,B', ln=True)
+            pdf.cell(95, 8, f" RNC / Cédula: {identidad} (Persona {tipo_p})", border='L,B', ln=False)
+            pdf.cell(95, 8, f" Expediente Vinculado: {codigo_exp}", border='R,B', ln=True)
+            pdf.ln(8)
+            
+            # --- TABLA DE SERVICIOS ---
+            # Encabezado de la tabla (Azul Marino con letras blancas)
             pdf.set_fill_color(0, 51, 102)
             pdf.set_text_color(255, 255, 255)
-            pdf.cell(50, 10, f"RD$ {total_final:,.2f}", 1, 1, 'R', fill=True)
+            pdf.set_font("Arial", 'B', 11)
+            pdf.cell(140, 10, "Descripción del Servicio", border=1, ln=False, align='C', fill=True)
+            pdf.cell(50, 10, "Monto (RD$)", border=1, ln=True, align='C', fill=True)
             
-            # Preparar descarga
+            # Filas de la tabla
+            pdf.set_text_color(0, 0, 0)
+            pdf.set_font("Arial", '', 11)
+            for item in st.session_state.items_factura:
+                pdf.cell(140, 10, f" {item['desc']}", border=1)
+                pdf.cell(50, 10, f"{item['monto']:,.2f} ", border=1, ln=True, align='R')
+            
+            # --- ZONA DE TOTALES ---
+            pdf.set_draw_color(0, 51, 102)
+            pdf.ln(2)
+            pdf.set_font("Arial", 'B', 10)
+            
+            # Subtotal
+            pdf.cell(140, 8, "SUB-TOTAL   ", ln=False, align='R')
+            pdf.cell(50, 8, f"RD$ {subtotal:,.2f} ", border=1, ln=True, align='R')
+            
+            # ITBIS (Opcional)
+            if aplicar_itbis:
+                pdf.cell(140, 8, "ITBIS (18%)   ", ln=False, align='R')
+                pdf.cell(50, 8, f"RD$ {itbis:,.2f} ", border=1, ln=True, align='R')
+            
+            # Total Final (Destacado)
+            pdf.set_fill_color(184, 134, 11) # Fondo Oro
+            pdf.set_text_color(255, 255, 255)
+            pdf.cell(140, 10, "TOTAL GENERAL   ", ln=False, align='R')
+            pdf.cell(50, 10, f"RD$ {total_final:,.2f} ", border=1, ln=True, align='R', fill=True)
+            
+            # --- CONDICIONES DE PAGO (CAJA INFERIOR) ---
+            pdf.ln(15)
+            pdf.set_text_color(0, 51, 102)
+            pdf.set_font("Arial", 'B', 11)
+            pdf.cell(0, 8, "TÉRMINOS Y CONDICIONES DE PAGO", ln=True)
+            
+            pdf.set_draw_color(184, 134, 11)
+            pdf.set_text_color(50, 50, 50)
+            pdf.set_font("Arial", '', 10)
+            # Dibujamos un rectángulo virtual usando multi_cell con bordes
+            pdf.multi_cell(190, 6, texto_condiciones, border=1, align='L')
+            
+            # --- PIE DE PÁGINA ---
+            pdf.set_y(-30) # Posición a 3 cm del final
+            pdf.set_font("Arial", 'I', 9)
+            pdf.set_text_color(150, 150, 150)
+            pdf.cell(0, 5, "Este documento tiene validez legal y administrativa para los fines correspondientes.", ln=True, align='C')
+            pdf.cell(0, 5, "Gracias por confiar sus procesos a AboAgrim.", ln=True, align='C')
+            
+            # --- EXPORTAR ---
             pdf_bytes = pdf.output(dest='S').encode('latin-1')
-            
-            st.download_button(
-                label="📥 Descargar Factura PDF para el Cliente",
-                data=pdf_bytes,
-                file_name=f"Factura_AboAgrim_{datetime.now().strftime('%Y%m%d')}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-            st.success("✅ Documento generado. Se ha guardado una copia en el historial del expediente.")
+            st.download_button("📥 Descargar Factura (PDF Premium)", pdf_bytes, f"AboAgrim_Factura_{codigo_exp}_{datetime.now().strftime('%Y%m%d')}.pdf", "application/pdf", use_container_width=True)
+            st.balloons()
     else:
-        st.info("Agregue servicios en el cuadro superior para generar el balance de la factura.")
+        st.info("Agregue servicios para facturar.")
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
