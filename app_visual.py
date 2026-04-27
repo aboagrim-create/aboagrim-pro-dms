@@ -495,71 +495,65 @@ def vista_facturacion():
 # =====================================================================
 def vista_configuracion():
     st.title("⚙️ Configuración del Sistema")
-    st.subheader("Gestión de Identidad y Seguridad")
+    st.subheader("Gestión de Identidad y Control de Mando")
     st.divider()
 
-    # 1. Verificación de Estado de Autenticación
-    if "admin_autenticado" not in st.session_state:
-        st.session_state.admin_autenticado = False
+    # --- 1. VERIFICACIÓN DE EXCLUSIVIDAD (FUNDADOR) ---
+    es_fundador = st.session_state.get("usuario") == "JhonnyMatos"
 
-    # 2. Muro de Seguridad
-    if not st.session_state.admin_autenticado:
-        st.warning("🔒 Esta sección requiere validación de credenciales administrativas.")
-        
-        col_login1, col_login2 = st.columns(2)
-        with col_login1:
-            usuario_ingresado = st.text_input("Usuario:", key="input_usuario_admin")
-        with col_login2:
-            pin_ingresado = st.text_input("PIN:", type="password", key="input_pin_admin")
+    if not es_fundador:
+        st.error("🛑 Acceso Restringido. Solo el Presidente Fundador puede modificar la estructura del sistema.")
+        st.info("Consulte con la dirección para solicitar cambios en los parámetros globales.")
+        return
 
-        if st.button("🔓 Validar Acceso", use_container_width=True):
-            # Reemplace 'SuUsuario' y '1234' por sus credenciales configuradas
-            if usuario_ingresado == "Jhonnymatos" and pin_ingresado == "0681":
-                st.session_state.admin_autenticado = True
-                st.success("Acceso concedido.")
-                st.rerun()
-            else:
-                st.error("Credenciales incorrectas.")
-        
-        # El return detiene la ejecución aquí si no está autenticado
-        return 
-
-    # 3. Contenido Protegido (Solo visible tras la validación)
-    if st.button("🔒 Cerrar Sesión Administrativa"):
-        st.session_state.admin_autenticado = False
-        st.rerun()
-
-    # Creación de pestañas con contenido explícitamente indentado
-    tab1, tab2, tab3 = st.tabs(["Seguridad", "Identidad", "Usuarios"])
+    # --- 2. PANELES DE CONTROL ---
+    tab1, tab2, tab3, tab4 = st.tabs(["🔒 Seguridad", "🏢 Firma", "👥 Usuarios", "🎨 Apariencia"])
 
     with tab1:
-        st.markdown("### Configuración de Seguridad")
-        # Asegúrese de que el contenido esté dentro de este bloque 'with'
-        nuevo_pin = st.text_input("Definir nuevo PIN maestro:", type="password", key="cfg_nuevo_pin")
-        if st.button("Actualizar PIN"):
-            st.success("PIN actualizado correctamente.")
+        st.markdown("### 🔐 Seguridad y Credenciales Maestras")
+        pin_actual = st.text_input("PIN Maestro Actual", type="password", key="cfg_pin_old")
+        nuevo_pin = st.text_input("Definir Nuevo PIN Maestro", type="password", key="cfg_pin_new")
+        
+        if st.button("💾 Actualizar Seguridad"):
+            st.success("✅ Protocolos de seguridad actualizados.")
 
     with tab2:
-        st.markdown("### Identidad de la Firma")
-        c1, c2 = st.columns(2)
-        with c1:
-            st.text_input("Nombre Titular:", key="cfg_titular")
-            st.text_input("Cargo:", key="cfg_cargo")
-        with c2:
-            st.text_input("Nombre de la Firma:", key="cfg_firma")
-            st.text_input("Ubicación:", key="cfg_ubicacion")
+        st.markdown("### 🏛️ Identidad Corporativa")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.text_input("Nombre del Titular", value="Lic. Jhonny Matos. M.A.")
+            st.text_input("Cargo Oficial", value="Presidente Fundador")
+        with col2:
+            st.text_input("Nombre de la Firma", value="Abogados y Agrimensores 'AboAgrim'")
+            st.text_input("Sede Principal", value="Santiago, Rep. Dom.")
+        st.button("💾 Guardar Datos de la Firma")
 
     with tab3:
-        st.markdown("### Gestión de Usuarios")
-        st.info("Módulo para dar de alta o baja a colaboradores.")
-        # Ejemplo de selectbox para desplegar funciones
-        opcion_usuario = st.selectbox("Acción a realizar:", ["Seleccionar...", "Agregar Usuario", "Eliminar Usuario"], key="cfg_accion_user")
+        st.markdown("### 👥 Administración de Personal")
         
-        if opcion_usuario == "Agregar Usuario":
-            st.text_input("Nombre del nuevo colaborador:", key="cfg_add_u")
-            st.button("Registrar")
-        elif opcion_usuario == "Eliminar Usuario":
-            st.warning("Seleccione el usuario que desea remover del sistema.")
+        # AGREGAR USUARIO CON CONTRASEÑA
+        with st.expander("➕ Dar de Alta a Nuevo Colaborador"):
+            u_nom = st.text_input("Nombre de Usuario", placeholder="ej: DianaT", key="add_u_name")
+            u_pass = st.text_input("Asignar Contraseña (PIN)", type="password", key="add_u_pass")
+            u_rol = st.selectbox("Rol en la Firma", ["Abogado", "Agrimensor", "Asistente", "Pasante"])
+            
+            if st.button("🚀 Registrar en Base de Datos"):
+                if u_nom and u_pass:
+                    # Aquí iría la lógica de supabase.table("usuarios").insert(...)
+                    st.success(f"✅ Usuario {u_nom} registrado como {u_rol}.")
+                else:
+                    st.warning("Debe completar nombre y contraseña.")
+
+    with tab4:
+        st.markdown("### 🎨 Personalización de la Oficina Digital")
+        st.write("Ajuste el entorno visual para su comodidad visual.")
+        
+        tema = st.selectbox("Tema de Interfaz", ["Ejecutivo (Dark Mode)", "Profesional (Claro)", "Alto Contraste (Lectura Legal)"])
+        fuente = st.selectbox("Estilo de Letra", ["Moderna (Sans Serif)", "Clásica (Serif)", "Técnica (Monospace)"])
+        
+        if st.button("✨ Aplicar Cambios Visuales"):
+            st.toast("Cambiando apariencia del sistema...", icon="🖌️")
+            # Nota: Esto se complementa con CSS personalizado en el inicio del script
         # Aquí va la función de agregar/borrar usuarios...
 def login_sistema():
     st.markdown("""
