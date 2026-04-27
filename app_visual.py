@@ -797,7 +797,7 @@ def vista_archivo_digital():
         st.success(f"📂 Carpeta Abierta: **{expediente_seleccionado}**")
 
     except Exception as e:
-        st.error("Error de conexión con la base de datos de expedientes.")
+        st.error(f"Detalle técnico del error: {e}")
         return
 
     st.write("---")
