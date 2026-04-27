@@ -545,7 +545,7 @@ def vista_configuracion():
         with col_acc2:
             p_pres = st.text_input("PIN de Seguridad:", type="password", key="p_login_cfg_final")
         
-        iif st.button("🔓 Validar Identidad y Entrar", use_container_width=True, type="primary"):
+        if st.button("🔓 Validar Identidad y Entrar", use_container_width=True, type="primary"):
             if u_pres == "JhonnyMatos" and p_pres == "1234": 
                 # ESTO ES LO QUE LE DEVUELVE EL ACCESO A TODO:
                 st.session_state.admin_autenticado = True
