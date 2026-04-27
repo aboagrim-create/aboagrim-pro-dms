@@ -900,7 +900,6 @@ def vista_plantillas_auto():
     st.subheader("Módulo Dinámico de la Jurisdicción Inmobiliaria")
 
     # --- INICIALIZACIÓN DE MEMORIA DINÁMICA ---
-    # Esto le enseña al sistema a "recordar" cuántos campos extra queremos
     if 'cant_extras' not in st.session_state: st.session_state.cant_extras = 0
     if 'cant_profesionales' not in st.session_state: st.session_state.cant_profesionales = 0
     if 'cant_apoderados' not in st.session_state: st.session_state.cant_apoderados = 0
@@ -1023,7 +1022,6 @@ def vista_plantillas_auto():
                         "sede_jurisdiccional": ji_tribunal_loc,
                         "firma_presidente": "Lic. Jhonny Matos. M.A.",
                         "cargo_presidente": "Presidente Fundador AboAgrim",
-                        # Aquí entran sus datos dinámicos:
                         **datos_extras_dict,
                         "profesionales": profesionales_lista,
                         "apoderados": apoderados_lista
@@ -1043,10 +1041,7 @@ def vista_plantillas_auto():
                 except Exception as e:
                     st.error(f"❌ Error al fabricar. Verifique que la plantilla exista. Detalle: {e}")
 
-    except Exception as e:
-        st.error(f"❌ Error crítico en el módulo: {e}")
-
-# ==========================================
+        # ==========================================
         # 6. MÓDULO DE MANTENIMIENTO DE PLANTILLAS
         # ==========================================
         st.write("---")
@@ -1054,6 +1049,7 @@ def vista_plantillas_auto():
             st.info("Desde aquí puede subir nuevas plantillas o actualizar las existentes.")
             
             maint_col1, maint_col2 = st.columns(2)
+            import os # Importación segura para la gestión de archivos
             
             with maint_col1:
                 st.markdown("**📤 Subir o Actualizar**")
@@ -1064,7 +1060,7 @@ def vista_plantillas_auto():
                 
                 if st.button("💾 Guardar Plantilla en Servidor"):
                     if archivo_subido:
-                        import os
+                        os.makedirs(f"plantillas_maestras/{destino}", exist_ok=True)
                         ruta_destino = f"plantillas_maestras/{destino}/{archivo_subido.name}"
                         with open(ruta_destino, "wb") as f:
                             f.write(archivo_subido.getbuffer())
@@ -1075,8 +1071,6 @@ def vista_plantillas_auto():
 
             with maint_col2:
                 st.markdown("**🗑️ Borrar Plantilla**")
-                import os
-                # Listamos los archivos actuales para poder elegir cuál borrar
                 carpeta_borrar = st.selectbox("Carpeta para limpieza:", 
                                             ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"],
                                             key="del_folder")
@@ -1091,6 +1085,11 @@ def vista_plantillas_auto():
                         os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
                         st.error(f"🗑️ El archivo '{archivo_a_borrar}' ha sido eliminado.")
                         st.rerun()
+
+    except Exception as e:
+        st.error(f"❌ Error crítico en el módulo: {e}")
+
+# Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
 # Aquí debajo empieza su def generar_documento_word...
 
 def generar_documento_word(nombre_plantilla, diccionario_datos):
