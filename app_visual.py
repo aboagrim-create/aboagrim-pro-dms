@@ -900,6 +900,8 @@ with st.sidebar:
     if st.button("🚪 Cerrar Sesión"):
         st.session_state.autenticado_global = False
         st.rerun()
+        
+        
 def vista_plantillas_auto():
     st.title("📄 Fábrica de Documentos AboAgrim")
     st.write("Seleccione un expediente existente para generar sus documentos legales al instante.")
