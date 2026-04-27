@@ -466,66 +466,128 @@ def vista_facturacion():
     st.title("💵 Facturación y Cobros Mágicos")
     st.subheader("Control Financiero | AboAgrim Pro")
     
-    # --- MOTOR DE PDF CON OBSERVACIONES Y BANCOS ---
+    # --- MOTOR DE PDF ÉLITE 2026 ---
     def generar_pdf_factura(datos, num_fac):
         pdf = FPDF()
         pdf.add_page()
         
-        # Encabezado Institucional
-        pdf.set_font("Arial", "B", 22)
-        pdf.set_text_color(11, 15, 25) # Azul noche
-        pdf.cell(0, 10, "ABOAGRIM", ln=True, align="C")
-        pdf.set_font("Arial", "", 10)
-        pdf.set_text_color(100, 100, 100)
-        pdf.cell(0, 5, "DESPACHO LEGAL Y AGRIMENSURA", ln=True, align="C")
-        pdf.set_font("Arial", "B", 11)
-        pdf.set_text_color(0, 0, 0)
-        pdf.cell(0, 7, "Lic. Jhonny Matos | Presidente Fundador", ln=True, align="C")
-        pdf.ln(10)
+        # Paleta de Colores Corporativos
+        AZUL_OSCURO = (11, 15, 25)
+        DORADO = (212, 175, 55)
+        TEXTO_GRIS = (100, 116, 139)
+        ROJO_ELEGANTE = (220, 38, 38)
+        GRIS_CLARO = (248, 250, 252)
         
-        pdf.line(10, 45, 200, 45)
-        pdf.ln(5)
+        # 1. Barra superior decorativa
+        pdf.set_fill_color(*AZUL_OSCURO)
+        pdf.rect(0, 0, 210, 12, 'F')
+        pdf.ln(15)
         
-        # Datos de la Factura
-        pdf.set_font("Arial", "B", 12)
-        pdf.cell(100, 10, f"Factura No: {num_fac}")
-        pdf.cell(0, 10, f"Fecha: {datos['fecha']}", ln=True, align="R")
-        pdf.ln(5)
+        # 2. Encabezado a dos columnas (Izquierda: Oficina | Derecha: Datos Factura)
+        pdf.set_font("Arial", "B", 26)
+        pdf.set_text_color(*AZUL_OSCURO)
+        pdf.cell(110, 10, "ABOAGRIM", ln=0)
         
-        # Detalles del Cliente y Concepto
-        pdf.set_fill_color(245, 245, 245)
-        pdf.set_font("Arial", "B", 11)
-        pdf.cell(0, 10, f" Expediente: {datos['expediente']}", ln=True, fill=True)
-        pdf.set_font("Arial", "", 11)
-        pdf.multi_cell(0, 8, f"Concepto: {datos['concepto']}")
+        pdf.set_font("Arial", "B", 18)
+        pdf.set_text_color(*DORADO)
+        pdf.cell(0, 10, "FACTURA", ln=1, align="R")
         
-        # Observaciones (Si existen)
-        if datos['observaciones']:
-            pdf.ln(5)
-            pdf.set_font("Arial", "I", 10)
-            pdf.set_text_color(80, 80, 80)
-            pdf.multi_cell(0, 6, f"Observaciones: {datos['observaciones']}")
-            pdf.set_text_color(0, 0, 0)
-        
-        pdf.ln(10)
-        
-        # Tabla de Montos
-        pdf.set_font("Arial", "B", 14)
-        pdf.cell(100, 12, "MONTO RECIBIDO:")
-        pdf.cell(0, 12, f"RD$ {datos['pago']:,.2f}", ln=True, align="R")
-        
-        pdf.set_text_color(200, 0, 0)
-        pdf.cell(100, 12, "BALANCE PENDIENTE:")
-        pdf.cell(0, 12, f"RD$ {datos['resta']:,.2f}", ln=True, align="R")
-        
-        # NOTA BANCARIA (Pie de página del PDF)
-        pdf.ln(20)
         pdf.set_font("Arial", "B", 10)
-        pdf.set_text_color(11, 15, 25)
-        pdf.cell(0, 6, "CUENTAS BANCARIAS PARA DEPÓSITO (AHORROS):", ln=True)
+        pdf.set_text_color(*DORADO)
+        pdf.cell(110, 5, "DESPACHO LEGAL Y AGRIMENSURA", ln=0)
+        
+        pdf.set_font("Arial", "B", 11)
+        pdf.set_text_color(*TEXTO_GRIS)
+        pdf.cell(0, 5, f"No. {num_fac}", ln=1, align="R")
+        
         pdf.set_font("Arial", "", 10)
-        pdf.cell(0, 6, "Banco de Reservas: 9601369253", ln=True)
-        pdf.cell(0, 6, "Banco BHD: 08010850011", ln=True)
+        pdf.cell(110, 5, "Lic. Jhonny Matos | Presidente Fundador", ln=0)
+        pdf.cell(0, 5, f"Fecha: {datos['fecha']}", ln=1, align="R")
+        
+        pdf.ln(10)
+        
+        # 3. Separador Superior
+        pdf.set_draw_color(*DORADO)
+        pdf.set_line_width(0.6)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+        pdf.set_line_width(0.2) # Resetear grosor
+        pdf.ln(8)
+        
+        # 4. Datos del Cliente y Servicio
+        pdf.set_font("Arial", "B", 9)
+        pdf.set_text_color(*TEXTO_GRIS)
+        pdf.cell(0, 5, "FACTURADO A / EXPEDIENTE:", ln=1)
+        
+        pdf.set_font("Arial", "B", 14)
+        pdf.set_text_color(*AZUL_OSCURO)
+        pdf.cell(0, 8, f"{datos['expediente']}", ln=1)
+        pdf.ln(2)
+        
+        pdf.set_font("Arial", "B", 9)
+        pdf.set_text_color(*TEXTO_GRIS)
+        pdf.cell(0, 5, "CONCEPTO DEL SERVICIO:", ln=1)
+        
+        pdf.set_font("Arial", "", 12)
+        pdf.set_text_color(0, 0, 0)
+        pdf.multi_cell(0, 7, f"{datos['concepto']}")
+        
+        if datos['observaciones']:
+            pdf.ln(3)
+            pdf.set_font("Arial", "I", 10)
+            pdf.set_text_color(*TEXTO_GRIS)
+            pdf.multi_cell(0, 5, f"Nota: {datos['observaciones']}")
+            
+        pdf.ln(8)
+        
+        # Separador Sutil
+        pdf.set_draw_color(226, 232, 240)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+        pdf.ln(10)
+        
+        # 5. Desglose Financiero (Fondo oscuro para cabecera de montos)
+        pdf.set_fill_color(*AZUL_OSCURO)
+        pdf.set_text_color(255, 255, 255)
+        pdf.set_font("Arial", "B", 11)
+        pdf.cell(95, 10, "  MODALIDAD Y VÍA DE PAGO", border=0, fill=True)
+        pdf.cell(95, 10, "IMPORTES  ", border=0, fill=True, align="R", ln=1)
+        pdf.ln(4)
+        
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_font("Arial", "", 11)
+        pdf.cell(95, 10, f"  Tipo: {datos['tipo']}")
+        
+        pdf.set_font("Arial", "B", 14)
+        pdf.cell(95, 10, f"MONTO RECIBIDO: RD$ {datos['pago']:,.2f}  ", ln=1, align="R")
+        
+        pdf.set_font("Arial", "", 11)
+        pdf.cell(95, 10, f"  Vía: {datos['metodo']}")
+        
+        pdf.set_text_color(*ROJO_ELEGANTE)
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(95, 10, f"BALANCE PENDIENTE: RD$ {datos['resta']:,.2f}  ", ln=1, align="R")
+        pdf.ln(10)
+        
+        # 6. Pie de Página - Bancos (En un recuadro elegante)
+        pdf.set_fill_color(*GRIS_CLARO)
+        pdf.rect(10, pdf.get_y(), 190, 25, 'F')
+        
+        pdf.set_y(pdf.get_y() + 4)
+        pdf.set_x(15)
+        pdf.set_font("Arial", "B", 10)
+        pdf.set_text_color(*AZUL_OSCURO)
+        pdf.cell(0, 5, "CUENTAS BANCARIAS PARA DEPÓSITO (AHORROS):", ln=1)
+        
+        pdf.set_x(15)
+        pdf.set_font("Arial", "", 10)
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(90, 6, "Banco de Reservas: 9601369253")
+        pdf.cell(90, 6, "Banco BHD: 08010850011", ln=1)
+        
+        # 7. Sello de Sistema
+        pdf.set_y(280)
+        pdf.set_font("Arial", "I", 8)
+        pdf.set_text_color(*TEXTO_GRIS)
+        pdf.cell(0, 5, "Documento generado digitalmente por AboAgrim Pro DMS - 2026", align="C")
         
         return bytes(pdf.output())
 
@@ -549,9 +611,7 @@ def vista_facturacion():
                 metodo = colB.selectbox("Vía:", ["Transferencia", "Efectivo", "Cheque"])
                 
                 concepto = st.text_input("Concepto:")
-                
-                # NUEVA CASILLA: OBSERVACIONES
-                obs = st.text_area("Observaciones Internas / Notas al Cliente:", placeholder="Ej: Pago sujeto a validación técnica...")
+                obs = st.text_area("Observaciones Internas / Notas al Cliente:", placeholder="Ej: Pago sujeto a validación...")
                 
                 st.divider()
                 col_m1, col_m2 = st.columns(2)
@@ -572,7 +632,7 @@ def vista_facturacion():
                 d = st.session_state['datos_fac']
                 n_f = f"FAC-{datetime.now().strftime('%y%m%H%M')}"
                 
-                # --- VISTA PREVIA PROFESIONAL ---
+                # --- VISTA PREVIA PROFESIONAL EN PANTALLA ---
                 with st.container(border=True):
                     st.markdown("<h2 style='text-align: center; color: #d4af37;'>⚖️ AboAgrim</h2>", unsafe_allow_html=True)
                     st.markdown("<p style='text-align: center; font-weight: bold;'>Lic. Jhonny Matos | Presidente Fundador</p>", unsafe_allow_html=True)
@@ -587,22 +647,18 @@ def vista_facturacion():
                     st.markdown(f"### 💰 RECIBIDO: RD$ {d['pago']:,.2f}")
                     st.markdown(f"#### 🔴 PENDIENTE: RD$ {d['resta']:,.2f}")
                     
-                    # NOTA DE BANCOS EN PANTALLA
-                    with st.expander("🏦 Datos para Depósito", expanded=True):
-                        st.markdown("""
-                        **Cuentas de Ahorros:**
-                        * **Banreservas:** 9601369253
-                        * **BHD:** 08010850011
-                        """)
+                    with st.expander("🏦 Datos para Depósito", expanded=False):
+                        st.markdown("**Banreservas:** 9601369253 | **BHD:** 08010850011")
                 
                 col_wa, col_dl = st.columns(2)
                 
                 # Descarga PDF
                 pdf_bytes = generar_pdf_factura(d, n_f)
-                col_dl.download_button("📥 Descargar Factura PDF", data=pdf_bytes, file_name=f"Factura_{n_f}.pdf", mime="application/pdf", use_container_width=True)
+                nombre_limpio = d['expediente'].split()[0].replace("-", "_")
+                col_dl.download_button("📥 Descargar PDF Élite", data=pdf_bytes, file_name=f"AboAgrim_Factura_{nombre_limpio}.pdf", mime="application/pdf", use_container_width=True)
                 
                 # WhatsApp
-                msg = f"Confirmamos el pago de *RD$ {d['pago']:,.2f}*. Pendiente: *RD$ {d['resta']:,.2f}*. \n\n*Cuentas:* \nBanreservas: 9601369253 \nBHD: 08010850011"
+                msg = f"Saludos. Confirmamos su pago de *RD$ {d['pago']:,.2f}*. Su balance pendiente es de *RD$ {d['resta']:,.2f}*. \n\n*Cuentas (Ahorros):* \nBanreservas: 9601369253 \nBHD: 08010850011"
                 col_wa.link_button("🟢 Enviar WhatsApp", f"https://wa.me/?text={msg.replace(' ', '%20')}", use_container_width=True)
 def vista_configuracion():
     st.title("⚙️ Panel de Control Maestro")
