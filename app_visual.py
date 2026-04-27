@@ -301,14 +301,16 @@ from datetime import datetime
 
 from datetime import datetime, timedelta
 
+from datetime import datetime, timedelta
+
 def vista_alertas_plazos():
     st.title("📅 Alertas y Plazos Legales (Ley 108-05)")
     st.subheader("Control Normativo JI 2026 | AboAgrim Pro")
     st.divider()
 
     try:
-        # Traemos la data necesaria del Registro Maestro
-        res = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, tipo_acto, f_audiencia, f_creacion, jurisdiccion").execute()
+        # Cambiamos f_creacion por fecha_creacion para que coincida con su BD
+        res = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, tipo_acto, f_audiencia, fecha_creacion, jurisdiccion").execute()
         
         if not res.data:
             st.info("✅ Sin expedientes activos para monitorear.")
@@ -328,19 +330,21 @@ def vista_alertas_plazos():
             st.caption("Control según Reglamento General de Mensuras Catastrales.")
             
             for caso in res.data:
-                # Plazo de Autorización (60 días según normativa para ejecutar trabajos)
-                f_ini = datetime.strptime(caso['f_creacion'][:10], '%Y-%m-%d').date()
-                vencimiento_aut = f_ini + timedelta(days=60)
-                dias_restantes = (vencimiento_aut - hoy).days
+                # Validamos que exista la fecha de creación antes de calcular
+                if caso.get('fecha_creacion'):
+                    # Cortamos la fecha por si viene con horas incluidas [:10]
+                    f_ini = datetime.strptime(caso['fecha_creacion'][:10], '%Y-%m-%d').date()
+                    vencimiento_aut = f_ini + timedelta(days=60)
+                    dias_restantes = (vencimiento_aut - hoy).days
 
-                if dias_restantes <= 15:
-                    with st.container(border=True):
-                        c1, c2 = st.columns([3, 1])
-                        c1.error(f"🔴 **EXP: {caso['expediente']}** - {caso['nombre_propietario']}")
-                        c1.write(f"Plazo fatal para depositar Mensura (60 días).")
-                        c2.metric("Días Restantes", dias_restantes)
-                        if st.button("Extender Plazo", key=f"ext_{caso['expediente']}"):
-                            st.toast("Solicitud de prórroga generada...")
+                    if dias_restantes <= 15:
+                        with st.container(border=True):
+                            c1, c2 = st.columns([3, 1])
+                            c1.error(f"🔴 **EXP: {caso['expediente']}** - {caso['nombre_propietario']}")
+                            c1.write(f"Plazo fatal para depositar Mensura (60 días).")
+                            c2.metric("Días Restantes", dias_restantes)
+                            if st.button("Extender Plazo", key=f"ext_{caso['expediente']}"):
+                                st.toast("Solicitud de prórroga generada...")
 
         with tab_judicial:
             st.markdown("### 🏛️ Audiencias y Recursos")
@@ -350,14 +354,15 @@ def vista_alertas_plazos():
                 if caso.get('f_audiencia'):
                     f_aud = datetime.strptime(caso['f_audiencia'], '%Y-%m-%d').date()
                     
-                    # Alerta de Audiencia
                     dias_aud = (f_aud - hoy).days
-                    if dias_aud <= 7:
+                    if dias_aud < 0:
+                        st.error(f"🔴 **AUDIENCIA PASADA:** Exp {caso['expediente']} hace {abs(dias_aud)} días.")
+                    elif dias_aud <= 7:
                         st.error(f"⚠️ **AUDIENCIA INMINENTE:** Exp {caso['expediente']} en {dias_aud} días.")
-                    
-                    # Plazo de Apelación (30 días desde notificación de sentencia)
-                    # Aquí el sistema asume 30 días si hubiera una fecha de sentencia cargada
-                    st.info(f"ℹ️ **Recordatorio:** El plazo de apelación en Jurisdicción Original es de 30 días.")
+                    elif dias_aud <= 30:
+                        st.warning(f"🟡 **PRÓXIMA AUDIENCIA:** Exp {caso['expediente']} en {dias_aud} días.")
+                        
+            st.info(f"ℹ️ **Recordatorio:** El plazo de apelación en Jurisdicción Original es de 30 días a partir de la notificación de la sentencia.")
 
         with tab_admin:
             st.markdown("### 📜 Recursos Administrativos y Registro")
