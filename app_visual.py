@@ -7,6 +7,41 @@ import zipfile
 import io
 from docxtpl import DocxTemplate
 # ... arriba están los import ...
+# =========================================================
+# MOTOR DE ESTILOS VISUALES (Se ejecuta siempre al inicio)
+# =========================================================
+if "tema_color" in st.session_state:
+    # Definimos si el fondo es oscuro o claro
+    bg_color = "#0e1117" if st.session_state["tema_fondo"] == "Oscuro Profundo" else "#ffffff"
+    text_color = "#ffffff" if st.session_state["tema_fondo"] == "Oscuro Profundo" else "#000000"
+    
+    # Inyectamos el diseño personalizado en toda la aplicación
+    custom_css = f"""
+    <style>
+        /* Cambiar color de fondo principal y texto */
+        .stApp {{
+            background-color: {bg_color};
+            color: {text_color};
+            font-family: {st.session_state['tema_fuente']} !important;
+        }}
+        /* Cambiar el color de todos los Títulos */
+        h1, h2, h3, h4, h5, h6 {{
+            color: {st.session_state['tema_color']} !important;
+            font-family: {st.session_state['tema_fuente']} !important;
+        }}
+        /* Cambiar el color de los botones principales */
+        .stButton>button[kind="primary"] {{
+            background-color: {st.session_state['tema_color']};
+            border-color: {st.session_state['tema_color']};
+            color: white;
+        }}
+        /* Cambiar el color del texto en los inputs si el fondo es blanco */
+        .stTextInput>div>div>input {{
+            color: {text_color};
+        }}
+    </style>
+    """
+    st.markdown(custom_css, unsafe_allow_html=True)
 # ==========================================
 # MOTOR DE GENERACIÓN DE DOCUMENTOS WORD
 # ==========================================
@@ -559,18 +594,36 @@ def vista_configuracion():
                 st.success("Usuario registrado exitosamente.")
 
     with tab4:
-        st.markdown("### Personalización de la Oficina Digital")
+        st.markdown("### 🎨 Personalización de la Oficina Digital")
         st.write("Ajuste la apariencia visual de su entorno de trabajo.")
         
+        # Leemos los valores guardados o usamos los de por defecto
+        color_actual = st.session_state.get("tema_color", "#003366")
+        fuente_actual = st.session_state.get("tema_fuente", "sans-serif")
+        fondo_actual = st.session_state.get("tema_fondo", "Oscuro Profundo")
+
         col_v1, col_v2 = st.columns(2)
         with col_v1:
-            st.color_picker("Color de Acento (Botones y Títulos)", "#003366")
-            st.selectbox("Tipo de Letra (Fuente)", ["Google Sans", "Roboto", "Lexend", "Arial"])
+            nuevo_color = st.color_picker("Color de Acento (Botones y Títulos)", color_actual)
+            nueva_fuente = st.selectbox(
+                "Tipo de Letra", 
+                ["sans-serif", "serif", "monospace"], 
+                index=["sans-serif", "serif", "monospace"].index(fuente_actual) if fuente_actual in ["sans-serif", "serif", "monospace"] else 0
+            )
         with col_v2:
-            st.selectbox("Fondo de Interfaz", ["Oscuro Profundo", "Gris Profesional", "Blanco Limpio"])
-            st.slider("Intensidad de Brillo", 0, 100, 50)
+            nuevo_fondo = st.selectbox(
+                "Fondo de Interfaz", 
+                ["Oscuro Profundo", "Blanco Limpio"], 
+                index=0 if fondo_actual == "Oscuro Profundo" else 1
+            )
         
-        st.button("Aplicar Cambios Estéticos")
+        if st.button("✨ Aplicar Cambios Estéticos", type="primary"):
+            # Guardamos las decisiones en la memoria del sistema
+            st.session_state["tema_color"] = nuevo_color
+            st.session_state["tema_fuente"] = nueva_fuente
+            st.session_state["tema_fondo"] = nuevo_fondo
+            st.success("✅ Cambios aplicados. Repintando la oficina...")
+            st.rerun() # Esto recarga la página para aplicar el color
             # Nota: Esto se complementa con CSS personalizado en el inicio del script
         # Aquí va la función de agregar/borrar usuarios...
 def login_sistema():
