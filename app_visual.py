@@ -1027,7 +1027,7 @@ if btn_guardar:
                         supabase.table("expedientes_maestros").update({"url_drive": url_carpeta}).eq("id", id_generado).execute()
                         
                         id_drive_carpeta = url_carpeta.split('/')[-1]
-                        archivo_resumen = generar_documento_word("plantillas_maestras/0_sistema/caratula_maestra.docx", datos_resumen)
+                        archivo_resumen = generar_documento_word("0_sistema/caratula_maestra.docx", datos_resumen)
                         
                         if archivo_resumen:
                             subir_archivo_a_drive(archivo_resumen, f"00_CARATULA_{nombre_cliente}.docx", id_drive_carpeta)
