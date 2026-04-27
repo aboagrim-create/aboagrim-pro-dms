@@ -1052,7 +1052,7 @@ def vista_plantillas_auto():
             pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_plantillas_auto")
             
             # --- CAMBIE "1234" POR SU PIN SECRETO REAL ---
-            PIN_SECRETO = "1234" 
+            PIN_SECRETO = "0681" 
             
             if pin_ingresado == PIN_SECRETO:
                 st.success("✅ Acceso Autorizado, Lic. Jhonny Matos.")
