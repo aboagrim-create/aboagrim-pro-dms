@@ -1385,11 +1385,12 @@ def vista_registro_maestro():
 # =========================================================
 
 if menu == "🏠 Mando Central":
-    st.info("Mando Central (En construcción)")
-    # vista_mando_central() # Quite el # cuando la tenga lista
+    vista_mando_central() # ¡Le quitamos el # y borramos el st.info!
 
 elif menu == "👤 Registro Maestro":
     vista_registro_maestro()
+
+# ... (El resto sigue igual) ...
 
 elif menu == "📁 Archivo Digital":
     st.info("Archivo Digital (En construcción)")
