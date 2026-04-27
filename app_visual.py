@@ -1223,7 +1223,24 @@ def vista_registro_maestro():
 # =========================================================
 # ENRUTADOR PRINCIPAL (EL MOTOR DEFINITIVO)
 # =========================================================
-
+with st.sidebar:
+    st.title("🛰️ AboAgrim Pro")
+    st.markdown("**Panel de Navegación**")
+    st.divider()
+    
+    # Aquí creamos la variable 'menu' que el sistema necesita
+    menu = st.radio(
+        "Seleccione un módulo:",
+        [
+            "🏠 Mando Central",
+            "👤 Registro Maestro",
+            "📁 Archivo Digital",
+            "📄 Plantillas Auto",
+            "📅 Alertas y Plazos",
+            "💵 Facturación",
+            "⚙️ Configuración"
+        ]
+    )
 if menu == "🏠 Mando Central":
     vista_mando_central()
 
