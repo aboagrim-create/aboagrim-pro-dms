@@ -297,6 +297,8 @@ def vista_plantillas():
 # =====================================================================
 from datetime import datetime
 
+from datetime import datetime
+
 def vista_alertas_plazos():
     st.title("📅 Alertas y Plazos Judiciales")
     st.subheader("Control de Audiencias y Vencimientos | AboAgrim Pro")
@@ -306,9 +308,8 @@ def vista_alertas_plazos():
     st.write("El sistema monitorea las fechas de audiencia registradas en sus expedientes maestros y calcula los días restantes automáticamente.")
     
     try:
-        # Consultamos los expedientes asegurándonos de que la columna f_audiencia exista
-        # Traemos solo los que tienen una fecha asignada
-        res = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, tribunal, jurisdiccion, f_audiencia").not_is_null("f_audiencia").execute()
+        # Consulta simplificada: traemos todo y filtramos en Python para evitar errores de versión
+        res = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, tribunal, jurisdiccion, f_audiencia").execute()
         
         if res.data:
             hoy = datetime.now().date()
@@ -318,7 +319,7 @@ def vista_alertas_plazos():
 
             # Clasificación de expedientes
             for caso in res.data:
-                # Ignorar si la fecha viene vacía
+                # Si el caso no tiene fecha de audiencia, lo saltamos
                 if not caso.get('f_audiencia'):
                     continue
                     
