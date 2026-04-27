@@ -1177,44 +1177,12 @@ vistas = {
     "💵 Facturación": vista_facturacion,
     "⚙️ Configuración": vista_configuracion
 }
-# --- DENTRO DE TU VISTA DE PLANTILLAS ---
 
-if st.button("🚀 Generar Documento"):
-    # A. Preparamos el diccionario con las variables que definimos antes
-    # Sacamos los datos de donde los tengas guardados (session_state o base de datos)
-    datos_para_la_plantilla = {
-        "prop_nombre": st.session_state.get('in_nom_cli', 'Nombre No Definido'),
-        "inm_dc": st.session_state.get('in_dc', ''),
-        "proc_expediente": st.session_state.get('in_exp', ''),
-        "fecha_dia": "25",
-        "fecha_mes": "Abril",
-        "fecha_anio": "2026",
-        # Datos tuyos fijos
-        "rep_nombre": "Lic. Jhonny Matos. M.A.",
-        "rep_cargo": "Presidente Fundador",
-        "firma_nombre": "Abogados y Agrimensores 'AboAgrim'"
-    }
-
-    # B. Llamamos al motor (la función que pegaste arriba de guardar_y_actualizar)
-    # Suponiendo que quieres generar el Aviso de Mensura
-    archivo_preparado = generar_documento_word("Aviso_de_Mensura_Para_Saneamiento.docx", datos_para_la_plantilla)
-
-    if archivo_preparado:
-        # C. Mostramos el botón de descarga para que el archivo baje a tu PC
-        st.download_button(
-            label="💾 Descargar Word Listo",
-            data=archivo_preparado,
-            file_name=f"Aviso_Mensura_{datos_para_la_plantilla['proc_expediente']}.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
-        st.success("✅ Documento generado con éxito.")
 if menu in vistas:
     vistas[menu]()
 else:
     st.error(f"Error de Conexión: La sección '{menu}' no coincide con el diccionario.")
     st.info("Sugerencia: Verifique que el nombre en el sidebar sea igual al del diccionario 'vistas'.")
-from docxtpl import DocxTemplate
-import io
 
 def generar_documento_word(nombre_plantilla, diccionario_datos):
     """
