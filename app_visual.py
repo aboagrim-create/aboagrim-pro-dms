@@ -1331,13 +1331,14 @@ if rol_usuario in ["Abogado", "Agrimensor", "Presidente Fundador"]:
 if rol_usuario == "Presidente Fundador" or not admin_activo:
     modulos.append("⚙️ Configuración")
 
-# 3. Interfaz Limpia: Barra Lateral con Menú Desplegable
+# 3. Interfaz con botones visibles (Radio Buttons)
 with st.sidebar:
     st.markdown(f"**Firmado como:** {usuario_actual if usuario_actual else 'Invitado'}")
     st.caption(f"**Nivel de Acceso:** {rol_usuario}")
     st.divider()
-    # Diseño simplificado con menú desplegable
-    menu = st.selectbox("Navegación del Sistema:", modulos)
+    
+    # Volvemos al diseño de botones visibles para mayor rapidez
+    menu = st.radio("Seleccione el Módulo:", modulos)
 
 # 4. Lógica de Enrutamiento (El Gatillo)
 if menu == "🏠 Mando Central":
