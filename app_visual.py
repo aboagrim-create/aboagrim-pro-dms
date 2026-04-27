@@ -1276,12 +1276,11 @@ if usuario_actual == "JhonnyMatos":
 
 rol_usuario = st.session_state.get("rol", "Pasante")
 
-# Módulos básicos
-modulos = ["🏠 Mando Central", "👤 Registro Maestro", "📁 Archivo Digital", "📄 Plantillas Auto"]
+# Módulos básicos (¡Alertas liberado para todo el equipo!)
+modulos = ["🏠 Mando Central", "👤 Registro Maestro", "📂 Archivo Digital", "📄 Plantillas Auto", "📅 Alertas y Plazos"]
 
-# Filtro de jerarquía para Alertas y Facturación
+# Filtro de jerarquía (Ahora solo protegemos el módulo financiero)
 if rol_usuario in ["Abogado", "Agrimensor", "Presidente Fundador"]:
-    modulos.append("📅 Alertas y Plazos")
     modulos.append("💵 Facturación")
 
 # LA CLAVE: Siempre mostramos Configuración si no está logueado como admin
