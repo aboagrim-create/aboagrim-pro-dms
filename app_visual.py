@@ -829,100 +829,107 @@ import io
 from docxtpl import DocxTemplate
 from datetime import datetime
 
+# ==========================================
+# 📄 MÓDULO DE PLANTILLAS AUTOMÁTICAS
+# ==========================================
 def vista_plantillas_auto():
     st.title("📄 Generador Automático de Documentos")
     st.subheader("Redacción Asistida | AboAgrim Pro")
     st.divider()
 
     try:
-        # 1. Recuperar expedientes para el buscador
         res = supabase.table("expedientes_maestros").select("*").execute()
-        
         if not res.data:
-            st.warning("⚠️ No se encontraron expedientes en el Registro Maestro. Primero debe registrar un caso.")
+            st.warning("⚠️ No hay expedientes en el Registro Maestro.")
             return
 
-        # Buscador dinámico
         dict_exp = {f"EXP: {e['expediente']} - {e['nombre_propietario']}": e for e in res.data}
-        seleccion = st.selectbox("🔍 Seleccione el expediente para extraer datos:", ["Seleccione..."] + list(dict_exp.keys()))
+        seleccion = st.selectbox("🔍 Seleccione el expediente:", ["Seleccione..."] + list(dict_exp.keys()))
         
-        if seleccion == "Seleccione...":
-            st.info("👆 Por favor, elija un expediente para cargar la información legal y técnica.")
-            return
-            
-        caso = dict_exp[seleccion]
-
-        st.write("---")
-        
-        # 2. Configuración de la Plantilla
-        col1, col2 = st.columns(2)
-        with col1:
+        if seleccion != "Seleccione...":
+            caso = dict_exp[seleccion]
             tipo_doc = st.selectbox("📝 Tipo de Documento:", [
                 "Instancia de Solicitud de Mensura",
                 "Contrato de Cuota Litis",
-                "Acto de Alguacil",
-                "Instancia de Litis sobre Derecho Registrado"
+                "Acto de Alguacil"
             ])
-        with col2:
-            st.caption("⚙️ Variables detectadas")
-            st.json({
-                "Cliente": caso.get('nombre_propietario'),
-                "Cédula": caso.get('cedula'),
-                "Parcela": caso.get('parcela'),
-                "DC": caso.get('dc')
-            })
 
-        # 3. Proceso de Generación
-        if st.button(f"🚀 Generar y Descargar Word", type="primary", use_container_width=True):
-            with st.spinner("Procesando plantilla y vinculando datos..."):
-                try:
-                    # Determinamos el archivo .docx que debe existir en GitHub
-                    mapa_plantillas = {
-                        "Instancia de Solicitud de Mensura": "plantilla_mensura.docx",
-                        "Contrato de Cuota Litis": "plantilla_cuota_litis.docx",
-                        "Acto de Alguacil": "plantilla_alguacil.docx",
-                        "Instancia de Litis sobre Derecho Registrado": "plantilla_litis.docx"
-                    }
-                    
-                    nombre_base = mapa_plantillas.get(tipo_doc)
-                    doc = DocxTemplate(nombre_base)
-                    
-                    # Diccionario de datos para el Word
-                    contexto = {
-                        'nombre_cliente': caso.get('nombre_propietario', '__________'),
-                        'cedula_cliente': caso.get('cedula', '__________'),
-                        'expediente': caso.get('expediente', '__________'),
-                        'parcela': caso.get('parcela', '__________'),
-                        'dc': caso.get('dc', '__________'),
-                        'municipio': caso.get('municipio', '__________'),
-                        'provincia': caso.get('provincia', '__________'),
-                        'fecha_hoy': datetime.now().strftime("%d de %B del %Y")
-                    }
-                    
-                    doc.render(contexto)
-                    
-                    # Preparar descarga
-                    buffer = io.BytesIO()
-                    doc.save(buffer)
-                    buffer.seek(0)
-                    
-                    st.download_button(
-                        label="📥 Descargar Documento Listo",
-                        data=buffer,
-                        file_name=f"{caso['expediente']}_{tipo_doc.replace(' ', '_')}.docx",
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        use_container_width=True
-                    )
-                    st.balloons()
-
-                except FileNotFoundError:
-                    st.error(f"❌ Error: No se encontró el archivo `{nombre_base}` en el repositorio.")
-                    st.info("Para que esto funcione, debe subir sus modelos de Word a GitHub con esos nombres exactos.")
-                except Exception as e:
-                    st.error(f"Ocurrió un error técnico: {e}")
-
+            if st.button("🚀 Generar y Descargar Word", type="primary", use_container_width=True):
+                with st.spinner("Vinculando datos..."):
+                    try:
+                        mapa = {
+                            "Instancia de Solicitud de Mensura": "plantilla_mensura.docx",
+                            "Contrato de Cuota Litis": "plantilla_cuota_litis.docx",
+                            "Acto de Alguacil": "plantilla_alguacil.docx"
+                        }
+                        nombre_base = mapa.get(tipo_doc)
+                        doc = DocxTemplate(nombre_base)
+                        
+                        contexto = {
+                            'nombre_cliente': caso.get('nombre_propietario', '__________'),
+                            'cedula_cliente': caso.get('cedula', '__________'),
+                            'parcela': caso.get('parcela', '__________'),
+                            'dc': caso.get('dc', '__________'),
+                            'fecha_hoy': datetime.now().strftime("%d de %B del %Y")
+                        }
+                        
+                        doc.render(contexto)
+                        buffer = io.BytesIO()
+                        doc.save(buffer)
+                        buffer.seek(0)
+                        
+                        st.download_button(
+                            label="📥 Descargar Documento Listo",
+                            data=buffer,
+                            file_name=f"{caso['expediente']}_{tipo_doc.replace(' ', '_')}.docx",
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            use_container_width=True
+                        )
+                    except FileNotFoundError:
+                        st.error(f"❌ Falta el archivo `{nombre_base}` en GitHub.")
+                    except Exception as e:
+                        st.error(f"Error: {e}")
     except Exception as e:
-        st.error(f"Error de conexión con la base de datos: {e}")
+        st.error(f"Error de conexión: {e}")
+
+# ==========================================
+# 🚦 ENRUTADOR Y MENÚ (EL GATILLO)
+# ==========================================
+
+# Definimos los módulos con los emojis exactos
+modulos = [
+    "🏠 Mando Central", 
+    "👤 Registro Maestro", 
+    "📂 Archivo Digital", 
+    "📄 Plantillas Auto", 
+    "📅 Alertas y Plazos"
+]
+
+if st.session_state.get("admin_autenticado", False):
+    modulos.append("💵 Facturación")
+
+if not st.session_state.get("admin_autenticado", False) or st.session_state.get("rol") == "Presidente Fundador":
+    modulos.append("⚙️ Configuración")
+
+with st.sidebar:
+    st.markdown(f"**Firmado como:** {st.session_state.get('usuario', 'Invitado')}")
+    menu = st.radio("Ir a:", modulos)
+
+# Lógica de salto (Enrutador)
+if menu == "🏠 Mando Central":
+    st.info("Bienvenido al Mando Central de AboAgrim Pro")
+elif menu == "👤 Registro Maestro":
+    vista_registro_maestro()
+elif menu == "📂 Archivo Digital":
+    vista_archivo_digital()
+elif menu == "📄 Plantillas Auto":
+    vista_plantillas_auto() # <--- ¡Aquí es donde se activa!
+elif menu == "📅 Alertas y Plazos":
+    vista_alertas_plazos()
+elif menu == "💵 Facturación":
+    vista_facturacion()
+elif menu == "⚙️ Configuración":
+    vista_configuracion()
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
 
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
