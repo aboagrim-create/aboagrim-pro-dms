@@ -337,126 +337,103 @@ def vista_plantillas():
 from datetime import datetime, timedelta
 
 def vista_alertas_plazos():
-    st.title("⚖️ Centro de Mando Normativo (JI)")
-    st.subheader("Control Integral de Plazos | AboAgrim Pro")
-    st.write("---")
-
-    try:
-        res = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, tipo_acto, f_audiencia, fecha_creacion, jurisdiccion").execute()
-        
-        if not res.data:
-            st.success("✨ El radar está despejado. No hay expedientes activos para monitorear en este momento.")
-            return
-
-        hoy = datetime.now().date()
-        
-        # --- 1. DASHBOARD DE MÉTRICAS (LO NUEVO Y MODERNO) ---
-        total_casos = len(res.data)
-        alertas_rojas = 0
-        
-        # Cálculo rápido de urgencias para el Dashboard
-        for c in res.data:
-            if c.get('f_audiencia'):
-                f_aud = datetime.strptime(c['f_audiencia'], '%Y-%m-%d').date()
-                if (f_aud - hoy).days <= 7: alertas_rojas += 1
-            if c.get('fecha_creacion'):
-                f_ini = datetime.strptime(c['fecha_creacion'][:10], '%Y-%m-%d').date()
-                if (f_ini + timedelta(days=60) - hoy).days <= 15: alertas_rojas += 1
-
-        col_m1, col_m2, col_m3 = st.columns(3)
-        with col_m1:
-            st.metric(label="Expedientes en Radar", value=total_casos, delta="Activos", delta_color="normal")
-        with col_m2:
-            st.metric(label="Alertas Críticas", value=alertas_rojas, delta="- Requieren Atención" if alertas_rojas > 0 else "Todo en orden", delta_color="inverse" if alertas_rojas > 0 else "normal")
-        with col_m3:
-            st.metric(label="Normativa Activa", value="Ley 108-05", delta="Reglamentos Vigentes")
-
-        st.write("---")
-        
-        # --- 2. PESTAÑAS REDISEÑADAS ---
-        tab_tecnico, tab_judicial, tab_admin = st.tabs([
-            "🛠️ Área Técnica (Mensuras)", 
-            "⚖️ Área Judicial (Tribunales)", 
-            "📝 Área Administrativa (Registro)"
-        ])
-
-        with tab_tecnico:
-            st.markdown("### 📐 Vigencia de Autorizaciones")
-            st.caption("Barra de estado para el plazo fatal de 60 días (Reglamento General de Mensuras).")
+    st.title("📅 Radar de Alertas y Plazos JI")
+    st.subheader("Control Normativo Ley 108-05 | AboAgrim Pro")
+    
+    # 1. BOTÓN DINÁMICO DE BÚSQUEDA
+    st.markdown("### 🔍 Motor de Rastreo de Expedientes")
+    col_scan, col_info = st.columns([1, 2])
+    escanear = col_scan.button("🚀 Escanear Plazos Activos", type="primary", use_container_width=True)
+    col_info.info("Haga clic para sincronizar las fechas con la nube y calcular los vencimientos normativos de sus expedientes.")
+    
+    # 2. LAS TRES GRANDES ÁREAS DE LA JURISDICCIÓN INMOBILIARIA
+    tab_tecnica, tab_judicial, tab_registro = st.tabs([
+        "📐 Área Técnica (Mensuras)", 
+        "⚖️ Judicial y Recursos", 
+        "📜 Registro de Títulos"
+    ])
+    
+    hoy = datetime.now().date()
+    
+    if escanear:
+        # Extraemos la data de la base de datos maestra
+        try:
+            res = supabase.table("expedientes_maestros").select("*").execute()
+            expedientes = res.data if res.data else []
+        except Exception as e:
+            expedientes = []
+            st.error(f"Error de conexión a la Nube: {e}")
             
-            casos_tecnicos = 0
-            for caso in res.data:
-                if caso.get('fecha_creacion'):
-                    casos_tecnicos += 1
-                    f_ini = datetime.strptime(caso['fecha_creacion'][:10], '%Y-%m-%d').date()
-                    vencimiento_aut = f_ini + timedelta(days=60)
-                    dias_restantes = (vencimiento_aut - hoy).days
-                    
-                    # Cálculo para la barra de progreso (0 a 100)
-                    progreso = max(0, min(100, int((dias_restantes / 60) * 100)))
-                    
-                    with st.expander(f"📌 Expediente: {caso['expediente']} | Cliente: {caso['nombre_propietario']}", expanded=(dias_restantes <= 15)):
-                        st.markdown(f"**Fecha de Inicio:** {f_ini.strftime('%d/%m/%Y')} ➔ **Vence:** {vencimiento_aut.strftime('%d/%m/%Y')}")
+        with tab_tecnica:
+            st.markdown("#### ⏳ Plazos de la Dirección Regional de Mensuras Catastrales")
+            st.write("Control de autorizaciones, trabajo de campo y revisión técnica.")
+            
+            if expedientes:
+                for caso in expedientes:
+                    if caso.get('fecha_creacion'):
+                        f_ini = datetime.strptime(caso['fecha_creacion'][:10], '%Y-%m-%d').date()
                         
-                        if dias_restantes < 0:
-                            st.error(f"❌ Autorización Vencida hace {abs(dias_restantes)} días.")
-                            st.progress(0)
-                        elif dias_restantes <= 15:
-                            st.error(f"🔴 CRÍTICO: Quedan {dias_restantes} días para depositar.")
-                            st.progress(progreso)
-                        else:
-                            st.success(f"🟢 Plazo holgado. Quedan {dias_restantes} días.")
-                            st.progress(progreso)
+                        # CÁLCULOS TÉCNICOS AMPLIADOS (Ley 108-05)
+                        venc_campo = f_ini + timedelta(days=60) # Plazo de ejecución de mensura
+                        venc_deposito = venc_campo + timedelta(days=15) # Plazo para depósito tras el trabajo
+                        
+                        dias_campo = (venc_campo - hoy).days
+                        
+                        with st.container(border=True):
+                            c1, c2 = st.columns([3, 1])
+                            c1.markdown(f"**Exp:** {caso['expediente']} | **Propietario:** {caso.get('nombre_propietario', 'N/A')}")
+                            c1.caption(f"Operación: {caso.get('tipo_acto', 'Mensura Catastral')} | Fecha de Inicio: {f_ini}")
                             
-            if casos_tecnicos == 0:
-                st.info("No hay fechas de creación registradas para calcular plazos técnicos.")
-
+                            if dias_campo < 0:
+                                c2.error(f"Vencido hace {abs(dias_campo)} días")
+                            elif dias_campo <= 15:
+                                c2.warning(f"Queda(n) {dias_campo} día(s) (CRÍTICO)")
+                            else:
+                                c2.success(f"En tiempo ({dias_campo} días)")
+                                
+                            # Desglose Dinámico
+                            with st.expander("Ver Desglose de Plazos Técnicos"):
+                                st.write(f"🟢 **Vencimiento Autorización (60 días):** {venc_campo.strftime('%d/%m/%Y')}")
+                                st.write(f"🟡 **Límite Depósito de Planos (+15 días):** {venc_deposito.strftime('%d/%m/%Y')}")
+            else:
+                st.warning("No se encontraron expedientes técnicos activos.")
+                
         with tab_judicial:
-            st.markdown("### 🏛️ Calendario de Audiencias")
+            st.markdown("#### ⚖️ Control de Audiencias y Vías de Recurso")
+            st.write("Gestión de plazos ante los Tribunales de Tierras y la SCJ.")
             
-            for caso in res.data:
-                if caso.get('f_audiencia'):
-                    f_aud = datetime.strptime(caso['f_audiencia'], '%Y-%m-%d').date()
-                    dias_aud = (f_aud - hoy).days
-                    
-                    with st.container(border=True):
-                        c1, c2 = st.columns([3, 1])
-                        c1.markdown(f"**⚖️ {caso.get('jurisdiccion', 'Jurisdicción Inmobiliaria')}**")
-                        c1.write(f"**Exp:** {caso['expediente']} | **Propietario:** {caso['nombre_propietario']}")
-                        
-                        if dias_aud < 0:
-                            c2.error(f"Pasada hace {abs(dias_aud)} días")
-                        elif dias_aud == 0:
-                            c2.error("🚨 AUDIENCIA HOY")
-                        elif dias_aud <= 7:
-                            c2.warning(f"En {dias_aud} días")
-                        else:
-                            c2.success(f"Próxima en {dias_aud} días")
-                            
-            st.info("💡 **Recordatorio de Apelación:** 30 días a partir de la notificación de la sentencia en Jurisdicción Original.")
-
-        with tab_admin:
-            st.markdown("### 📜 Recursos y Registro de Títulos")
-            st.caption("Plazos legales estandarizados para consulta rápida.")
-            
-            c_adm1, c_adm2 = st.columns(2)
-            with c_adm1:
-                with st.container(border=True):
-                    st.markdown("#### ⏳ Reconsideración")
-                    st.write("**Plazo:** 15 días hábiles.")
-                    st.caption("Se interpone ante el mismo órgano que dictó el acto objetado.")
-            with c_adm2:
-                with st.container(border=True):
-                    st.markdown("#### ⚖️ Recurso Jerárquico")
-                    st.write("**Plazo:** 30 días.")
-                    st.caption("A partir de la respuesta del recurso de reconsideración.")
-                    
             with st.container(border=True):
-                st.markdown("#### 📄 Certificaciones")
-                st.write("• **Estado Jurídico / Cargas y Gravámenes:** Vigencia de 30 días desde su emisión.")
+                st.markdown("**📌 Alarmas Normativas para Recursos:**")
+                c_j1, c_j2 = st.columns(2)
+                
+                with c_j1:
+                    st.error("**Vía Administrativa:**")
+                    st.write("• **Recurso de Reconsideración:** 15 días (Ante el mismo órgano).")
+                    st.write("• **Recurso Jerárquico:** 15 días (Ante el órgano superior).")
+                
+                with c_j2:
+                    st.error("**Vía Jurisdiccional:**")
+                    st.write("• **Recurso de Apelación:** 30 días (Tribunal Superior de Tierras).")
+                    st.write("• **Recurso de Casación:** 30 días (Suprema Corte de Justicia).")
+                    
+            st.info("💡 Utilice el 'Registro Maestro' para registrar las fechas de notificación de las sentencias u oficios y activar automáticamente estas cuentas regresivas.")
 
-    except Exception as e:
-        st.error(f"Error de conexión con el radar: {e}")
+        with tab_registro:
+            st.markdown("#### 📜 Control del Registro de Títulos")
+            st.write("Seguimiento a emisión de Certificados de Título y depósitos registrales.")
+            
+            with st.container(border=True):
+                st.markdown("**📌 Plazos Normativos Registrales:**")
+                st.write("• **Calificación y Emisión de Título:** 45 días laborables.")
+                st.write("• **Anotación de Litis sobre Derechos Registrados:** 15 días laborables.")
+                st.write("• **Inscripción de Hipotecas / Privilegios:** 15 días laborables.")
+                st.write("• **Aprobación de Condominios:** 45 días laborables.")
+            
+            st.info("💡 Los expedientes que pasen a la fase de 'Registro de Títulos' iniciarán su cuenta regresiva de 45 días laborables aquí.")
+            
+    else:
+        # Pantalla en espera si no se ha hecho clic en el botón
+        st.info("👈 Presione el botón azul 'Escanear Plazos Activos' arriba para iniciar el rastreo normativo en su base de datos.")
             
 
 from fpdf import FPDF
