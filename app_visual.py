@@ -835,43 +835,76 @@ from datetime import datetime
 
 def vista_registro_maestro():
     st.title("👤 Registro Maestro de Expedientes")
-    st.subheader("Control de Casos | AboAgrim Pro")
+    st.subheader("Control Centralizado | AboAgrim Pro")
     
-    # Formulario de Registro (Basado en su estructura de Supabase)
-    with st.expander("➕ Registrar Nuevo Expediente", expanded=False):
-        with st.form("form_registro"):
-            col1, col2 = st.columns(2)
-            exp = col1.text_input("Número de Expediente:")
-            prop = col2.text_input("Nombre del Propietario:")
-            ced = col1.text_input("Cédula/RNC:")
-            tipo = col2.selectbox("Tipo de Acto:", ["Mensura Catastral", "Deslinde", "Litis sobre Derecho Registrado", "Cierre de Condominio"])
-            parc = col1.text_input("Parcela:")
-            dc = col2.text_input("D.C.:")
+    # --- PESTAÑAS: REGISTRAR Y CONSULTAR ---
+    tab_reg, tab_con = st.tabs(["➕ Nuevo Registro", "🔍 Consultar y Editar"])
+    
+    with tab_reg:
+        with st.form("registro_exp", clear_on_submit=True):
+            c1, c2 = st.columns(2)
+            exp = c1.text_input("Expediente Nro:")
+            prop = c2.text_input("Nombre Completo del Propietario:")
+            ced = c1.text_input("Cédula o RNC:")
+            tipo = c2.selectbox("Tipo de Acto:", ["Mensura Catastral", "Deslinde", "Litis", "Saneamiento", "Condominio"])
             
-            if st.form_submit_button("💾 Guardar en Registro Maestro"):
+            # Datos Técnicos
+            c3, c4, c5 = st.columns(3)
+            parc = c3.text_input("Parcela:")
+            dc = c4.text_input("D.C.:")
+            mun = c5.text_input("Municipio/Provincia:")
+            
+            if st.form_submit_button("💾 Guardar en la Nube"):
                 if exp and prop:
-                    data = {"expediente": exp, "nombre_propietario": prop, "cedula": ced, "tipo_acto": tipo, "parcela": parc, "dc": dc}
-                    supabase.table("expedientes_maestros").insert(data).execute()
-                    st.success(f"✅ Expediente {exp} registrado exitosamente.")
+                    nueva_data = {
+                        "expediente": exp, "nombre_propietario": prop, "cedula": ced,
+                        "tipo_acto": tipo, "parcela": parc, "dc": dc, "municipio": mun,
+                        "fecha_creacion": datetime.now().strftime("%Y-%m-%d")
+                    }
+                    supabase.table("expedientes_maestros").insert(nueva_data).execute()
+                    st.success(f"✅ Expediente {exp} guardado correctamente.")
                 else:
-                    st.error("Faltan campos obligatorios.")
+                    st.error("Error: El número de expediente y nombre son obligatorios.")
 
+    with tab_con:
+        try:
+            res = supabase.table("expedientes_maestros").select("*").order("fecha_creacion", desc=True).execute()
+            if res.data:
+                st.dataframe(res.data, use_container_width=True)
+            else:
+                st.info("No hay datos registrados aún.")
+        except Exception as e:
+            st.error(f"Error de conexión: {e}")
 def vista_archivo_digital():
     st.title("📂 Archivo Digital Centralizado")
-    tab_exp, tab_sub = st.tabs(["🔍 Explorar", "📤 Vincular"])
+    st.subheader("Bóveda Documental de AboAgrim")
     
-    with tab_exp:
-        try:
-            res = supabase.table("archivo_digital").select("*").execute()
-            if res.data:
-                for doc in res.data:
-                    with st.container(border=True):
-                        c1, c2 = st.columns([4, 1])
-                        c1.write(f"📄 **{doc['nombre_documento']}** | Exp: {doc['codigo_expediente']}")
-                        c2.link_button("👁️ Abrir", doc['url_enlace'])
-            else:
-                st.info("No hay documentos en la bóveda.")
-        except: st.error("Error al conectar con el archivo.")
+    # 1. Traer expedientes para el buscador
+    res_e = supabase.table("expedientes_maestros").select("expediente, nombre_propietario").execute()
+    list_e = [f"{e['expediente']} - {e['nombre_propietario']}" for e in res_e.data] if res_e.data else []
+    
+    sel_exp = st.selectbox("Seleccione Expediente para ver sus documentos:", ["Ver Todos"] + list_e)
+    st.divider()
+
+    # 2. Lógica de consulta
+    try:
+        query = supabase.table("archivo_digital").select("*")
+        if sel_exp != "Ver Todos":
+            query = query.eq("codigo_expediente", sel_exp.split(" - ")[0])
+        
+        docs = query.execute()
+        
+        if docs.data:
+            for d in docs.data:
+                with st.container(border=True):
+                    c1, c2 = st.columns([4, 1])
+                    c1.markdown(f"📄 **{d['nombre_documento']}**")
+                    c1.caption(f"Categoría: {d.get('categoria', 'General')} | Registrado: {d['fecha_registro'][:10]}")
+                    c2.link_button("👁️ Abrir", d['url_enlace'], use_container_width=True)
+        else:
+            st.info("No se encontraron documentos para esta selección.")
+    except Exception as e:
+        st.error(f"Error al cargar archivos: {e}")
 
 def vista_plantillas_auto():
     st.title("📄 Plantillas Automáticas")
@@ -888,12 +921,35 @@ def vista_plantillas_auto():
     except: st.error("Error en el módulo de plantillas.")
 
 def vista_alertas_plazos():
-    st.title("📅 Radar de Alertas y Plazos")
-    st.subheader("Control Normativo JI 2026")
-    t1, t2, t3 = st.tabs(["🛠️ Técnico", "⚖️ Judicial", "📝 Administrativo"])
-    t1.info("Monitoreo de 60 días para Mensuras Catastrales.")
-    t2.info("Control de audiencias y plazos de apelación (30 días).")
-    t3.info("Recursos Administrativos (15 días).")
+    st.title("📅 Radar de Alertas JI")
+    st.subheader("Control Normativo 2026")
+    hoy = datetime.now().date()
+    
+    res = supabase.table("expedientes_maestros").select("*").execute()
+    
+    t1, t2 = st.tabs(["🛠️ Plazos de Mensura (60 días)", "⚖️ Audiencias y Apelaciones"])
+    
+    with t1:
+        st.markdown("### Control de Trabajo de Campo")
+        for caso in res.data:
+            if caso.get('fecha_creacion'):
+                f_ini = datetime.strptime(caso['fecha_creacion'][:10], '%Y-%m-%d').date()
+                vencimiento = f_ini + timedelta(days=60)
+                dias_restantes = (vencimiento - hoy).days
+                
+                if dias_restantes <= 15:
+                    st.error(f"🔴 **CRÍTICO:** Exp {caso['expediente']} - {caso['nombre_propietario']} vence en {dias_restantes} días.")
+                elif dias_restantes <= 30:
+                    st.warning(f"🟡 **ATENCIÓN:** Exp {caso['expediente']} tiene {dias_restantes} días restantes.")
+
+    with t2:
+        st.markdown("### Próximas Audiencias")
+        for caso in res.data:
+            if caso.get('f_audiencia'):
+                f_aud = datetime.strptime(caso['f_audiencia'], '%Y-%m-%d').date()
+                dias = (f_aud - hoy).days
+                if 0 <= dias <= 7:
+                    st.error(f"🚨 **AUDIENCIA EN {dias} DÍAS:** {caso['nombre_propietario']} (Exp: {caso['expediente']})")
 
 def vista_facturacion():
     st.title("💵 Módulo de Honorarios y Cobros")
