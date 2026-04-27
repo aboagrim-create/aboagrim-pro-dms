@@ -466,46 +466,67 @@ def vista_facturacion():
     st.title("💵 Facturación y Cobros Mágicos")
     st.subheader("Control Financiero | AboAgrim Pro")
     
-    # --- FUNCIÓN PARA GENERAR EL PDF (CORREGIDA PARA FPDF2) ---
+    # --- MOTOR DE PDF CON OBSERVACIONES Y BANCOS ---
     def generar_pdf_factura(datos, num_fac):
         pdf = FPDF()
         pdf.add_page()
         
-        # Encabezado
-        pdf.set_font("Arial", "B", 20)
+        # Encabezado Institucional
+        pdf.set_font("Arial", "B", 22)
+        pdf.set_text_color(11, 15, 25) # Azul noche
         pdf.cell(0, 10, "ABOAGRIM", ln=True, align="C")
         pdf.set_font("Arial", "", 10)
+        pdf.set_text_color(100, 100, 100)
         pdf.cell(0, 5, "DESPACHO LEGAL Y AGRIMENSURA", ln=True, align="C")
-        pdf.cell(0, 5, "Lic. Jhonny Matos | Presidente Fundador", ln=True, align="C")
+        pdf.set_font("Arial", "B", 11)
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(0, 7, "Lic. Jhonny Matos | Presidente Fundador", ln=True, align="C")
         pdf.ln(10)
         
-        # Línea divisoria
-        pdf.line(10, 40, 200, 40)
+        pdf.line(10, 45, 200, 45)
         pdf.ln(5)
         
-        # Datos Factura
+        # Datos de la Factura
         pdf.set_font("Arial", "B", 12)
         pdf.cell(100, 10, f"Factura No: {num_fac}")
         pdf.cell(0, 10, f"Fecha: {datos['fecha']}", ln=True, align="R")
         pdf.ln(5)
         
-        # Cuerpo
-        pdf.set_fill_color(240, 240, 240)
-        pdf.cell(0, 10, f"Expediente: {datos['expediente']}", ln=True, fill=True)
+        # Detalles del Cliente y Concepto
+        pdf.set_fill_color(245, 245, 245)
+        pdf.set_font("Arial", "B", 11)
+        pdf.cell(0, 10, f" Expediente: {datos['expediente']}", ln=True, fill=True)
         pdf.set_font("Arial", "", 11)
-        pdf.multi_cell(0, 10, f"Concepto: {datos['concepto']}")
+        pdf.multi_cell(0, 8, f"Concepto: {datos['concepto']}")
+        
+        # Observaciones (Si existen)
+        if datos['observaciones']:
+            pdf.ln(5)
+            pdf.set_font("Arial", "I", 10)
+            pdf.set_text_color(80, 80, 80)
+            pdf.multi_cell(0, 6, f"Observaciones: {datos['observaciones']}")
+            pdf.set_text_color(0, 0, 0)
+        
         pdf.ln(10)
         
-        # Totales
+        # Tabla de Montos
         pdf.set_font("Arial", "B", 14)
-        pdf.cell(100, 10, "MONTO PAGADO:")
-        pdf.cell(0, 10, f"RD$ {datos['pago']:,.2f}", ln=True, align="R")
+        pdf.cell(100, 12, "MONTO RECIBIDO:")
+        pdf.cell(0, 12, f"RD$ {datos['pago']:,.2f}", ln=True, align="R")
         
         pdf.set_text_color(200, 0, 0)
-        pdf.cell(100, 10, "BALANCE PENDIENTE:")
-        pdf.cell(0, 10, f"RD$ {datos['resta']:,.2f}", ln=True, align="R")
+        pdf.cell(100, 12, "BALANCE PENDIENTE:")
+        pdf.cell(0, 12, f"RD$ {datos['resta']:,.2f}", ln=True, align="R")
         
-        # ESTA ES LA CLAVE QUE ARREGLA EL ERROR ROJO:
+        # NOTA BANCARIA (Pie de página del PDF)
+        pdf.ln(20)
+        pdf.set_font("Arial", "B", 10)
+        pdf.set_text_color(11, 15, 25)
+        pdf.cell(0, 6, "CUENTAS BANCARIAS PARA DEPÓSITO (AHORROS):", ln=True)
+        pdf.set_font("Arial", "", 10)
+        pdf.cell(0, 6, "Banco de Reservas: 9601369253", ln=True)
+        pdf.cell(0, 6, "Banco BHD: 08010850011", ln=True)
+        
         return bytes(pdf.output())
 
     tab_emitir, tab_historial = st.tabs(["📄 Emitir Nueva Factura", "📊 Historial"])
@@ -515,76 +536,74 @@ def vista_facturacion():
         
         with c1:
             with st.container(border=True):
-                st.markdown("### 📝 Datos de Cobro")
+                st.markdown("### 📝 Parámetros de Cobro")
                 
                 try:
                     res_e = supabase.table("expedientes_maestros").select("expediente, nombre_propietario").execute()
                     list_e = [f"{e['expediente']} - {e['nombre_propietario']}" for e in res_e.data] if res_e.data else []
-                except:
-                    list_e = []
+                except: list_e = []
                     
-                expediente = st.selectbox("Vinculado a Expediente:", ["Seleccione..."] + list_e)
-                tipo_pago = st.selectbox("Modalidad:", ["Avance Inicial", "Pago Parcial", "Saldo Total"])
-                concepto = st.text_input("Concepto / Descripción:", placeholder="Ej: Mensura parcela...")
+                expediente = st.selectbox("Expediente Vinculado:", ["Seleccione..."] + list_e)
+                colA, colB = st.columns(2)
+                tipo_pago = colA.selectbox("Modalidad:", ["Avance Inicial", "Pago Parcial", "Saldo Final"])
+                metodo = colB.selectbox("Vía:", ["Transferencia", "Efectivo", "Cheque"])
                 
+                concepto = st.text_input("Concepto:")
+                
+                # NUEVA CASILLA: OBSERVACIONES
+                obs = st.text_area("Observaciones Internas / Notas al Cliente:", placeholder="Ej: Pago sujeto a validación técnica...")
+                
+                st.divider()
                 col_m1, col_m2 = st.columns(2)
-                monto_pago = col_m1.number_input("Paga Hoy (RD$):", min_value=0.0, step=1000.0, format="%.2f")
-                monto_resta = col_m2.number_input("Resta (RD$):", min_value=0.0, step=1000.0, format="%.2f")
+                m_pago = col_m1.number_input("Pago Hoy (RD$):", min_value=0.0, format="%.2f")
+                m_resta = col_m2.number_input("Resta (RD$):", min_value=0.0, format="%.2f")
                 
-                if st.button("✨ Generar Vista Previa", type="primary", use_container_width=True):
+                if st.button("✨ Generar Factura", type="primary", use_container_width=True):
                     if expediente != "Seleccione...":
                         st.session_state['datos_fac'] = {
-                            "expediente": expediente, "concepto": concepto, 
-                            "pago": monto_pago, "resta": monto_resta, "tipo": tipo_pago,
+                            "expediente": expediente, "concepto": concepto, "observaciones": obs,
+                            "pago": m_pago, "resta": m_resta, "tipo": tipo_pago, "metodo": metodo,
                             "fecha": datetime.now().strftime("%d/%m/%Y")
                         }
                         st.session_state['factura_ready'] = True
-                    else:
-                        st.warning("Seleccione un expediente.")
 
         with c2:
             if st.session_state.get('factura_ready'):
                 d = st.session_state['datos_fac']
-                num_f = f"FAC-{datetime.now().strftime('%y%m%d%H%M')}"
+                n_f = f"FAC-{datetime.now().strftime('%y%m%H%M')}"
                 
-                # --- VISTA PREVIA LIMPIA (Sin códigos raros) ---
+                # --- VISTA PREVIA PROFESIONAL ---
                 with st.container(border=True):
                     st.markdown("<h2 style='text-align: center; color: #d4af37;'>⚖️ AboAgrim</h2>", unsafe_allow_html=True)
-                    st.markdown("<p style='text-align: center; margin-top: -10px;'>DESPACHO LEGAL Y AGRIMENSURA</p>", unsafe_allow_html=True)
                     st.markdown("<p style='text-align: center; font-weight: bold;'>Lic. Jhonny Matos | Presidente Fundador</p>", unsafe_allow_html=True)
                     st.divider()
                     
-                    st.write(f"**Factura No:** {num_f}")
-                    st.write(f"**Fecha:** {d['fecha']}")
-                    st.write(f"**Cliente / Expediente:** {d['expediente']}")
+                    st.write(f"**Expediente:** {d['expediente']}")
                     st.write(f"**Concepto:** {d['concepto']}")
+                    if d['observaciones']:
+                        st.caption(f"**Obs:** {d['observaciones']}")
+                    
                     st.divider()
                     st.markdown(f"### 💰 RECIBIDO: RD$ {d['pago']:,.2f}")
                     st.markdown(f"#### 🔴 PENDIENTE: RD$ {d['resta']:,.2f}")
+                    
+                    # NOTA DE BANCOS EN PANTALLA
+                    with st.expander("🏦 Datos para Depósito", expanded=True):
+                        st.markdown("""
+                        **Cuentas de Ahorros:**
+                        * **Banreservas:** 9601369253
+                        * **BHD:** 08010850011
+                        """)
                 
-                # --- BOTONES FUNCIONALES ---
                 col_wa, col_dl = st.columns(2)
                 
-                # Botón PDF Corregido
-                try:
-                    pdf_data = generar_pdf_factura(d, num_f)
-                    nombre_archivo_limpio = d['expediente'].split()[0].replace("-", "_")
-                    
-                    col_dl.download_button(
-                        label="📥 Descargar PDF",
-                        data=pdf_data,
-                        file_name=f"Factura_{nombre_archivo_limpio}.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
-                except Exception as e:
-                    col_dl.error(f"Error generando PDF: {e}")
+                # Descarga PDF
+                pdf_bytes = generar_pdf_factura(d, n_f)
+                col_dl.download_button("📥 Descargar Factura PDF", data=pdf_bytes, file_name=f"Factura_{n_f}.pdf", mime="application/pdf", use_container_width=True)
                 
-                # Botón WhatsApp
-                msg = f"Saludos desde *AboAgrim*. Confirmamos el pago de *RD$ {d['pago']:,.2f}*. Su balance restante es de *RD$ {d['resta']:,.2f}*. Le adjuntamos su factura en breve."
-                link_wa = f"https://wa.me/?text={msg.replace(' ', '%20')}"
-                col_wa.link_button("🟢 Enviar WhatsApp", link_wa, use_container_width=True)
-
+                # WhatsApp
+                msg = f"Confirmamos el pago de *RD$ {d['pago']:,.2f}*. Pendiente: *RD$ {d['resta']:,.2f}*. \n\n*Cuentas:* \nBanreservas: 9601369253 \nBHD: 08010850011"
+                col_wa.link_button("🟢 Enviar WhatsApp", f"https://wa.me/?text={msg.replace(' ', '%20')}", use_container_width=True)
 def vista_configuracion():
     st.title("⚙️ Panel de Control Maestro")
     
