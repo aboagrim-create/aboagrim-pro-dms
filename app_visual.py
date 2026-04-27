@@ -495,64 +495,82 @@ def vista_facturacion():
 # =====================================================================
 def vista_configuracion():
     st.title("⚙️ Configuración del Sistema")
-    st.subheader("Gestión de Identidad y Control de Mando")
+    st.subheader("Despacho Privado del Presidente Fundador")
     st.divider()
 
-    # --- 1. VERIFICACIÓN DE EXCLUSIVIDAD (FUNDADOR) ---
-    es_fundador = st.session_state.get("usuario") == "JhonnyMatos"
+    # --- 1. MURO DE SEGURIDAD (Se muestra si no está autenticado) ---
+    if not st.session_state.get("admin_autenticado", False):
+        st.error("🛑 Acceso Restringido")
+        st.info("Este módulo es de uso exclusivo para el Lic. Jhonny Matos. Por favor, valide su identidad.")
+        
+        # Habilitamos los campos de entrada para el ingreso
+        col_acc1, col_acc2 = st.columns(2)
+        with col_acc1:
+            u_pres = st.text_input("Usuario Presidente:", key="u_login_cfg_final")
+        with col_acc2:
+            p_pres = st.text_input("PIN de Seguridad:", type="password", key="p_login_cfg_final")
+        
+        if st.button("🔓 Validar Identidad y Entrar", use_container_width=True, type="primary"):
+            # Verificación de su clave maestra
+            if u_pres == "JhonnyMatos" and p_pres == "0681": 
+                st.session_state.admin_autenticado = True
+                st.session_state.usuario = "JhonnyMatos"
+                st.rerun()
+            else:
+                st.error("Credenciales incorrectas. Verifique su usuario y PIN.")
+        return # Detiene la carga de pestañas hasta que se autentique
 
-    if not es_fundador:
-        st.error("🛑 Acceso Restringido. Solo el Presidente Fundador puede modificar la estructura del sistema.")
-        st.info("Consulte con la dirección para solicitar cambios en los parámetros globales.")
-        return
+    # --- 2. ÁREA DE CONTROL TOTAL (Solo visible tras el login) ---
+    
+    # Botón de bloqueo para cerrar el despacho al terminar
+    if st.button("🔒 Bloquear y Salir del Despacho"):
+        st.session_state.admin_autenticado = False
+        st.rerun()
 
-    # --- 2. PANELES DE CONTROL ---
-    tab1, tab2, tab3, tab4 = st.tabs(["🔒 Seguridad", "🏢 Firma", "👥 Usuarios", "🎨 Apariencia"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🔒 Seguridad", "🏢 Identidad", "👥 Personal", "🎨 Estilo y Fondo"])
 
     with tab1:
-        st.markdown("### 🔐 Seguridad y Credenciales Maestras")
-        pin_actual = st.text_input("PIN Maestro Actual", type="password", key="cfg_pin_old")
-        nuevo_pin = st.text_input("Definir Nuevo PIN Maestro", type="password", key="cfg_pin_new")
-        
-        if st.button("💾 Actualizar Seguridad"):
-            st.success("✅ Protocolos de seguridad actualizados.")
+        st.markdown("### Gestión de Claves Maestras")
+        st.caption("Cambie su PIN de acceso principal al sistema.")
+        st.text_input("Nuevo PIN Maestro", type="password", key="new_master_pin_set")
+        if st.button("Actualizar PIN"):
+            st.success("Protocolo de seguridad actualizado.")
 
     with tab2:
-        st.markdown("### 🏛️ Identidad Corporativa")
-        col1, col2 = st.columns(2)
-        with col1:
+        st.markdown("### Identidad Corporativa AboAgrim")
+        c1, c2 = st.columns(2)
+        with c1:
             st.text_input("Nombre del Titular", value="Lic. Jhonny Matos. M.A.")
             st.text_input("Cargo Oficial", value="Presidente Fundador")
-        with col2:
-            st.text_input("Nombre de la Firma", value="Abogados y Agrimensores 'AboAgrim'")
+        with c2:
+            st.text_input("Firma", value="Abogados y Agrimensores 'AboAgrim'")
             st.text_input("Sede Principal", value="Santiago, Rep. Dom.")
-        st.button("💾 Guardar Datos de la Firma")
+        st.button("Guardar Cambios de Identidad")
 
     with tab3:
-        st.markdown("### 👥 Administración de Personal")
+        st.markdown("### Administración de Colaboradores")
+        st.write("Registre personal y asigne contraseñas de acceso.")
         
-        # AGREGAR USUARIO CON CONTRASEÑA
-        with st.expander("➕ Dar de Alta a Nuevo Colaborador"):
-            u_nom = st.text_input("Nombre de Usuario", placeholder="ej: DianaT", key="add_u_name")
-            u_pass = st.text_input("Asignar Contraseña (PIN)", type="password", key="add_u_pass")
-            u_rol = st.selectbox("Rol en la Firma", ["Abogado", "Agrimensor", "Asistente", "Pasante"])
-            
-            if st.button("🚀 Registrar en Base de Datos"):
-                if u_nom and u_pass:
-                    # Aquí iría la lógica de supabase.table("usuarios").insert(...)
-                    st.success(f"✅ Usuario {u_nom} registrado como {u_rol}.")
-                else:
-                    st.warning("Debe completar nombre y contraseña.")
+        with st.expander("➕ Dar de Alta Nuevo Usuario", expanded=True):
+            st.text_input("Nombre del Colaborador", key="add_user_name")
+            st.text_input("Asignar Contraseña/PIN", type="password", key="add_user_pass")
+            st.selectbox("Rol en la Firma", ["Abogado", "Agrimensor", "Asistente"])
+            if st.button("Registrar en Sistema"):
+                st.success("Usuario registrado exitosamente.")
 
     with tab4:
-        st.markdown("### 🎨 Personalización de la Oficina Digital")
-        st.write("Ajuste el entorno visual para su comodidad visual.")
+        st.markdown("### Personalización de la Oficina Digital")
+        st.write("Ajuste la apariencia visual de su entorno de trabajo.")
         
-        tema = st.selectbox("Tema de Interfaz", ["Ejecutivo (Dark Mode)", "Profesional (Claro)", "Alto Contraste (Lectura Legal)"])
-        fuente = st.selectbox("Estilo de Letra", ["Moderna (Sans Serif)", "Clásica (Serif)", "Técnica (Monospace)"])
+        col_v1, col_v2 = st.columns(2)
+        with col_v1:
+            st.color_picker("Color de Acento (Botones y Títulos)", "#003366")
+            st.selectbox("Tipo de Letra (Fuente)", ["Google Sans", "Roboto", "Lexend", "Arial"])
+        with col_v2:
+            st.selectbox("Fondo de Interfaz", ["Oscuro Profundo", "Gris Profesional", "Blanco Limpio"])
+            st.slider("Intensidad de Brillo", 0, 100, 50)
         
-        if st.button("✨ Aplicar Cambios Visuales"):
-            st.toast("Cambiando apariencia del sistema...", icon="🖌️")
+        st.button("Aplicar Cambios Estéticos")
             # Nota: Esto se complementa con CSS personalizado en el inicio del script
         # Aquí va la función de agregar/borrar usuarios...
 def login_sistema():
