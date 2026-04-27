@@ -1233,22 +1233,20 @@ def vista_registro_maestro():
                     st.error(f"❌ Error al guardar en el servidor: {e}")
 
 # =========================================================
-# ENRUTADOR PRINCIPAL (ESTO VA AL FINAL DE TODO EL ARCHIVO)
+# ENRUTADOR PRINCIPAL (EL MOTOR DEFINITIVO)
 # =========================================================
 
 if menu == "🏠 Mando Central":
-    vista_mando_central() # ¡Le quitamos el # y borramos el st.info!
+    vista_mando_central()
 
-elif menu == "⚙️ Configuración":
-    vista_configuracion() # <--- Asegúrese de que diga esto y NO st.info
-
-# ... (El resto sigue igual) ...
+elif menu == "👤 Registro Maestro":
+    vista_registro_maestro()
 
 elif menu == "📁 Archivo Digital":
     st.info("Archivo Digital (En construcción)")
 
 elif menu == "📄 Plantillas Auto":
-    vista_plantillas_auto() # Nuestra obra maestra blindada
+    vista_plantillas_auto()
 
 elif menu == "📅 Alertas y Plazos":
     st.info("Alertas y Plazos (En construcción)")
@@ -1257,4 +1255,4 @@ elif menu == "💵 Facturación":
     st.info("Facturación (En construcción)")
 
 elif menu == "⚙️ Configuración":
-    st.info("Configuración (En construcción)")
+    vista_configuracion() # <--- ¡Solo una vez y llamando a la función real!
