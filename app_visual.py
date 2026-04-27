@@ -825,101 +825,104 @@ def vista_archivo_digital():
 import io
 from docxtpl import DocxTemplate
 
+import io
+from docxtpl import DocxTemplate
+from datetime import datetime
+
 def vista_plantillas_auto():
     st.title("📄 Generador Automático de Documentos")
     st.subheader("Redacción Asistida | AboAgrim Pro")
     st.divider()
 
-    st.markdown("### 1️⃣ Selección de Expediente")
-    
     try:
-        # Traer expedientes de la base de datos
-        res = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, cedula, tipo_acto, parcela, dc, municipio, provincia").execute()
+        # 1. Recuperar expedientes para el buscador
+        res = supabase.table("expedientes_maestros").select("*").execute()
         
         if not res.data:
-            st.warning("⚠️ No hay expedientes registrados. Vaya al Registro Maestro para crear uno.")
+            st.warning("⚠️ No se encontraron expedientes en el Registro Maestro. Primero debe registrar un caso.")
             return
 
-        # Crear diccionario para el buscador
+        # Buscador dinámico
         dict_exp = {f"EXP: {e['expediente']} - {e['nombre_propietario']}": e for e in res.data}
+        seleccion = st.selectbox("🔍 Seleccione el expediente para extraer datos:", ["Seleccione..."] + list(dict_exp.keys()))
         
-        # Buscador
-        seleccion = st.selectbox("Seleccione el caso para extraer los datos:", ["Seleccione un caso..."] + list(dict_exp.keys()))
-        
-        if seleccion == "Seleccione un caso...":
-            st.info("👆 Seleccione un expediente para continuar.")
+        if seleccion == "Seleccione...":
+            st.info("👆 Por favor, elija un expediente para cargar la información legal y técnica.")
             return
             
-        caso_elegido = dict_exp[seleccion]
-        st.success(f"✅ Datos cargados para: **{caso_elegido['nombre_propietario']}**")
+        caso = dict_exp[seleccion]
 
         st.write("---")
-        st.markdown("### 2️⃣ Selección de Plantilla")
         
-        # Opciones de plantillas
-        tipo_plantilla = st.selectbox(
-            "¿Qué tipo de documento desea generar?",
-            ["Instancia Solicitud de Mensura (Técnico)", 
-             "Contrato de Cuota Litis (Legal)",
-             "Acto de Alguacil (Notificación)"]
-        )
+        # 2. Configuración de la Plantilla
+        col1, col2 = st.columns(2)
+        with col1:
+            tipo_doc = st.selectbox("📝 Tipo de Documento:", [
+                "Instancia de Solicitud de Mensura",
+                "Contrato de Cuota Litis",
+                "Acto de Alguacil",
+                "Instancia de Litis sobre Derecho Registrado"
+            ])
+        with col2:
+            st.caption("⚙️ Variables detectadas")
+            st.json({
+                "Cliente": caso.get('nombre_propietario'),
+                "Cédula": caso.get('cedula'),
+                "Parcela": caso.get('parcela'),
+                "DC": caso.get('dc')
+            })
 
-        st.write("---")
-        st.markdown("### 3️⃣ Generación y Descarga")
-
-        if st.button(f"🚀 Generar {tipo_plantilla}", type="primary", use_container_width=True):
-            with st.spinner('Ensamblando documento legal...'):
+        # 3. Proceso de Generación
+        if st.button(f"🚀 Generar y Descargar Word", type="primary", use_container_width=True):
+            with st.spinner("Procesando plantilla y vinculando datos..."):
                 try:
-                    # Aquí es donde ocurre la magia. 
-                    # El sistema necesita un archivo base (ej: 'plantilla_mensura.docx')
-                    # que debe estar guardado en la misma carpeta que su código.
-                    
-                    nombre_archivo_base = ""
-                    if "Mensura" in tipo_plantilla:
-                        nombre_archivo_base = "plantilla_mensura.docx"
-                    elif "Cuota" in tipo_plantilla:
-                        nombre_archivo_base = "plantilla_cuota_litis.docx"
-                    else:
-                        nombre_archivo_base = "plantilla_alguacil.docx"
-
-                    # Intentamos abrir la plantilla
-                    doc = DocxTemplate(nombre_archivo_base)
-                    
-                    # Estos son los "huecos" que el sistema va a llenar en el Word
-                    contexto = {
-                        'nombre_cliente': caso_elegido.get('nombre_propietario', 'N/A'),
-                        'cedula_cliente': caso_elegido.get('cedula', 'N/A'),
-                        'numero_parcela': caso_elegido.get('parcela', 'N/A'),
-                        'distrito_catastral': caso_elegido.get('dc', 'N/A'),
-                        'municipio': caso_elegido.get('municipio', 'N/A'),
-                        'provincia': caso_elegido.get('provincia', 'N/A'),
-                        'fecha_actual': datetime.now().strftime("%d de %B del %Y")
+                    # Determinamos el archivo .docx que debe existir en GitHub
+                    mapa_plantillas = {
+                        "Instancia de Solicitud de Mensura": "plantilla_mensura.docx",
+                        "Contrato de Cuota Litis": "plantilla_cuota_litis.docx",
+                        "Acto de Alguacil": "plantilla_alguacil.docx",
+                        "Instancia de Litis sobre Derecho Registrado": "plantilla_litis.docx"
                     }
                     
-                    # Llenamos el documento
+                    nombre_base = mapa_plantillas.get(tipo_doc)
+                    doc = DocxTemplate(nombre_base)
+                    
+                    # Diccionario de datos para el Word
+                    contexto = {
+                        'nombre_cliente': caso.get('nombre_propietario', '__________'),
+                        'cedula_cliente': caso.get('cedula', '__________'),
+                        'expediente': caso.get('expediente', '__________'),
+                        'parcela': caso.get('parcela', '__________'),
+                        'dc': caso.get('dc', '__________'),
+                        'municipio': caso.get('municipio', '__________'),
+                        'provincia': caso.get('provincia', '__________'),
+                        'fecha_hoy': datetime.now().strftime("%d de %B del %Y")
+                    }
+                    
                     doc.render(contexto)
                     
-                    # Preparamos el archivo para descargarlo sin guardarlo en el servidor
-                    bio = io.BytesIO()
-                    doc.save(bio)
+                    # Preparar descarga
+                    buffer = io.BytesIO()
+                    doc.save(buffer)
+                    buffer.seek(0)
                     
                     st.download_button(
-                        label="📥 Descargar Documento en Word",
-                        data=bio.getvalue(),
-                        file_name=f"{caso_elegido['expediente']}_{tipo_plantilla.replace(' ', '_')}.docx",
+                        label="📥 Descargar Documento Listo",
+                        data=buffer,
+                        file_name=f"{caso['expediente']}_{tipo_doc.replace(' ', '_')}.docx",
                         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                         use_container_width=True
                     )
                     st.balloons()
-                    
+
                 except FileNotFoundError:
-                    st.error(f"❌ Falta el archivo base: `{nombre_archivo_base}`.")
-                    st.info("Debe subir un documento Word con ese nombre a su repositorio de GitHub para que el sistema sepa qué formato usar.")
+                    st.error(f"❌ Error: No se encontró el archivo `{nombre_base}` en el repositorio.")
+                    st.info("Para que esto funcione, debe subir sus modelos de Word a GitHub con esos nombres exactos.")
                 except Exception as e:
-                    st.error(f"Error al procesar el documento: {e}")
+                    st.error(f"Ocurrió un error técnico: {e}")
 
     except Exception as e:
-        st.error(f"Error de conexión: {e}")
+        st.error(f"Error de conexión con la base de datos: {e}")
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
 
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
