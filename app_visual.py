@@ -1319,6 +1319,7 @@ def vista_registro_maestro():
                     st.rerun()
                 except Exception as e:
                     st.error(f"❌ Error al guardar en el servidor: {e}")
+
 # =========================================================
 # ENRUTADOR PRINCIPAL (ESTO VA AL FINAL DE TODO EL ARCHIVO)
 # =========================================================
