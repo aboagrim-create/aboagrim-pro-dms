@@ -1004,7 +1004,7 @@ if btn_guardar:
                 id_generado = res.data[0]['id']
                 nombre_cliente = st.session_state.get('in_np', 'Sin_Nombre')
 
-                # 2. Generamos la Carátula de Word
+                # 2. Generamos la Ficha Maestra de Word
                 datos_resumen = {
                     "num_expediente": f"RES-{id_generado}",
                     "cliente_nombre": nombre_cliente,
@@ -1016,12 +1016,16 @@ if btn_guardar:
                     "inmueble_dc": st.session_state.get('in_dc', '_______'),
                     "profesional_a_cargo": "Lic. Jhonny Matos, Presidente Fundador"
                 }
-                
-                # 3. Flujo de Drive (Oficina Virtual)
-                with st.status("⏳ Creando oficina virtual y subiendo archivos...", expanded=True):
-                    url_carpeta = crear_oficina_virtual(nombre_cliente, f"RES-{id_generado}")
-                    
+
+                # 3. Flujo de Google Drive (Oficina Virtual)
+                with st.status("⏳ Creando oficina virtual en Google Drive...", expanded=True):
+                    ID_MAESTRA = "1d1FmJhurQ_Ojj8j_fKxyLBOr-zFqUTuz"
+                    url_carpeta = crear_oficina_virtual(nombre_cliente, id_generado, ID_MAESTRA)
+
                     if url_carpeta:
+                        # Guardamos el link de Drive en la base de datos
+                        supabase.table("expedientes_maestros").update({"url_drive": url_carpeta}).eq("id", id_generado).execute()
+                        
                         id_drive_carpeta = url_carpeta.split('/')[-1]
                         archivo_resumen = generar_documento_word("plantillas_maestras/0_sistema/caratula_maestra.docx", datos_resumen)
                         
@@ -1034,26 +1038,6 @@ if btn_guardar:
                 st.error(f"❌ Error al procesar: {e}")
         else:
             st.warning("⚠️ El nombre del propietario es obligatorio para crear el expediente.")
-                
-                
-                # 1. Guardamos en Supabase (usando su tabla expedientes_maestros)
-                # 1. Guardamos en Supabase (usando su tabla expedientes_maestros)
-                res = supabase.table("expedientes_maestros").insert(datos_a_guardar).execute()
-                id_generado = res.data[0]['id']
-                nombre_cliente = st.session_state.get('in_np', 'Sin_Nombre')
-
-                # 2. Iniciamos la magia de la nube (Google Drive)
-                with st.status("🏗️ Creando oficina virtual en Google Drive...", expanded=True) as status:
-                    
-                    # ---> IMPORTANTE: PEGUE AQUÍ SU ID DE DRIVE <---
-                    ID_MAESTRA = "1d1FmJhurQ_Ojj8j_fKxyLBOr-zFqUTuz" 
-                    
-                    url_carpeta = crear_oficina_virtual(nombre_cliente, id_generado, ID_MAESTRA)
-                    
-                    if url_carpeta:
-                        # Guardamos el link en la base de datos para el Archivo Digital
-                        supabase.table("expedientes_maestros").update({"url_drive": url_carpeta}).eq("id", id_generado).execute()
-                        status.update(label="✅ Oficina Virtual y Carpetas creadas!", state="complete")
                 
                 st.success(f"⚖️ Expediente de {nombre_cliente} registrado y organizado.")
                 if url_carpeta:
