@@ -933,13 +933,41 @@ def vista_plantillas_auto():
 
         st.divider() # Una línea separadora elegante
 
-        # 3. El botón de Acción
-        if st.button("🚀 Fabricar Documento", type="primary"):
-            st.info(f"⏳ Buscando datos del ID {id_seleccionado} para crear el documento: {tipo_doc}...")
-            # (En el próximo paso conectaremos aquí las plantillas de Word reales)
+        # 3. El botón de Acción Final
+        if st.button("🚀 Fabricar Documento", type="primary", use_container_width=True):
+            try:
+                # Traemos los datos del cliente elegido
+                res_datos = supabase.table("expedientes_maestros").select("*").eq("id", id_seleccionado).single().execute()
+                datos_cliente = res_datos.data
 
-    except Exception as e:
-        st.error(f"❌ Error al buscar en la base de datos: {e}")
+                # Mapeo de sus carpetas reales
+                rutas = {
+                    "Carátula Maestra": "plantillas_maestras/0_sistema/caratula_maestra.docx",
+                    "Contrato Cuota Litis": "plantillas_maestras/4_actos_y_contratos/cuota_litis/poder_cuota_litis/contrato_poder_cuota_litis.docx",
+                    "Aviso de Mensura": "plantillas_maestras/1_mensuras_catastrales/saneamiento/Aviso_de_Mensura.docx"
+                }
+
+                ruta_seleccionada = rutas.get(tipo_doc)
+
+                if ruta_seleccionada:
+                    # El motor 'docxtpl' entra en acción
+                    archivo_binario = generar_documento_word(ruta_seleccionada, datos_cliente)
+                    
+                    if archivo_binario:
+                        st.success(f"✅ ¡{tipo_doc} generado para {datos_cliente['nombre_propietario']}!")
+                        # El botón que le entrega el trabajo listo
+                        st.download_button(
+                            label="📥 DESCARGAR DOCUMENTO LISTO",
+                            data=archivo_binario,
+                            file_name=f"{tipo_doc}_{datos_cliente['nombre_propietario']}.docx",
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            use_container_width=True
+                        )
+                else:
+                    st.error("⚠️ No se encontró la ruta de esa plantilla en el servidor.")
+
+            except Exception as e:
+                st.error(f"❌ Error en la fábrica: {e}")
 
 
 def generar_documento_word(nombre_plantilla, diccionario_datos):
