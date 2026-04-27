@@ -1361,6 +1361,6 @@ elif menu == "📄 Plantillas Auto":
 elif menu == "📅 Alertas y Plazos":
     st.info("Módulo de Alertas y Plazos Operativo")
 elif menu == "💵 Facturación":
-    st.info("Módulo de Honorarios y Facturación Operativo")
+    vista_facturacion()
 elif menu == "⚙️ Configuración":
     vista_configuracion()
