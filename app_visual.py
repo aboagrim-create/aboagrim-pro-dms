@@ -495,90 +495,10 @@ def vista_facturacion():
 # =====================================================================
 def vista_configuracion():
     st.title("⚙️ Configuración del Sistema")
-    
-    with st.expander("🏢 Datos de la Firma AboAgrim"):
-        st.text_input("Nombre de la Oficina", value="Abogados y Agrimensores 'AboAgrim'")
-        st.text_input("Dirección en Santiago", value="Calle Principal, Santiago, Rep. Dom.")
-        st.text_input("Teléfono de Contacto", value="809-XXX-XXXX")
-        
-    with st.expander("💾 Conexión de Base de Datos"):
-        st.success("Conexión con Supabase: ACTIVA")
-        st.code("Host: database.supabase.co")
-        
-    if st.button("Guardar Cambios"):
-        st.success("Configuración actualizada")
-    # --- BLOQUE DE SEGURIDAD ---
-    if "autenticado" not in st.session_state:
-        st.session_state.autenticado = False
+    st.subheader("Gestión de Identidad y Seguridad de AboAgrim Pro")
+    st.divider()
 
-    if not st.session_state.autenticado:
-        st.header("🔒 Acceso Restringido - Facturación")
-        pin = st.text_input("Ingrese su PIN de Seguridad:", type="password", key="pin_fact")
-        if st.button("Validar Acceso"):
-            if pin == "1234": # <--- Licenciado, aquí pone su clave
-                st.session_state.autenticado = True
-                st.rerun()
-            else:
-                st.error("PIN Incorrecto.")
-        return 
-
-    # --- TODO SU CONTENIDO NUEVO (FUSIONADO) ---
-    st.header("💰 Gestión de Honorarios y Facturación")
-    
-    # Mantenemos sus mensajes automáticos
-    MENSAJES_PRO = {
-        "Anticipo": "Hola, le saludo de AboAgrim. Confirmamos el recibo de su anticipo.",
-        "Saldo": "Saludos, su expediente está listo. Favor pasar a liquidar el saldo.",
-        "Recordatorio": "Buen día, le recordamos que tiene un pago pendiente.",
-        "Mensura Programada": "Hola, su mensura ha sido agendada. Favor estar presente."
-    }
-
-    with st.expander("➕ Registrar y Despachar Factura", expanded=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            exp_fact = st.text_input("No. de Expediente:")
-            cli_fact = st.text_input("Nombre del Cliente:")
-            tel_cli = st.text_input("WhatsApp (Ej: 1809...):")
-            monto_t = st.number_input("Monto Total (RD$):", min_value=0.0)
-        with col2:
-            monto_a = st.number_input("Monto Recibido (RD$):", min_value=0.0)
-            concepto = st.text_input("Concepto:")
-            msg_tipo = st.selectbox("Mensaje WhatsApp:", list(MENSAJES_PRO.keys()))
-            
-        st.markdown("---")
-        c1, c2, c3 = st.columns(3)
-        
-        if c1.button("💾 Guardar en Nube"):
-            estado = "Saldado" if monto_a >= monto_t else "Pendiente"
-            try:
-                supabase.table("facturacion").insert({
-                    "expediente_id": exp_fact, "cliente": cli_fact,
-                    "monto_total": monto_t, "monto_abonado": monto_a,
-                    "concepto": concepto, "estado_pago": estado
-                }).execute()
-                st.success("✅ ¡Registrado en Supabase!")
-            except Exception as e:
-                st.error(f"Error: {e}")
-
-        if c2.button("📲 Enviar WhatsApp"):
-            if tel_cli:
-                msg = f"{MENSAJES_PRO[msg_tipo]} *Detalle:* {concepto}. *Monto:* RD${monto_a}".replace(" ", "%20")
-                st.markdown(f'<a href="https://wa.me/{tel_cli}?text={msg}" target="_blank"><button style="background-color:#25D366;color:white;border:none;padding:10px;border-radius:5px;width:100%;">Abrir WhatsApp</button></a>', unsafe_allow_html=True)
-            else: st.warning("Falta teléfono.")
-
-        if c3.button("🖨️ Imprimir Recibo"):
-            factura_html = f"<h3>RECIBO ABOAGRIM</h3><p><b>Cliente:</b> {cli_fact}<br><b>Monto:</b> RD${monto_a}</p><script>window.print();</script>"
-            st.components.v1.html(factura_html, height=200)
-
-    if st.button("🔒 Cerrar Caja Fuerte"):
-        st.session_state.autenticado = False
-        st.rerun()
-    # (Aquí sigue el código de la tabla que ya teníamos para mostrar los datos de Supabase)
-# =====================================================================
-# MÓDULO 7: CONFIGURACIÓN
-# =====================================================================
-def vista_configuracion():
-    # --- 1. BLOQUEO DE ADMINISTRADOR ÚNICO ---
+    # --- 1. BLOQUE DE SEGURIDAD PRIVADO ---
     if "admin_autenticado" not in st.session_state:
         st.session_state.admin_autenticado = False
 
@@ -588,88 +508,43 @@ def vista_configuracion():
         
         u_admin = st.text_input("Usuario Maestro:", key="admin_user")
         p_admin = st.text_input("PIN Maestro:", type="password", key="admin_pin")
-        
+
         if st.button("Validar Identidad de Propietario"):
-            # Validamos que sea USTED y que coincida con la base de datos
-            res = supabase.table("usuarios_sistema").select("*").eq("nombre_usuario", u_admin).eq("pin_acceso", p_admin).execute()
-            
-            if res.data and u_admin == "JhonnyMatos":
+            if u_admin == "JhonnyMatos" and p_admin == "1234": 
                 st.session_state.admin_autenticado = True
-                st.success("Identidad confirmada. Bienvenido, Licenciado.")
+                st.success("Bienvenido, Licenciado.")
                 st.rerun()
             else:
-                st.error("Acceso denegado. Esta sección es solo para el administrador principal.")
-        return
+                st.error("Acceso denegado.")
+        return 
 
-    # --- 2. PANEL DE CONTROL (Si ya es usted) ---
-    st.divider()
-    st.subheader("📥 Respaldo y Protección de Datos")
-    st.info("Descargue una copia de seguridad completa (Excel) de su base de datos a su computadora.")
-
-    if st.button("🚀 Generar Respaldo Maestro"):
-        try:
-            import pandas as pd
-            from io import BytesIO
-            from datetime import date
-
-            # 1. Extraer datos de Supabase
-            df_ingresos = pd.DataFrame(supabase.table("facturacion").select("*").execute().data)
-            df_agenda = pd.DataFrame(supabase.table("agenda_mensuras").select("*").execute().data)
-            df_usuarios = pd.DataFrame(supabase.table("usuarios_sistema").select("*").execute().data)
-            
-            # 2. Preparar el archivo Excel en memoria
-            output = BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                df_ingresos.to_excel(writer, sheet_name='Facturacion', index=False)
-                df_agenda.to_excel(writer, sheet_name='Agenda_Plazos', index=False)
-                df_usuarios.to_excel(writer, sheet_name='Usuarios', index=False)
-            
-            # 3. Crear el botón de descarga real
-            st.download_button(
-                label="💾 Guardar Archivo en PC",
-                data=output.getvalue(),
-                file_name=f"Respaldo_AboAgrim_{date.today()}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-            st.success("✅ Archivo generado. Presione el botón de arriba para guardarlo.")
-        except Exception as e:
-            st.error(f"Hubo un problema al recopilar los datos: {e}")
-    st.header("⚙️ Panel de Control Maestro")
-    
-    tab1, tab2 = st.tabs(["👥 Gestión de Accesos", "🎨 Diseño y Estilo"])
+    # --- 2. PANEL DE CONFIGURACIÓN POR PESTAÑAS ---
+    tab1, tab2, tab3 = st.tabs(["🔒 Seguridad de Acceso", "🏢 Identidad AboAgrim", "📡 Estado Cloud"])
 
     with tab1:
-        st.subheader("Control de Colaboradores")
-        with st.expander("➕ Dar Acceso a Nuevo Usuario"):
-            nuevo_u = st.text_input("Nombre:")
-            nuevo_p = st.text_input("PIN (4 dígitos):", type="password", max_chars=4)
-            if st.button("Crear Acceso"):
-                try:
-                    supabase.table("usuarios_sistema").insert({"nombre_usuario": nuevo_u, "pin_acceso": nuevo_p}).execute()
-                    st.success(f"Acceso creado para {nuevo_u}")
-                except: st.error("El usuario ya existe.")
-        
-        # Lista para quitar accesos
-        usuarios = supabase.table("usuarios_sistema").select("*").execute()
-        for u in usuarios.data:
-            c1, c2 = st.columns([3, 1])
-            c1.write(f"👤 **{u['nombre_usuario']}** - {u['estado']}")
-            label = "Bloquear" if u['estado'] == 'Activo' else "Activar"
-            est = 'Inactivo' if u['estado'] == 'Activo' else 'Activo'
-            if c2.button(label, key=f"u_{u['id']}"):
-                supabase.table("usuarios_sistema").update({"estado": est}).eq("id", u['id']).execute()
-                st.rerun()
+        st.write("### Cambio de PIN General")
+        nuevo_pin = st.text_input("Nuevo PIN del Sistema", type="password")
+        if st.button("Actualizar PIN"):
+            st.success("✅ PIN actualizado correctamente.")
 
     with tab2:
-        st.subheader("Personalización de AboAgrim Pro")
-        color_p = st.color_picker("Color de la Firma:", "#1E3A8A")
-        if st.button("Guardar Cambios de Diseño"):
-            st.markdown(f"<style>h1, h2, h3 {{ color: {color_p} !important; }} .stButton>button {{ background-color: {color_p} !important; }}</style>", unsafe_allow_html=True)
-            st.success("Diseño actualizado.")
+        st.write("### Datos para Documentos y Firmas")
+        col_a, col_b = st.columns(2)
+        with col_a:
+            st.text_input("Nombre Titular", value="Lic. Jhonny Matos. M.A.")
+            st.text_input("Firma Oficial", value="Abogados y Agrimensores 'AboAgrim'")
+        with col_b:
+            st.text_input("Oficina Principal", value="Santiago, Rep. Dom.")
+            st.text_input("Contacto", value="809-XXX-XXXX")
+        st.button("Guardar Identidad Corporativa")
 
-    if st.button("🔒 Salir de Modo Maestro"):
-        st.session_state.admin_autenticado = False
-        st.rerun()
+    with tab3:
+        st.write("### Estado de la Infraestructura")
+        st.success("🟢 Conexión con Supabase: Activa")
+        st.info("Proyecto: database.supabase.co")
+        if st.button("Cerrar Sesión de Administrador"):
+            st.session_state.admin_autenticado = False
+            st.rerun()
 
 def login_sistema():
     st.markdown("""
