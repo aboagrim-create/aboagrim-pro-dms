@@ -909,43 +909,60 @@ def vista_plantillas_auto():
 
         opciones_exp = {f"RES-{e['id']} | {e['nombre_propietario']}": e['id'] for e in res.data}
 
-        col1, col2 = st.columns(2)
-        with col1:
-            seleccion = st.selectbox("🔍 1. Busque al Cliente:", list(opciones_exp.keys()))
-            id_seleccionado = opciones_exp[seleccion]
-            
-        with col2:
-            tipo_doc = st.selectbox("📝 2. ¿Qué documento desea?", 
-                                    ["Carátula Maestra", "Contrato Cuota Litis", "Aviso de Mensura"])
+        # --- ÁREA DE SELECCIÓN DINÁMICA ---
+    col1, col2, col3 = st.columns(3)
 
-        st.divider()
+    with col1:
+        # El sistema ya tiene a los clientes de Supabase
+        seleccion_cliente = st.selectbox("🔍 1. Cliente/Expediente:", list(opciones_exp.keys()))
+        id_cliente = opciones_exp[seleccion_cliente]
+
+    with col2:
+        # Menú de Jurisdicción
+        jurisdiccion = st.selectbox("🏛️ 2. Jurisdicción:", list(TRAMITES_JI.keys()))
+
+    with col3:
+        # Este menú cambia solo según lo que eligió en la Jurisdicción
+        tramite = st.selectbox(f"📋 3. Trámite:", TRAMITES_JI[jurisdiccion])
+
+    st.divider()
+
+    # --- LÓGICA DE CARGA DE CARPETAS ---
+    # Convertimos el nombre del trámite a formato de archivo (ej: "Deslinde" -> "deslinde.docx")
+    archivo_nombre = tramite.lower().replace(" ", "_") + ".docx"
+    
+    # Asignamos la carpeta correcta según la jurisdicción
+    if "Mensuras" in jurisdiccion:
+        carpeta = "1_mensuras_catastrales"
+    elif "Registro" in jurisdiccion:
+        carpeta = "3_registro_titulos"
+    else:
+        carpeta = "2_jurisdiccion_original"
+
+    ruta_final = f"plantillas_maestras/{carpeta}/{archivo_nombre}"
 
         # 3. El botón definitivo (Línea 931)
-        if st.button("🚀 Fabricar Documento", type="primary", use_container_width=True):
+        if st.button(f"🚀 Fabricar {tramite}", type="primary", use_container_width=True):
+        with st.status(f"🛠️ Procesando {tramite} para la Jurisdicción Inmobiliaria...", expanded=False):
             try:
-                # Traemos los datos de Judith o el cliente seleccionado
-                res_datos = supabase.table("expedientes_maestros").select("*").eq("id", id_seleccionado).single().execute()
-                datos_cliente = res_datos.data
+                # 1. Buscamos los datos técnicos en la base de datos
+                res = supabase.table("expedientes_maestros").select("*").eq("id", id_cliente).single().execute()
+                datos = res.data
 
-                # Mapa de sus plantillas reales
-                rutas = {
-                    "Carátula Maestra": "plantillas_maestras/0_sistema/caratula_maestra.docx",
-                    "Contrato Cuota Litis": "plantillas_maestras/4_actos_y_contratos/cuota_litis/poder_cuota_litis/contrato_poder_cuota_litis.docx",
-                    "Aviso de Mensura": "plantillas_maestras/1_mensuras_catastrales/saneamiento/Aviso_de_Mensura.docx"
-                }
+                # 2. Inyectamos los datos en la plantilla de Word
+                archivo_listo = generar_documento_word(ruta_final, datos)
 
-                ruta_final = rutas.get(tipo_doc)
-                if ruta_final:
-                    # Llamamos al motor de Word
-                    archivo_binario = generar_documento_word(ruta_final, datos_cliente)
-                    if archivo_binario:
-                        st.success(f"✅ ¡{tipo_doc} generado con éxito!")
-                        st.download_button("📥 DESCARGAR DOCUMENTO", archivo_binario, f"{tipo_doc}.docx", use_container_width=True)
-                else:
-                    st.error("⚠️ No se encontró la ruta de la plantilla.")
-            
-            except Exception as e_intern:
-                st.error(f"❌ Error interno en la fábrica: {e_intern}")
+                if archivo_listo:
+                    st.success(f"✅ ¡{tramite} generado con éxito!")
+                    st.download_button(
+                        label="📥 DESCARGAR DOCUMENTO PARA DEPÓSITO",
+                        data=archivo_listo,
+                        file_name=f"{tramite}_{datos['nombre_propietario']}.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        use_container_width=True
+                    )
+            except Exception as e:
+                st.error(f"❌ Error: Asegúrese de que el archivo '{archivo_nombre}' esté en la carpeta '{carpeta}'.")
 
     # Este e_extern debe estar alineado con el inicio de la función, un paso a la izquierda
     except Exception as e_extern:
