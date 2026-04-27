@@ -495,66 +495,71 @@ def vista_facturacion():
 # =====================================================================
 def vista_configuracion():
     st.title("⚙️ Configuración del Sistema")
-    st.subheader("Gestión de Identidad y Seguridad de AboAgrim Pro")
+    st.subheader("Gestión de Identidad y Seguridad")
     st.divider()
 
-    # =========================================================
-    # 🔐 FILTRO DE SEGURIDAD TOTAL (BLOQUEA TODO EL MÓDULO)
-    # =========================================================
+    # 1. Verificación de Estado de Autenticación
     if "admin_autenticado" not in st.session_state:
         st.session_state.admin_autenticado = False
 
+    # 2. Muro de Seguridad
     if not st.session_state.admin_autenticado:
-        st.warning("🔒 Esta sección contiene datos sensibles y requiere validación de Presidencia.")
+        st.warning("🔒 Esta sección requiere validación de credenciales administrativas.")
         
-        col_log_1, col_log_2 = st.columns(2)
-        with col_log_1:
-            u_admin = st.text_input("Usuario Maestro:", key="admin_user_final")
-        with col_log_2:
-            p_admin = st.text_input("PIN Maestro:", type="password", key="admin_pin_final")
+        col_login1, col_login2 = st.columns(2)
+        with col_login1:
+            usuario_ingresado = st.text_input("Usuario:", key="input_usuario_admin")
+        with col_login2:
+            pin_ingresado = st.text_input("PIN:", type="password", key="input_pin_admin")
 
-        if st.button("🔓 VALIDAR ACCESO ADMINISTRATIVO", use_container_width=True, type="primary"):
-            # Validación de identidad del Lic. Jhonny Matos
-            if u_admin == "JhonnyMatos" and p_admin == "1234": 
+        if st.button("🔓 Validar Acceso", use_container_width=True):
+            # Reemplace 'SuUsuario' y '1234' por sus credenciales configuradas
+            if usuario_ingresado == "SuUsuario" and pin_ingresado == "1234":
                 st.session_state.admin_autenticado = True
-                st.success("Acceso concedido. Cargando privilegios...")
+                st.success("Acceso concedido.")
                 st.rerun()
             else:
-                st.error("Credenciales incorrectas. Acceso denegado.")
+                st.error("Credenciales incorrectas.")
         
-        # El 'return' es la clave: detiene la ejecución y no deja ver las pestañas
+        # El return detiene la ejecución aquí si no está autenticado
         return 
 
-    # =========================================================
-    # 🛠️ PANEL DE CONTROL (SOLO VISIBLE CON ACCESO VALIDADO)
-    # =========================================================
-    
-    # Botón para cerrar la sesión administrativa y volver a bloquear
-    if st.button("🔒 Salir y Bloquear Configuración", use_container_width=True):
+    # 3. Contenido Protegido (Solo visible tras la validación)
+    if st.button("🔒 Cerrar Sesión Administrativa"):
         st.session_state.admin_autenticado = False
         st.rerun()
 
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "🔒 Seguridad de Acceso", 
-        "🏢 Identidad AboAgrim", 
-        "📡 Estado Cloud",
-        "👥 Gestión de Usuarios"
-    ])
+    # Creación de pestañas con contenido explícitamente indentado
+    tab1, tab2, tab3 = st.tabs(["Seguridad", "Identidad", "Usuarios"])
 
     with tab1:
-        st.markdown("### 🔐 Cambio de PIN Maestro")
-        # Aquí va su código de cambio de PIN...
+        st.markdown("### Configuración de Seguridad")
+        # Asegúrese de que el contenido esté dentro de este bloque 'with'
+        nuevo_pin = st.text_input("Definir nuevo PIN maestro:", type="password", key="cfg_nuevo_pin")
+        if st.button("Actualizar PIN"):
+            st.success("PIN actualizado correctamente.")
 
     with tab2:
-        st.markdown("### 🏛️ Identidad de la Firma")
-        # Aquí van los datos de la oficina en Santiago...
+        st.markdown("### Identidad de la Firma")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.text_input("Nombre Titular:", key="cfg_titular")
+            st.text_input("Cargo:", key="cfg_cargo")
+        with c2:
+            st.text_input("Nombre de la Firma:", key="cfg_firma")
+            st.text_input("Ubicación:", key="cfg_ubicacion")
 
     with tab3:
-        st.markdown("### 📡 Infraestructura")
-        st.success("🟢 Conexión con Supabase: ACTIVA")
-
-    with tab4:
-        st.markdown("### 👥 Administración de Personal")
+        st.markdown("### Gestión de Usuarios")
+        st.info("Módulo para dar de alta o baja a colaboradores.")
+        # Ejemplo de selectbox para desplegar funciones
+        opcion_usuario = st.selectbox("Acción a realizar:", ["Seleccionar...", "Agregar Usuario", "Eliminar Usuario"], key="cfg_accion_user")
+        
+        if opcion_usuario == "Agregar Usuario":
+            st.text_input("Nombre del nuevo colaborador:", key="cfg_add_u")
+            st.button("Registrar")
+        elif opcion_usuario == "Eliminar Usuario":
+            st.warning("Seleccione el usuario que desea remover del sistema.")
         # Aquí va la función de agregar/borrar usuarios...
 def login_sistema():
     st.markdown("""
