@@ -1230,47 +1230,92 @@ def crear_carpeta_expediente(nombre_cliente, id_expediente):
 import googleapiclient.discovery
 
 def vista_registro_maestro():
-    st.title("👤 Registro Maestro de Expedientes")
-    st.write("Complete los datos del propietario para abrir el expediente.")
+    st.title("🗂️ Registro Maestro de Clientes")
+    st.subheader("Gestión de Expedientes y Generales de Ley")
 
-    # Formulario simple y efectivo
+    # --- 1. LÓGICA DE NÚMERO DE EXPEDIENTE AUTOMÁTICO ---
+    try:
+        # Consultamos el último registro para seguir el orden ascendente
+        res_ultimo = supabase.table("expedientes_maestros").select("id").order("id", desc=True).limit(1).execute()
+        if res_ultimo.data:
+            siguiente_id = res_ultimo.data[0]['id'] + 1
+        else:
+            siguiente_id = 1
+        
+        # Formato: 2026-0001
+        n_expediente_auto = f"2026-{siguiente_id:04d}"
+        st.info(f"📂 Próximo Expediente a Generar: **{n_expediente_auto}**")
+    except Exception:
+        n_expediente_auto = "2026-0001"
+
+    # --- 2. DATOS PRINCIPALES DEL REGISTRO ---
+    st.write("---")
     with st.container():
-        in_np = st.text_input("Nombre del Propietario", key="reg_np_final")
-        in_cp = st.text_input("Cédula / Pasaporte", key="reg_cp_final")
-        in_exp = st.text_input("Número de Expediente (Opcional)", key="reg_exp_final")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            es_compania = st.toggle("🏢 ¿Es una Compañía / Entidad Jurídica?", value=False)
+            if es_compania:
+                nombre_cliente = st.text_input("Razón Social de la Empresa:", placeholder="Ej: Inversiones Inmobiliarias S.R.L.")
+                identificacion = st.text_input("RNC (Registro Nacional de Contribuyente):")
+            else:
+                nombre_cliente = st.text_input("Nombre Completo del Cliente:", placeholder="Ej: Juan Pérez Martínez")
+                identificacion = st.text_input("Cédula o Pasaporte:")
+
+        with col2:
+            telefono = st.text_input("Número de Teléfono / WhatsApp:", placeholder="809-XXX-XXXX")
+            domicilio = st.text_area("Domicilio o Residencia Física:", placeholder="Calle, No., Sector, Ciudad...")
+
+    # --- 3. MÓDULO DINÁMICO DE GENERALES ADICIONALES ---
+    st.write("---")
+    st.markdown("### ➕ Generales de Ley Adicionales")
+    st.caption("Agregue Nacionalidad, Estado Civil, Profesión u otros datos necesarios para el expediente.")
+    
+    if 'cant_gen_reg' not in st.session_state: st.session_state.cant_gen_reg = 0
+
+    c_btn1, c_btn2, c_sp = st.columns([1, 1, 3])
+    with c_btn1:
+        if st.button("➕ Agregar Dato", key="add_gen_reg"): st.session_state.cant_gen_reg += 1
+    with c_btn2:
+        if st.button("➖ Borrar Dato", key="del_gen_reg") and st.session_state.cant_gen_reg > 0: st.session_state.cant_gen_reg -= 1
+
+    datos_adicionales = {}
+    for i in range(st.session_state.cant_gen_reg):
+        rg1, rg2 = st.columns(2)
+        with rg1: 
+            etiqueta = st.text_input(f"Dato {i+1} (Ej: Estado Civil)", key=f"reg_et_{i}")
+        with rg2: 
+            valor = st.text_input(f"Descripción {i+1}", key=f"reg_vl_{i}")
+        if etiqueta: 
+            datos_adicionales[etiqueta.lower().replace(" ", "_")] = valor
 
     st.divider()
 
-    if st.button("💾 GUARDAR EXPEDIENTE", type="primary", use_container_width=True):
-        if in_np:
-            try:
-                # Guardamos en su base de datos de Supabase
-                datos = {
-                    "nombre_propietario": in_np, 
-                    "cedula_propietario": in_cp, 
-                    "expediente": in_exp
-                }
-                supabase.table("expedientes_maestros").insert(datos).execute()
-                st.success(f"✅ ¡Éxito! El expediente de {in_np} ha sido registrado.")
-            except Exception as e:
-                st.error(f"❌ Error al conectar con la base de datos: {e}")
+    # --- 4. BOTÓN DE GUARDADO FINAL ---
+    if st.button("💾 COMPLETAR REGISTRO MAESTRO", type="primary", use_container_width=True):
+        if not nombre_cliente:
+            st.error("❌ El nombre o razón social es obligatorio para el registro.")
         else:
-            st.warning("⚠️ El nombre del propietario es obligatorio para el registro.")
-
-# ==========================================
-# MOTOR DE NAVEGACIÓN (ESTO CIERRA EL ARCHIVO)
-# ==========================================
-vistas = {
-    "🏠 Mando Central": vista_mando,
-    "👤 Registro Maestro": vista_registro_maestro,
-    "📁 Archivo Digital": vista_archivo_digital,
-    "📄 Plantillas Auto": vista_plantillas_auto,
-    "📅 Alertas y Plazos": vista_alertas,
-    "💵 Facturación": vista_facturacion,
-    "⚙️ Configuración": vista_configuracion
-}
-
-if menu in vistas:
-    vistas[menu]()
-else:
-    st.error(f"Error: La sección '{menu}' no existe en el diccionario.")
+            with st.status("📡 Conectando con la base de datos de AboAgrim...", expanded=False):
+                try:
+                    # Preparamos el paquete de datos
+                    data_insert = {
+                        "expediente_codigo": n_expediente_auto,
+                        "nombre_propietario": nombre_cliente,
+                        "cedula_rnc": identificacion,
+                        "telefono": telefono,
+                        "domicilio": domicilio,
+                        "tipo_persona": "Jurídica" if es_compania else "Física",
+                        "datos_adicionales": datos_extras_dict # Se guarda como JSON en Supabase
+                    }
+                    
+                    # Insertamos en Supabase
+                    supabase.table("expedientes_maestros").insert(data_insert).execute()
+                    
+                    st.success(f"✅ ¡Expediente {n_expediente_auto} creado con éxito para {nombre_cliente}!")
+                    st.balloons()
+                    # Reiniciamos contadores para el próximo registro
+                    st.session_state.cant_gen_reg = 0
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Error al guardar en el servidor: {e}")
