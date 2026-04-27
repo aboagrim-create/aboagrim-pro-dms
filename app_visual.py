@@ -911,9 +911,6 @@ if st.session_state.get("admin_autenticado", False):
 if not st.session_state.get("admin_autenticado", False) or st.session_state.get("rol") == "Presidente Fundador":
     modulos.append("⚙️ Configuración")
 
-with st.sidebar:
-    st.markdown(f"**Firmado como:** {st.session_state.get('usuario', 'Invitado')}")
-    menu = st.radio("Ir a:", modulos)
 
 # Lógica de salto (Enrutador)
 if menu == "🏠 Mando Central":
