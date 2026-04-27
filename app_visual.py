@@ -897,7 +897,7 @@ with st.sidebar:
         
 def vista_plantillas_auto():
     st.title("📄 Fábrica de Documentos AboAgrim Pro")
-    st.subheader("Módulo Dinámico de la Jurisdicción Inmobiliaria")
+    st.subheader("Módulo de Control Técnico y Legal JI")
 
     # --- INICIALIZACIÓN DE MEMORIA DINÁMICA ---
     if 'cant_extras' not in st.session_state: st.session_state.cant_extras = 0
@@ -926,19 +926,25 @@ def vista_plantillas_auto():
         st.divider()
 
         # ==========================================
-        # 1. BLOQUE DE DATOS TÉCNICOS BASE
+        # 1. BLOQUE DE DATOS TÉCNICOS BASE (ACTUALIZADO)
         # ==========================================
         st.write(f"### 📑 Datos Estándar de JI")
         c1, c2, c3 = st.columns(3)
         with c1:
-            ji_parcela = st.text_input("Parcela No.")
-            ji_dc = st.text_input("Distrito Catastral (DC)")
+            ji_parcela = st.text_input("Parcela No.", placeholder="Ej: 123-A")
+            ji_dc = st.text_input("Distrito Catastral (DC)", placeholder="Ej: 01")
+            ji_solar_manzana = st.text_input("Solar / Manzana", placeholder="Ej: Solar 5, Manzana 12")
+            
         with c2:
             ji_matricula = st.text_input("Matrícula / Certificado")
             ji_libro = st.text_input("Libro / Folio")
+            ji_fecha_emision = st.text_input("Fecha Inscripción / Emisión", placeholder="DD/MM/AAAA")
+            
         with c3:
             ji_exp_ji = st.text_input("Expediente JI No.")
-            ji_tribunal_loc = st.text_input("Sede Tribunal/Registro", value="Santiago")
+            ji_ubicacion = st.text_input("Ubicación del Inmueble", value="Santiago")
+            ji_area = st.text_input("Área / Superficie (m²)")
+            ji_coordenadas = st.text_input("Coordenadas (UTM/WGS84)")
 
         # ==========================================
         # 2. CAMPOS EXTRA DINÁMICOS (JI)
@@ -954,7 +960,7 @@ def vista_plantillas_auto():
         for i in range(st.session_state.cant_extras):
             c_nom, c_val = st.columns(2)
             with c_nom: 
-                nombre_campo = st.text_input(f"Nombre del dato {i+1} (Ej: Acta Hito)", key=f"ex_n_{i}")
+                nombre_campo = st.text_input(f"Nombre del dato {i+1}", key=f"ex_n_{i}")
             with c_val: 
                 valor_campo = st.text_input(f"Valor {i+1}", key=f"ex_v_{i}")
             if nombre_campo: datos_extras_dict[nombre_campo.replace(" ", "_").lower()] = valor_campo
@@ -975,7 +981,7 @@ def vista_plantillas_auto():
             cp1, cp2, cp3 = st.columns(3)
             with cp1: n = st.text_input(f"Nombre del Profesional {i+1}", key=f"p_nom_{i}")
             with cp2: r = st.selectbox(f"Rol {i+1}", ["Abogado", "Agrimensor", "Notario Público"], key=f"p_rol_{i}")
-            with cp3: c = st.text_input(f"Colegiatura (CODIA / CARD) {i+1}", key=f"p_col_{i}")
+            with cp3: c = st.text_input(f"Colegiatura {i+1}", key=f"p_col_{i}")
             profesionales_lista.append({"nombre": n, "rol": r, "colegiatura": c})
 
         # ==========================================
@@ -994,7 +1000,7 @@ def vista_plantillas_auto():
             ca1, ca2, ca3 = st.columns(3)
             with ca1: an = st.text_input(f"Nombre Apoderado {i+1}", key=f"a_nom_{i}")
             with ca2: ac = st.text_input(f"Cédula {i+1}", key=f"a_ced_{i}")
-            with ca3: ar = st.text_input(f"En representación de {i+1}", placeholder="Ej: Herederos / Empresa", key=f"a_rep_{i}")
+            with ca3: ar = st.text_input(f"En representación de {i+1}", key=f"a_rep_{i}")
             apoderados_lista.append({"nombre": an, "cedula": ac, "representa": ar})
 
         st.divider()
@@ -1007,19 +1013,22 @@ def vista_plantillas_auto():
         ruta_final = f"plantillas_maestras/{carpeta}/{archivo_nombre}"
 
         if st.button(f"🚀 FABRICAR DOCUMENTO MAESTRO", type="primary", use_container_width=True) and id_cliente:
-            with st.status("🛠️ Ensamblando expediente con datos dinámicos...", expanded=False):
+            with st.status("🛠️ Ensamblando expediente...", expanded=False):
                 try:
                     res_db = supabase.table("expedientes_maestros").select("*").eq("id", id_cliente).single().execute()
                     
-                    # Consolidamos el DICCIONARIO MAESTRO
                     contexto_word = {
                         **res_db.data,
                         "parcela": ji_parcela,
                         "dc": ji_dc,
+                        "solar_manzana": ji_solar_manzana,
                         "matricula": ji_matricula,
                         "libro_folio": ji_libro,
+                        "fecha_emision": ji_fecha_emision,
                         "expediente_ji": ji_exp_ji,
-                        "sede_jurisdiccional": ji_tribunal_loc,
+                        "ubicacion_inmueble": ji_ubicacion,
+                        "area": ji_area,
+                        "coordenadas": ji_coordenadas,
                         "firma_presidente": "Lic. Jhonny Matos. M.A.",
                         "cargo_presidente": "Presidente Fundador AboAgrim",
                         **datos_extras_dict,
@@ -1030,75 +1039,46 @@ def vista_plantillas_auto():
                     archivo_bin = generar_documento_word(ruta_final, contexto_word)
 
                     if archivo_bin:
-                        st.success(f"✅ ¡Expediente para {res_db.data['nombre_propietario']} generado con éxito!")
-                        st.download_button(
-                            label="📥 DESCARGAR DOCUMENTO",
-                            data=archivo_bin,
-                            file_name=f"{tramite}_{res_db.data['nombre_propietario']}.docx",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                            use_container_width=True
-                        )
+                        st.success(f"✅ ¡Documento generado para {res_db.data['nombre_propietario']}!")
+                        st.download_button("📥 DESCARGAR DOCUMENTO", archivo_bin, f"{tramite}.docx", use_container_width=True)
                 except Exception as e:
-                    st.error(f"❌ Error al fabricar. Verifique que la plantilla exista. Detalle: {e}")
+                    st.error(f"❌ Error al fabricar: {e}")
 
         # ==========================================
-        # 6. MÓDULO DE MANTENIMIENTO DE PLANTILLAS (CON PIN)
+        # 6. MÓDULO DE MANTENIMIENTO (CON PIN)
         # ==========================================
         st.write("---")
-        with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS (Solo Presidente)"):
-            st.warning("⚠️ Área Restringida. Ingrese credenciales de administrador para modificar las plantillas del sistema.")
-            
-            # 1. El Candado de Seguridad
-            pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_plantillas_auto")
-            
-            # --- CAMBIE "1234" POR SU PIN SECRETO REAL ---
-            PIN_SECRETO = "0681" 
+        with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS"):
+            pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password")
+            PIN_SECRETO = "1234" # Cambie esto por su PIN real
             
             if pin_ingresado == PIN_SECRETO:
-                st.success("✅ Acceso Autorizado, Lic. Jhonny Matos.")
-                
                 maint_col1, maint_col2 = st.columns(2)
-                import os # Importación segura para la gestión de archivos
-                
+                import os
                 with maint_col1:
                     st.markdown("**📤 Subir o Actualizar**")
-                    destino = st.radio("¿A qué carpeta pertenece?", 
-                                     ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"])
-                    
+                    destino = st.radio("Carpeta:", ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"])
                     archivo_subido = st.file_uploader("Elija el archivo .docx", type=["docx"])
-                    
-                    if st.button("💾 Guardar Plantilla en Servidor"):
+                    if st.button("💾 Guardar"):
                         if archivo_subido:
                             os.makedirs(f"plantillas_maestras/{destino}", exist_ok=True)
-                            ruta_destino = f"plantillas_maestras/{destino}/{archivo_subido.name}"
-                            with open(ruta_destino, "wb") as f:
+                            with open(f"plantillas_maestras/{destino}/{archivo_subido.name}", "wb") as f:
                                 f.write(archivo_subido.getbuffer())
-                            st.success(f"✅ Archivo '{archivo_subido.name}' guardado en {destino}.")
-                            st.balloons()
-                        else:
-                            st.warning("⚠️ Seleccione un archivo primero.")
-
+                            st.success(f"✅ Guardado en {destino}.")
                 with maint_col2:
-                    st.markdown("**🗑️ Borrar Plantilla**")
-                    carpeta_borrar = st.selectbox("Carpeta para limpieza:", 
-                                                ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"],
-                                                key="del_folder")
-                    
+                    st.markdown("**🗑️ Borrar**")
+                    carpeta_borrar = st.selectbox("Carpeta:", ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"], key="del_f")
                     ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
-                    archivos_actuales = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
-                    
-                    archivo_a_borrar = st.selectbox("Seleccione archivo a eliminar:", archivos_actuales)
-                    
-                    if st.button("🗑️ ELIMINAR ARCHIVO DEFINITIVAMENTE", type="secondary"):
+                    archivos = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
+                    archivo_a_borrar = st.selectbox("Archivo a eliminar:", archivos)
+                    if st.button("🗑️ ELIMINAR"):
                         if archivo_a_borrar:
                             os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
-                            st.error(f"🗑️ El archivo '{archivo_a_borrar}' ha sido eliminado.")
+                            st.error(f"🗑️ Eliminado.")
                             st.rerun()
-            elif pin_ingresado != "":
-                st.error("❌ PIN incorrecto. Acceso denegado.")
 
     except Exception as e:
-        st.error(f"❌ Error crítico en el módulo: {e}")
+        st.error(f"❌ Error crítico: {e}")
 
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
 
