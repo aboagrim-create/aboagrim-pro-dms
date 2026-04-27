@@ -951,6 +951,29 @@ def vista_plantillas_auto():
     except Exception as e_extern:
         st.error(f"❌ Error al cargar los expedientes: {e_extern}")
 
+# 1. EL CEREBRO DE LA JI (Basado en sus imágenes)
+    TRAMITES_JI = {
+        "📍 Mensuras Catastrales": [
+            "Deslinde", "Saneamiento", "Subdivisión", "Refundición", 
+            "Actualización de Mensura", "Urbanización Parcelaria", 
+            "Regularización Parcelaria", "Modificación de Condominio",
+            "Solicitud de Autorización", "Oposición Expediente Técnico"
+        ],
+        "📜 Registro de Títulos": [
+            "Transferencia de Inmueble", "Hipoteca Convencional", 
+            "Cancelación de Hipoteca", "Certificación de Estado Jurídico", 
+            "Actualización de Generales", "Duplicado por Pérdida", 
+            "Constitución de Condominio", "Corrección de Certificación",
+            "Inscripción de Embargo", "Desafectación de Dominio Público"
+        ],
+        "⚖️ Tribunales de Tierras": [
+            "Determinación de Herederos", "Litis sobre Derechos Registrados", 
+            "Recurso de Apelación", "Partición Amigable", 
+            "Solicitud de Desglose", "Revisión por Causa de Fraude",
+            "Certificaciones de Tribunal"
+        ]
+    }
+
 # Aquí debajo empieza su def generar_documento_word...
 
 def generar_documento_word(nombre_plantilla, diccionario_datos):
