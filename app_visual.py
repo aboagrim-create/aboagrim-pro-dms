@@ -514,7 +514,7 @@ def vista_configuracion():
 
         if st.button("🔓 Validar Acceso", use_container_width=True):
             # Reemplace 'SuUsuario' y '1234' por sus credenciales configuradas
-            if usuario_ingresado == "SuUsuario" and pin_ingresado == "1234":
+            if usuario_ingresado == "Jhonnymatos" and pin_ingresado == "0681":
                 st.session_state.admin_autenticado = True
                 st.success("Acceso concedido.")
                 st.rerun()
