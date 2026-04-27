@@ -543,90 +543,108 @@ import io
 from datetime import datetime
 
 def vista_configuracion():
-    st.title("⚙️ Panel de Configuración y Seguridad")
-    st.subheader("Centro de Mando Administrativo | AboAgrim Pro")
+    st.title("⚙️ Configuración y Alta Gerencia")
+    st.subheader("Control de Accesos e Identidad | AboAgrim Pro")
     st.divider()
 
-    # --- VERIFICACIÓN DE SESIÓN ---
     if st.session_state.get("admin_autenticado", False):
-        st.success("🔓 Sesión de Alta Jerarquía Activa")
-        
-        # --- 1. TARJETA DE PERFIL (MODERNIDAD Y BELLEZA) ---
-        with st.container(border=True):
-            c1, c2 = st.columns([1, 4])
-            with c1:
-                st.markdown("## 🏢") # Icono representativo
-            with c2:
-                st.markdown("### Lic. Jhonny Matos. M.A.")
-                st.markdown("**Presidente Fundador** | Abogados y Agrimensores 'AboAgrim'")
-                st.caption("Sede Central: Santiago, República Dominicana")
+        tab_accesos, tab_membrete, tab_sistema = st.tabs(["👥 Gestión de Accesos", "🎨 Identidad Visual", "💻 Sistema"])
 
-        st.write("---")
-        st.markdown("### 🛠️ Herramientas del Sistema")
-        
-        # --- 2. PESTAÑAS DE ADMINISTRACIÓN ---
-        tab_bd, tab_seguridad, tab_firma = st.tabs(["🗄️ Base de Datos", "🛡️ Seguridad", "📑 Membretes"])
-        
-        with tab_bd:
-            st.info("Gestión de conexión y respaldos en la nube (Supabase).")
-            col1, col2 = st.columns(2)
-            if col1.button("📁 Generar Backup Local", use_container_width=True):
-                st.toast("Iniciando respaldo de seguridad...")
-                st.success("✅ Backup comprimido y verificado.")
-            if col2.button("🔄 Sincronizar Caché", use_container_width=True):
-                st.toast("Limpiando memoria temporal...")
-                st.rerun()
-                
-        with tab_seguridad:
-            st.warning("Gestión de credenciales maestras.")
-            with st.container(border=True):
-                st.write("**Actualizar PIN de Acceso**")
-                nuevo_pin = st.text_input("Nuevo PIN:", type="password")
-                confirmar_pin = st.text_input("Confirmar Nuevo PIN:", type="password")
-                if st.button("💾 Actualizar Credenciales", type="primary"):
-                    if nuevo_pin == confirmar_pin and nuevo_pin != "":
-                        st.success("✅ PIN actualizado correctamente en la bóveda temporal.")
-                    else:
-                        st.error("❌ Los códigos no coinciden o están vacíos.")
-                    
-        with tab_firma:
-            st.markdown("**Ajustes de Impresión y PDF**")
-            with st.container(border=True):
-                st.text_input("Nombre Oficial", value="Abogados y Agrimensores 'AboAgrim'")
-                st.text_input("Firma Autorizada", value="Lic. Jhonny Matos. M.A., Presidente Fundador")
-                if st.button("Actualizar Identidad Visual"):
-                    st.toast("✅ Membretes actualizados en el sistema.")
-
-        st.write("---")
-        
-        # --- 3. BOTÓN DE CIERRE DE SESIÓN ---
-        if st.button("🚪 Cerrar Sesión Administrativa (Bloquear Sistema)", type="primary", use_container_width=True):
-            st.session_state.admin_autenticado = False
-            st.session_state.rol = "Pasante"
-            st.session_state.usuario = "Invitado"
-            st.rerun()
-
-    # --- PANTALLA DE ACCESO (SI NO ESTÁ LOGUEADO) ---
-    else:
-        st.markdown("### 🔒 Bóveda de Seguridad")
-        st.write("Ingrese sus credenciales para desbloquear la configuración y el módulo financiero.")
-        
-        with st.container(border=True):
-            col_u, col_p = st.columns(2)
-            with col_u:
-                u_pres = st.text_input("Usuario Master:", placeholder="Ej: JhonnyMatos")
-            with col_p:
-                p_pres = st.text_input("PIN de Seguridad:", type="password")
+        # --- 1. GESTIÓN DE ACCESOS (AÑADIR/BORRAR) ---
+        with tab_accesos:
+            st.markdown("### 👥 Control de Personal")
             
-            st.write("") # Espaciador
-            if st.button("🔑 Validar Identidad y Desbloquear", use_container_width=True, type="primary"):
-                if u_pres == "JhonnyMatos" and p_pres == "1234":
+            # Formulario para nuevo acceso
+            with st.expander("➕ Registrar Nuevo Miembro del Equipo", expanded=False):
+                c1, c2, c3 = st.columns(3)
+                nuevo_u = c1.text_input("Usuario:")
+                nuevo_p = c2.text_input("PIN (4 dígitos):", type="password", max_chars=4)
+                nuevo_r = c3.selectbox("Rol:", ["Abogado", "Agrimensor", "Pasante"])
+                
+                if st.button("Guardar Nuevo Acceso", type="primary"):
+                    if nuevo_u and nuevo_p:
+                        try:
+                            supabase.table("usuarios").insert({
+                                "nombre_usuario": nuevo_u, 
+                                "pin_acceso": nuevo_p, 
+                                "rol": nuevo_r
+                            }).execute()
+                            st.success(f"✅ {nuevo_u} ha sido autorizado como {nuevo_r}.")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error: El usuario ya existe o hubo un fallo en la nube.")
+
+            st.write("---")
+            st.markdown("#### Usuarios con Acceso Actual")
+            try:
+                res_u = supabase.table("usuarios").select("*").execute()
+                for user in res_u.data:
+                    col_user, col_rol, col_btn = st.columns([2, 2, 1])
+                    col_user.write(f"👤 **{user['nombre_usuario']}**")
+                    col_rol.caption(f"Rango: {user['rol']}")
+                    # Evitar que el Presidente se borre a sí mismo por error
+                    if user['nombre_usuario'] != "JhonnyMatos":
+                        if col_btn.button("Eliminar", key=f"del_{user['id']}", type="secondary"):
+                            supabase.table("usuarios").delete().eq("id", user['id']).execute()
+                            st.rerun()
+            except:
+                st.info("No hay usuarios adicionales registrados.")
+
+        # --- 2. IDENTIDAD VISUAL (LETRAS, COLORES, FONDOS) ---
+        with tab_membrete:
+            st.markdown("### 🎨 Personalización de Membretes e Interfaz")
+            st.caption("Ajuste los colores y tipografías que el sistema usará en PDF y pantallas.")
+            
+            try:
+                # Recuperar ajustes actuales
+                conf_res = supabase.table("configuracion_visual").select("*").eq("id", 1).single().execute()
+                c_act = conf_res.data
+
+                col_p1, col_p2 = st.columns(2)
+                with col_p1:
+                    new_color_p = st.color_picker("Color Primario (Azul AboAgrim)", c_act['color_primario'])
+                    new_color_s = st.color_picker("Color Secundario (Oro/Detalles)", c_act['color_secundario'])
+                with col_p2:
+                    new_font = st.selectbox("Fuente Institucional:", 
+                                         ["Arial", "Helvetica", "Times New Roman", "Courier", "Verdana"],
+                                         index=["Arial", "Helvetica", "Times New Roman", "Courier", "Verdana"].index(c_act['fuente_familia']))
+                    new_bg = st.color_picker("Fondo de Encabezados PDF:", c_act['fondo_cabecera'])
+
+                if st.button("💾 Aplicar Identidad Visual", use_container_width=True, type="primary"):
+                    supabase.table("configuracion_visual").update({
+                        "color_primario": new_color_p,
+                        "color_secundario": new_color_s,
+                        "fuente_familia": new_font,
+                        "fondo_cabecera": new_bg
+                    }).eq("id", 1).execute()
+                    st.success("🎨 Identidad corporativa actualizada. Los nuevos PDF usarán este estilo.")
+                    st.balloons()
+            except:
+                st.error("Configure la tabla 'configuracion_visual' en Supabase para usar esta función.")
+
+        # --- 3. SISTEMA ---
+        with tab_sistema:
+            st.markdown("### 🚪 Salida Segura")
+            if st.button("Bloquear Centro de Mando", use_container_width=True):
+                st.session_state.admin_autenticado = False
+                st.session_state.rol = "Pasante"
+                st.rerun()
+
+    else:
+        # Pantalla de acceso original con validación dinámica contra la tabla usuarios
+        st.markdown("### 🔒 Validación de Identidad Administrativa")
+        with st.container(border=True):
+            u_pres = st.text_input("Usuario Master:")
+            p_pres = st.text_input("PIN:", type="password")
+            if st.button("Entrar", use_container_width=True, type="primary"):
+                res_val = supabase.table("usuarios").select("*").eq("nombre_usuario", u_pres).eq("pin_acceso", p_pres).execute()
+                if res_val.data:
                     st.session_state.admin_autenticado = True
-                    st.session_state.usuario = "JhonnyMatos"
-                    st.session_state.rol = "Presidente Fundador" 
+                    st.session_state.usuario = u_pres
+                    st.session_state.rol = res_val.data[0]['rol']
                     st.rerun()
                 else:
-                    st.error("❌ Credenciales incorrectas. Acceso denegado.")
+                    st.error("Credenciales no autorizadas.")
             # Nota: Esto se complementa con CSS personalizado en el inicio del script
         # Aquí va la función de agregar/borrar usuarios...
 def login_sistema():
