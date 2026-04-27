@@ -1041,40 +1041,37 @@ def crear_carpeta_expediente(nombre_cliente, id_expediente):
     return link_drive
 import googleapiclient.discovery
 
-def automatizar_nube_cliente(nombre_cliente, id_expediente):
-    """
-    Crea la estructura de carpetas en Google Drive y devuelve el link.
-    """
-    # ID de su carpeta maestra (el que copió en el paso 1)
-    ID_CARPETA_MAESTRA = "SU_ID_AQUI" 
-    
-    nombre_principal = f"EXP-{id_expediente} | {nombre_cliente}"
-    
-    try:
-        # 1. Crear Carpeta Principal del Cliente
-        folder_metadata = {
-            'name': nombre_principal,
-            'mimeType': 'application/vnd.google-apps.folder',
-            'parents': [ID_CARPETA_MAESTRA]
-        }
-        # folder = drive_service.files().create(body=folder_metadata, fields='id, webViewLink').execute()
-        # folder_id = folder.get('id')
-        # link_final = folder.get('webViewLink')
+def vista_registro_maestro():
+    st.title("👤 Registro Maestro de Expedientes")
+    st.write("Complete los datos del propietario para abrir el expediente.")
 
-        # 2. Crear Sub-carpetas de organización interna
-        subcarpetas = ["01_DOCUMENTOS_LEGALES", "02_PLANOS_Y_TECNICO", "03_PAGOS_Y_RECIBOS"]
-        for sub in subcarpetas:
-            sub_metadata = {
-                'name': sub,
-                'mimeType': 'application/vnd.google-apps.folder',
-                # 'parents': [folder_id]
-            }
-            # drive_service.files().create(body=sub_metadata).execute()
+    # Formulario simple y efectivo
+    with st.container():
+        in_np = st.text_input("Nombre del Propietario", key="reg_np_final")
+        in_cp = st.text_input("Cédula / Pasaporte", key="reg_cp_final")
+        in_exp = st.text_input("Número de Expediente (Opcional)", key="reg_exp_final")
 
-        # return link_final
-        return "https://drive.google.com/..." # Simulación de retorno
-    except Exception as e:
-        return None
+    st.divider()
+
+    if st.button("💾 GUARDAR EXPEDIENTE", type="primary", use_container_width=True):
+        if in_np:
+            try:
+                # Guardamos en su base de datos de Supabase
+                datos = {
+                    "nombre_propietario": in_np, 
+                    "cedula_propietario": in_cp, 
+                    "expediente": in_exp
+                }
+                supabase.table("expedientes_maestros").insert(datos).execute()
+                st.success(f"✅ ¡Éxito! El expediente de {in_np} ha sido registrado.")
+            except Exception as e:
+                st.error(f"❌ Error al conectar con la base de datos: {e}")
+        else:
+            st.warning("⚠️ El nombre del propietario es obligatorio para el registro.")
+
+# ==========================================
+# MOTOR DE NAVEGACIÓN (ESTO CIERRA EL ARCHIVO)
+# ==========================================
 vistas = {
     "🏠 Mando Central": vista_mando,
     "👤 Registro Maestro": vista_registro_maestro,
@@ -1088,5 +1085,4 @@ vistas = {
 if menu in vistas:
     vistas[menu]()
 else:
-    st.error(f"Error de Conexión: La sección '{menu}' no coincide con el diccionario.")
-    st.info("Sugerencia: Verifique que el nombre en el sidebar sea igual al del diccionario 'vistas'.")
+    st.error(f"Error: La sección '{menu}' no existe en el diccionario.")
