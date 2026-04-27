@@ -904,10 +904,40 @@ def vista_plantillas_auto():
     if 'cant_profesionales' not in st.session_state: st.session_state.cant_profesionales = 0
     if 'cant_apoderados' not in st.session_state: st.session_state.cant_apoderados = 0
 
+    # ==========================================
+    # EL DICCIONARIO MAESTRO JI (COMPLETO)
+    # ==========================================
     TRAMITES_JI = {
-        "📍 Mensuras Catastrales": ["Deslinde", "Saneamiento", "Subdivisión", "Refundición", "Actualización de Mensura", "Regularización Parcelaria", "Oposición Expediente Técnico"],
-        "📜 Registro de Títulos": ["Transferencia de Inmueble", "Hipoteca Convencional", "Cancelación de Hipoteca", "Determinación de Herederos", "Constitución de Condominio"],
-        "⚖️ Tribunales de Tierras": ["Litis sobre Derechos Registrados", "Recurso de Apelación", "Partición Amigable", "Desglose de Instancia", "Revisión por Causa de Fraude"]
+        "📍 Mensuras Catastrales": [
+            "Actualización de Mensura", "Corrección Mensura Desplazada", 
+            "Depósito de Documentos Físicos", "Desafectación de Dominio Público", 
+            "Deslinde", "División para Constitución de Condominio", 
+            "Modificación Condominio", "Oposición Expediente Técnico", 
+            "Plano Definitivo", "Prórroga de Autorización", 
+            "Recurso Jerárquico", "Refundición", 
+            "Regularización Parcelaria", "Saneamiento", 
+            "Solicitud de Autorización", "Solicitud de Reconsideración", 
+            "Subdivisión", "Urbanización Parcelaria"
+        ],
+        "📜 Registro de Títulos": [
+            "Transferencia de Inmueble", "Transferencia de Mejoras",
+            "Hipoteca Convencional", "Hipoteca Judicial", "Hipoteca Legal de la Mujer Casada",
+            "Cancelación de Hipoteca Convencional", "Cancelación de Hipoteca Judicial",
+            "Certificación del Estado Jurídico del Inmueble", "Certificación con Reserva de Prioridad",
+            "Actualización de Generales", "Duplicado por Pérdida o Deterioro", 
+            "Constitución de Régimen de Condominio", "Corrección de Certificado de Título",
+            "Embargo Inmobiliario", "Cancelación de Embargo Inmobiliario",
+            "Constitución de Bien de Familia", "Cancelación de Bien de Familia",
+            "Privilegio de Honorarios de Abogados", "Cancelación de Privilegio de Honorarios",
+            "Adjudicación", "Anotación Preventiva"
+        ],
+        "⚖️ Tribunales de Tierras": [
+            "Determinación de Herederos", "Litis Sobre Derechos Registrados", 
+            "Certificaciones", "Recurso de Apelación", 
+            "Partición Amigable Entre Esposos", "Partición Amigable con Determinación de Herederos", 
+            "Renuncia de Bien de Familia", "Solicitud de Transferencias Administrativas", 
+            "Solicitud de Desglose como Instancia Principal Administrativa", "Revisión por Causa de Fraude"
+        ]
     }
 
     try:
@@ -993,7 +1023,7 @@ def vista_plantillas_auto():
                 "nombre": n, "rol": r, "colegiatura": c, 
                 "cedula": p_ced, "estado_civil": p_ec, "domicilio": p_dom
             })
-            st.write("") # Pequeño espacio entre cada profesional
+            st.write("") 
 
         # ==========================================
         # 4. APODERADOS / REPRESENTANTES DINÁMICOS (CON GENERALES)
@@ -1023,7 +1053,7 @@ def vista_plantillas_auto():
                 "nombre": an, "cedula": ac, "representa": ar,
                 "nacionalidad": a_nac, "estado_civil": a_ec, "domicilio": a_dom
             })
-            st.write("") # Pequeño espacio entre cada apoderado
+            st.write("") 
 
         st.divider()
 
@@ -1052,7 +1082,7 @@ def vista_plantillas_auto():
                         "area": ji_area,
                         "coordenadas": ji_coordenadas,
                         "firma_presidente": "Lic. Jhonny Matos. M.A.",
-                        "cargo_presidente": "Presidente Fundador AboAgrim",
+                        "cargo_presidente": "Presidente Fundador",
                         **datos_extras_dict,
                         "profesionales": profesionales_lista,
                         "apoderados": apoderados_lista
