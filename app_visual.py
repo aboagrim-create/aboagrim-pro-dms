@@ -896,95 +896,90 @@ with st.sidebar:
         
         
 def vista_plantillas_auto():
-    st.title("📄 Fábrica de Documentos AboAgrim")
-    st.write("Seleccione un expediente para generar sus documentos legales al instante.")
+    st.title("📄 Fábrica de Documentos AboAgrim Pro")
+    st.write("Complete la información técnica y legal para generar el documento.")
 
-    # 1. EL CEREBRO DE LA JI
+    # 1. EL CEREBRO DE TRÁMITES (Jurisdicción Inmobiliaria)
     TRAMITES_JI = {
-        "📍 Mensuras Catastrales": [
-            "Deslinde", "Saneamiento", "Subdivisión", "Refundición", 
-            "Actualización de Mensura", "Urbanización Parcelaria", 
-            "Regularización Parcelaria", "Modificación de Condominio",
-            "Solicitud de Autorización", "Oposición Expediente Técnico"
-        ],
-        "📜 Registro de Títulos": [
-            "Transferencia de Inmueble", "Hipoteca Convencional", 
-            "Cancelación de Hipoteca", "Certificación de Estado Jurídico", 
-            "Actualización de Generales", "Duplicado por Pérdida", 
-            "Constitución de Condominio", "Corrección de Certificación",
-            "Inscripción de Embargo", "Desafectación de Dominio Público"
-        ],
-        "⚖️ Tribunales de Tierras": [
-            "Determinación de Herederos", "Litis sobre Derechos Registrados", 
-            "Recurso de Apelación", "Partición Amigable", 
-            "Solicitud de Desglose", "Revisión por Causa de Fraude",
-            "Certificaciones de Tribunal"
-        ]
+        "📍 Mensuras Catastrales": ["Deslinde", "Saneamiento", "Subdivisión", "Refundición", "Actualización de Mensura", "Regularización Parcelaria"],
+        "📜 Registro de Títulos": ["Transferencia de Inmueble", "Hipoteca Convencional", "Cancelación de Hipoteca", "Determinación de Herederos", "Duplicado por Pérdida"],
+        "⚖️ Tribunales de Tierras": ["Litis sobre Derechos Registrados", "Recurso de Apelación", "Partición Amigable", "Desglose de Instancia"]
     }
 
     try:
-        # 2. BUSCAR CLIENTES EN LA BASE DE DATOS
+        # 2. SELECCIÓN DE CLIENTE Y TRÁMITE
         res = supabase.table("expedientes_maestros").select("id, nombre_propietario").order("id", desc=True).execute()
-        if not res.data:
-            st.warning("⚠️ No hay expedientes registrados aún.")
-            return
-            
         opciones_exp = {f"RES-{e['id']} | {e['nombre_propietario']}": e['id'] for e in res.data}
 
-        # 3. ÁREA DE SELECCIÓN DINÁMICA (LAS 3 COLUMNAS)
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            seleccion_cliente = st.selectbox("🔍 1. Cliente/Expediente:", list(opciones_exp.keys()))
-            id_cliente = opciones_exp[seleccion_cliente]
-
-        with col2:
-            jurisdiccion = st.selectbox("🏛️ 2. Jurisdicción:", list(TRAMITES_JI.keys()))
-
-        with col3:
-            tramite = st.selectbox("📋 3. Trámite:", TRAMITES_JI[jurisdiccion])
+        col_a, col_b, col_c = st.columns(3)
+        with col_a:
+            sel_cliente = st.selectbox("👤 Cliente:", list(opciones_exp.keys()))
+            id_cliente = opciones_exp[sel_cliente]
+        with col_b:
+            jurisdiccion = st.selectbox("🏛️ Jurisdicción:", list(TRAMITES_JI.keys()))
+        with col_c:
+            tramite = st.selectbox("📋 Trámite:", TRAMITES_JI[jurisdiccion])
 
         st.divider()
 
-        # 4. LÓGICA DE CARGA DE CARPETAS
-        archivo_nombre = tramite.lower().replace(" ", "_") + ".docx"
+        # 3. PANEL TÉCNICO Y LEGAL (Aquí es donde ocurre la magia)
+        st.subheader("📍 Datos Técnicos y Órganos de la JI")
+        exp_col1, exp_col2, exp_col3 = st.columns(3)
         
-        if "Mensuras" in jurisdiccion:
-            carpeta = "1_mensuras_catastrales"
-        elif "Registro" in jurisdiccion:
-            carpeta = "3_registro_titulos"
-        else:
-            carpeta = "2_jurisdiccion_original"
+        with exp_col1:
+            ji_parcela = st.text_input("Parcela No.", placeholder="Ej: 123-B")
+            ji_dc = st.text_input("Distrito Catastral (DC)", placeholder="Ej: 04")
+            ji_superficie = st.text_input("Superficie (m²)")
+            
+        with exp_col2:
+            ji_matricula = st.text_input("Certificado / Matrícula")
+            ji_libro = st.text_input("Libro / Folio")
+            ji_registro = st.text_input("Registro de Títulos de:", value="Santiago")
+            
+        with exp_col3:
+            ji_tribunal = st.text_input("Tribunal de Tierras de:", value="Santiago")
+            ji_municipio = st.text_input("Municipio / Provincia", value="Santiago, Rep. Dom.")
+            ji_coords = st.text_input("Coordenadas (UTM/WGS84)")
 
+        st.divider()
+
+        # 4. LÓGICA DE RUTA Y FABRICACIÓN
+        archivo_nombre = tramite.lower().replace(" ", "_") + ".docx"
+        carpeta = "1_mensuras_catastrales" if "Mensuras" in jurisdiccion else "3_registro_titulos" if "Registro" in jurisdiccion else "2_jurisdiccion_original"
         ruta_final = f"plantillas_maestras/{carpeta}/{archivo_nombre}"
-        st.info(f"📂 El sistema buscará la plantilla en: {carpeta}/{archivo_nombre}")
 
-        # 5. BOTÓN DE FABRICACIÓN
-        if st.button(f"🚀 Fabricar {tramite}", type="primary", use_container_width=True):
-            with st.status(f"🛠️ Procesando {tramite}...", expanded=False):
+        if st.button(f"🚀 FABRICAR {tramite.upper()}", type="primary", use_container_width=True):
+            with st.status("🛠️ Inyectando datos legales en la plantilla...", expanded=False):
                 try:
-                    res_datos = supabase.table("expedientes_maestros").select("*").eq("id", id_cliente).single().execute()
-                    datos = res_datos.data
+                    # Traemos datos base del cliente
+                    res_base = supabase.table("expedientes_maestros").select("*").eq("id", id_cliente).single().execute()
+                    
+                    # UNIMOS TODO: Datos del cliente + Datos técnicos que acaba de escribir
+                    datos_finales = {
+                        **res_base.data,
+                        "parcela": ji_parcela,
+                        "dc": ji_dc,
+                        "superficie": ji_superficie,
+                        "matricula": ji_matricula,
+                        "libro_folio": f"Libro {ji_libro}",
+                        "registro_titulos": f"Registro de Títulos de {ji_registro}",
+                        "tribunal": f"Tribunal de Jurisdicción Original de {ji_tribunal}",
+                        "municipio": ji_municipio,
+                        "coordenadas": ji_coords,
+                        "firma_presidente": "Lic. Jhonny Matos. M.A.",
+                        "cargo_presidente": "Presidente Fundador"
+                    }
 
-                    archivo_listo = generar_documento_word(ruta_final, datos)
+                    archivo_listo = generar_documento_word(ruta_final, datos_finales)
 
                     if archivo_listo:
-                        st.success(f"✅ ¡{tramite} generado con éxito!")
-                        st.download_button(
-                            label="📥 DESCARGAR DOCUMENTO PARA DEPÓSITO",
-                            data=archivo_listo,
-                            file_name=f"{tramite}_{datos['nombre_propietario']}.docx",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                            use_container_width=True
-                        )
-                except Exception as e_gen:
-                    st.error(f"❌ Error al fabricar: Asegúrese de que el archivo '{archivo_nombre}' esté subido a GitHub en la carpeta correcta. Detalle: {e_gen}")
+                        st.success(f"✅ ¡{tramite} generado para {datos_finales['nombre_propietario']}!")
+                        st.download_button("📥 DESCARGAR PARA FIRMA Y DEPÓSITO", archivo_listo, f"{tramite}.docx", use_container_width=True)
+                except Exception as e:
+                    st.error(f"❌ Error: Verifique que '{archivo_nombre}' esté en la carpeta '{carpeta}'. {e}")
 
-    except Exception as e_carga:
-        st.error(f"❌ Error general de conexión: {e_carga}")
-
-# Aquí debajo sigue su def generar_documento_word...
-
+    except Exception as e:
+        st.error(f"❌ Error de carga: {e}")
 # Aquí debajo empieza su def generar_documento_word...
 
 def generar_documento_word(nombre_plantilla, diccionario_datos):
