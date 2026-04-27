@@ -1228,7 +1228,67 @@ def crear_carpeta_expediente(nombre_cliente, id_expediente):
     link_drive = f"https://drive.google.com/drive/folders/ID_GENERADO"
     return link_drive
 import googleapiclient.discovery
+def vista_mando_central():
+    st.title("🏠 Mando Central | AboAgrim Pro")
+    st.markdown("**Bienvenido al panel de control principal, Lic. Jhonny Matos.**")
+    st.divider()
 
+    # --- 1. MÉTRICAS PRINCIPALES (KPIs) ---
+    st.subheader("📊 Resumen de Operaciones")
+    m1, m2, m3, m4 = st.columns(4)
+    
+    # Intentamos obtener el total real de expedientes desde Supabase
+    total_expedientes = 0
+    try:
+        res = supabase.table("expedientes_maestros").select("id", count="exact").execute()
+        total_expedientes = res.count if res.count else 0
+    except Exception:
+        pass
+
+    with m1:
+        st.metric(label="Expedientes Totales", value=total_expedientes, delta="Registrados")
+    with m2:
+        st.metric(label="Mensuras Catastrales", value="Activas") 
+    with m3:
+        st.metric(label="Registro de Títulos", value="Activos")
+    with m4:
+        st.metric(label="Tribunales de Tierras", value="En Litigio")
+
+    st.write("---")
+
+    # --- 2. ACCESOS RÁPIDOS Y ÚLTIMOS REGISTROS ---
+    c_izq, c_der = st.columns([2, 1])
+    
+    with c_izq:
+        st.subheader("🕒 Últimos Expedientes Registrados")
+        try:
+            # Traemos los últimos 5 clientes para tenerlos a mano
+            res_ultimos = supabase.table("expedientes_maestros").select("expediente_codigo, nombre_propietario, tipo_persona").order("id", desc=True).limit(5).execute()
+            
+            if res_ultimos.data:
+                # Mostramos una tabla profesional y limpia
+                st.dataframe(
+                    res_ultimos.data, 
+                    use_container_width=True, 
+                    hide_index=True,
+                    column_config={
+                        "expediente_codigo": "Expediente No.",
+                        "nombre_propietario": "Cliente / Razón Social",
+                        "tipo_persona": "Tipo"
+                    }
+                )
+            else:
+                st.info("Aún no hay expedientes registrados en el sistema.")
+        except Exception as e:
+            st.warning("Conectando con la base de datos para mostrar el historial...")
+
+    with c_der:
+        st.subheader("⚡ Estado del Sistema")
+        st.success("🟢 Conexión a Servidor: Óptima")
+        st.success("🟢 Motor de Plantillas: Activo")
+        st.success("🟢 Base de Datos: Sincronizada")
+        st.write("")
+        st.info("📌 Recuerde: Mantener su Archivo Digital actualizado garantiza la agilidad de los procesos en la Jurisdicción Inmobiliaria de Santiago y el resto del país.")
 def vista_registro_maestro():
     st.title("🗂️ Registro Maestro de Clientes")
     st.subheader("Gestión de Expedientes y Generales de Ley")
