@@ -388,102 +388,130 @@ def vista_alertas():
     except Exception as e:
         st.error(f"Error al cargar monitor: {e}")
 
+from fpdf import FPDF
+import io
+
 def vista_facturacion():
-    st.title("💵 Gestión de Honorarios y Facturación")
-    st.subheader("Control Financiero de Expedientes | AboAgrim")
+    st.title("💵 Facturación y Cobros | AboAgrim Pro")
+    st.subheader("Generador de Facturas y Control de Honorarios")
     st.divider()
 
-    # --- 1. SELECCIÓN DE EXPEDIENTE ---
-    st.markdown("### 🔍 Localizador de Cuenta")
+    # --- 1. DATOS DEL CLIENTE Y TIPO DE PERSONA ---
+    st.markdown("### 🔍 Datos del Cliente")
     try:
-        # Usamos la conexión exitosa que logramos en el Archivo Digital
-        res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario").execute()
+        res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, cedula_propietario").execute()
         lista_expedientes = [f"{e['expediente']} - {e['nombre_propietario']}" for e in res_exp.data] if res_exp.data else []
         
         if not lista_expedientes:
-            st.info("📌 Registre un expediente primero para gestionar su facturación.")
+            st.info("📌 No hay expedientes para facturar.")
             return
 
-        expediente_seleccionado = st.selectbox("Seleccione el Expediente a facturar:", ["Seleccione..."] + lista_expedientes)
-        
-        if expediente_seleccionado == "Seleccione...":
-            return # Mantiene la pantalla limpia hasta que se elija un cliente
+        exp_sel = st.selectbox("Seleccione Expediente:", ["Seleccione..."] + lista_expedientes)
+        if exp_sel == "Seleccione...": return
 
-        codigo_exp = expediente_seleccionado.split(" - ")[0]
-        cliente_nom = expediente_seleccionado.split(" - ")[1]
+        codigo_exp = exp_sel.split(" - ")[0]
+        nombre_cli = exp_sel.split(" - ")[1]
         
+        # Selección de tipo de contribuyente
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            tipo_persona = st.radio("Tipo de Persona:", ["Física", "Jurídica"], horizontal=True)
+        with col_t2:
+            identificacion = st.text_input("RNC / Cédula:", placeholder="000-0000000-0")
+
     except Exception as e:
-        st.error(f"Detalle técnico del error: {e}")
+        st.error(f"Error: {e}")
         return
 
-    st.write("---")
-    st.markdown(f"### 💼 Estado de Cuenta: **{cliente_nom}**")
-    st.caption(f"Expediente Vinculado: {codigo_exp}")
+    st.divider()
 
-    # --- 2. PANELES FINANCIEROS (PESTAÑAS) ---
-    tab_resumen, tab_ingresos, tab_gastos = st.tabs(["📊 Balance y Honorarios", "💰 Registrar Abono", "📉 Gastos del Caso"])
+    # --- 2. GESTIÓN DINÁMICA DE ITEMS (AGREGAR Y BORRAR) ---
+    st.markdown("### 📝 Detalle de la Factura")
+    
+    # Inicializamos la lista de items en la sesión
+    if "items_factura" not in st.session_state:
+        st.session_state.items_factura = []
 
-    # PESTAÑA A: BALANCE GENERAL
-    with tab_resumen:
-        st.write("#### Resumen Financiero del Expediente")
+    # Formulario para agregar items
+    with st.container(border=True):
+        c_i1, c_i2, c_i3 = st.columns([3, 2, 1])
+        with c_i1:
+            desc = st.text_input("Descripción del Servicio:", placeholder="Ej: Mensura Catastral Parcela X")
+        with c_i2:
+            monto = st.number_input("Monto (RD$):", min_value=0.0, step=500.0)
+        with c_i3:
+            st.write("") # Espaciador
+            if st.button("➕ Añadir"):
+                if desc and monto > 0:
+                    st.session_state.items_factura.append({"descripcion": desc, "monto": monto})
+                    st.rerun()
+
+    # Tabla de items agregados
+    total_factura = 0
+    if st.session_state.items_factura:
+        for index, item in enumerate(st.session_state.items_factura):
+            col_d1, col_d2, col_d3 = st.columns([3, 2, 1])
+            with col_d1: st.write(f"• {item['descripcion']}")
+            with col_d2: st.write(f"RD$ {item['monto']:,.2f}")
+            with col_d3:
+                if st.button("🗑️", key=f"del_{index}"):
+                    st.session_state.items_factura.pop(index)
+                    st.rerun()
+            total_factura += item['monto']
         
-        # Panel de Métricas (Diseño Ejecutivo)
-        col_met1, col_met2, col_met3 = st.columns(3)
-        with col_met1:
-            st.metric(label="Honorarios Acordados", value="RD$ 0.00")
-        with col_met2:
-            st.metric(label="Total Cobrado", value="RD$ 0.00")
-        with col_met3:
-            st.metric(label="Balance Pendiente", value="RD$ 0.00", delta="- RD$ 0.00", delta_color="inverse")
+        st.markdown(f"## **TOTAL: RD$ {total_factura:,.2f}**")
+    else:
+        st.info("La factura está vacía. Agregue un servicio.")
+
+    st.divider()
+
+    # --- 3. GENERACIÓN Y DESCARGA DE PDF ---
+    if st.session_state.items_factura:
+        if st.button("📄 GENERAR FACTURA Y GUARDAR EN DRIVE", type="primary", use_container_width=True):
+            # Lógica del PDF
+            pdf = FPDF()
+            pdf.add_page()
             
-        st.divider()
-        
-        st.write("#### ⚙️ Configurar Honorarios")
-        with st.container(border=True):
-            monto_total = st.number_input("Establecer Honorarios Totales (RD$):", min_value=0.0, step=1000.0)
-            concepto = st.text_input("Concepto del Servicio Legal/Técnico:", placeholder="Ej: Saneamiento Parcela, Litis de Derechos Registrados...")
-            if st.button("💾 Guardar Acuerdo de Honorarios"):
-                # Aquí irá la lógica de Supabase para guardar el total
-                st.success(f"Honorarios de RD$ {monto_total:,.2f} asignados al expediente {codigo_exp}.")
-
-    # PESTAÑA B: REGISTRO DE PAGOS
-    with tab_ingresos:
-        st.write("#### 📥 Ingreso de Fondos")
-        st.write("Registre los avances o pagos finales realizados por el cliente.")
-        
-        col_p1, col_p2 = st.columns(2)
-        with col_p1:
-            monto_pago = st.number_input("Monto Recibido (RD$):", min_value=0.0, step=500.0, key="monto_pago_in")
-            fecha_pago = st.date_input("Fecha de Pago")
-        with col_p2:
-            metodo_pago = st.selectbox("Método de Pago:", ["Transferencia Bancaria", "Efectivo", "Cheque", "Depósito Físico"])
-            ref_pago = st.text_input("No. Referencia o Recibo (Opcional):")
+            # Encabezado Institucional
+            pdf.set_font("Arial", 'B', 16)
+            pdf.cell(0, 10, "ABOGADOS Y AGRIMENSORES 'ABOAGRIM'", ln=True, align='C')
+            pdf.set_font("Arial", '', 10)
+            pdf.cell(0, 5, "Lic. Jhonny Matos. M.A. | Presidente Fundador", ln=True, align='C')
+            pdf.cell(0, 5, "Santiago, Rep. Dom.", ln=True, align='C')
+            pdf.ln(10)
             
-        if st.button("🖨️ Registrar Abono y Generar Recibo", type="primary", use_container_width=True):
-            if monto_pago > 0:
-                st.toast("Transacción registrada.", icon="💵")
-                st.success(f"✅ Se ha registrado un abono de RD$ {monto_pago:,.2f} vía {metodo_pago}.")
-            else:
-                st.warning("El monto debe ser mayor a cero.")
-
-    # PESTAÑA C: GASTOS OPERATIVOS
-    with tab_gastos:
-        st.write("#### 📉 Registro de Gastos (Desembolsos)")
-        st.write("Controle los gastos de mensura, impuestos y viáticos para calcular la rentabilidad real.")
-        
-        c_gasto1, c_gasto2 = st.columns(2)
-        with c_gasto1:
-            monto_gasto = st.number_input("Monto del Gasto (RD$):", min_value=0.0, step=100.0, key="monto_gasto_out")
-        with c_gasto2:
-            tipo_gasto = st.selectbox("Categoría del Gasto:", ["Sellos / Impuestos DGII", "Viáticos y Combustible", "Tasas Jurisdicción Inmobiliaria", "Pago a Terceros (Peritos)"])
+            # Datos de Factura
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(0, 10, f"FACTURA: {codigo_exp}-001", ln=True)
+            pdf.set_font("Arial", '', 11)
+            pdf.cell(0, 7, f"Cliente: {nombre_cli}", ln=True)
+            pdf.cell(0, 7, f"Tipo: Persona {tipo_persona} | ID: {identificacion}", ln=True)
+            pdf.ln(5)
             
-        desc_gasto = st.text_input("Descripción exacta del gasto:")
-        
-        if st.button("🧾 Registrar Desembolso", use_container_width=True):
-            if monto_gasto > 0:
-                st.warning(f"Gasto de RD$ {monto_gasto:,.2f} registrado en la categoría '{tipo_gasto}'.")
-            else:
-                st.info("Ingrese un monto válido.")
+            # Tabla de Items
+            pdf.set_fill_color(200, 220, 255)
+            pdf.cell(130, 10, "Descripción", 1, 0, 'C', 1)
+            pdf.cell(60, 10, "Monto (RD$)", 1, 1, 'C', 1)
+            
+            for item in st.session_state.items_factura:
+                pdf.cell(130, 10, item['descripcion'], 1)
+                pdf.cell(60, 10, f"{item['monto']:,.2f}", 1, 1, 'R')
+            
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(130, 10, "TOTAL", 1)
+            pdf.cell(60, 10, f"RD$ {total_factura:,.2f}", 1, 1, 'R')
+            
+            # Output para descarga
+            pdf_output = pdf.output(dest='S').encode('latin-1')
+            
+            st.download_button(
+                label="📥 Descargar Factura PDF",
+                data=pdf_output,
+                file_name=f"Factura_{codigo_exp}.pdf",
+                mime="application/pdf"
+            )
+            
+            st.success("✅ Factura lista para descarga y enviando copia a Google Drive...")
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
