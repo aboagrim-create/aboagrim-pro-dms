@@ -1042,52 +1042,65 @@ def vista_plantillas_auto():
                     st.error(f"❌ Error al fabricar. Verifique que la plantilla exista. Detalle: {e}")
 
         # ==========================================
-        # 6. MÓDULO DE MANTENIMIENTO DE PLANTILLAS
+        # 6. MÓDULO DE MANTENIMIENTO DE PLANTILLAS (CON PIN)
         # ==========================================
         st.write("---")
         with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS (Solo Presidente)"):
-            st.info("Desde aquí puede subir nuevas plantillas o actualizar las existentes.")
+            st.warning("⚠️ Área Restringida. Ingrese credenciales de administrador para modificar las plantillas del sistema.")
             
-            maint_col1, maint_col2 = st.columns(2)
-            import os # Importación segura para la gestión de archivos
+            # 1. El Candado de Seguridad
+            pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_plantillas_auto")
             
-            with maint_col1:
-                st.markdown("**📤 Subir o Actualizar**")
-                destino = st.radio("¿A qué carpeta pertenece?", 
-                                 ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"])
+            # --- CAMBIE "1234" POR SU PIN SECRETO REAL ---
+            PIN_SECRETO = "1234" 
+            
+            if pin_ingresado == PIN_SECRETO:
+                st.success("✅ Acceso Autorizado, Lic. Jhonny Matos.")
                 
-                archivo_subido = st.file_uploader("Elija el archivo .docx", type=["docx"])
+                maint_col1, maint_col2 = st.columns(2)
+                import os # Importación segura para la gestión de archivos
                 
-                if st.button("💾 Guardar Plantilla en Servidor"):
-                    if archivo_subido:
-                        os.makedirs(f"plantillas_maestras/{destino}", exist_ok=True)
-                        ruta_destino = f"plantillas_maestras/{destino}/{archivo_subido.name}"
-                        with open(ruta_destino, "wb") as f:
-                            f.write(archivo_subido.getbuffer())
-                        st.success(f"✅ Archivo '{archivo_subido.name}' guardado correctamente en {destino}.")
-                        st.balloons()
-                    else:
-                        st.warning("⚠️ Seleccione un archivo primero.")
+                with maint_col1:
+                    st.markdown("**📤 Subir o Actualizar**")
+                    destino = st.radio("¿A qué carpeta pertenece?", 
+                                     ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"])
+                    
+                    archivo_subido = st.file_uploader("Elija el archivo .docx", type=["docx"])
+                    
+                    if st.button("💾 Guardar Plantilla en Servidor"):
+                        if archivo_subido:
+                            os.makedirs(f"plantillas_maestras/{destino}", exist_ok=True)
+                            ruta_destino = f"plantillas_maestras/{destino}/{archivo_subido.name}"
+                            with open(ruta_destino, "wb") as f:
+                                f.write(archivo_subido.getbuffer())
+                            st.success(f"✅ Archivo '{archivo_subido.name}' guardado en {destino}.")
+                            st.balloons()
+                        else:
+                            st.warning("⚠️ Seleccione un archivo primero.")
 
-            with maint_col2:
-                st.markdown("**🗑️ Borrar Plantilla**")
-                carpeta_borrar = st.selectbox("Carpeta para limpieza:", 
-                                            ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"],
-                                            key="del_folder")
-                
-                ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
-                archivos_actuales = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
-                
-                archivo_a_borrar = st.selectbox("Seleccione archivo a eliminar:", archivos_actuales)
-                
-                if st.button("🗑️ ELIMINAR ARCHIVO DEFINITIVAMENTE", type="secondary"):
-                    if archivo_a_borrar:
-                        os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
-                        st.error(f"🗑️ El archivo '{archivo_a_borrar}' ha sido eliminado.")
-                        st.rerun()
+                with maint_col2:
+                    st.markdown("**🗑️ Borrar Plantilla**")
+                    carpeta_borrar = st.selectbox("Carpeta para limpieza:", 
+                                                ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"],
+                                                key="del_folder")
+                    
+                    ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
+                    archivos_actuales = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
+                    
+                    archivo_a_borrar = st.selectbox("Seleccione archivo a eliminar:", archivos_actuales)
+                    
+                    if st.button("🗑️ ELIMINAR ARCHIVO DEFINITIVAMENTE", type="secondary"):
+                        if archivo_a_borrar:
+                            os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
+                            st.error(f"🗑️ El archivo '{archivo_a_borrar}' ha sido eliminado.")
+                            st.rerun()
+            elif pin_ingresado != "":
+                st.error("❌ PIN incorrecto. Acceso denegado.")
 
     except Exception as e:
         st.error(f"❌ Error crítico en el módulo: {e}")
+
+# Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
 
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
 # Aquí debajo empieza su def generar_documento_word...
