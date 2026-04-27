@@ -1036,7 +1036,7 @@ def vista_plantillas_auto():
         st.write("---")
         with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS"):
             pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_p_auto")
-            PIN_SECRETO = "1234" 
+            PIN_SECRETO = "0681" 
             if pin_ingresado == PIN_SECRETO:
                 maint_col1, maint_col2 = st.columns(2)
                 import os
