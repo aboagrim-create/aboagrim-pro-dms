@@ -380,7 +380,7 @@ def vista_alertas_plazos():
         st.error(f"Falta configurar la base de datos: {e}")
         st.info("💡 Asegúrese de tener la columna 'f_audiencia' (tipo date) y 'tribunal' (tipo text) en su tabla 'expedientes_maestros' de Supabase.")
             
-# Aplicamos colores de forma segura
+        # Aplicamos colores de forma segura
 def resaltar(s):
                 color = ''
                 dias = (s.Vencimiento - date.today()).days
