@@ -495,7 +495,6 @@ def vista_facturacion():
                 
                 concepto = st.text_input("Concepto / Descripción:", placeholder="Ej: Trabajo de campo y georreferenciación...")
                 
-                # --- NUEVAS CASILLAS DE MONTO ---
                 st.markdown("---")
                 col_m1, col_m2 = st.columns(2)
                 monto_pago = col_m1.number_input("Monto a Pagar Hoy (RD$):", min_value=0.0, step=1000.0, format="%.2f")
@@ -517,64 +516,47 @@ def vista_facturacion():
                 dfact = st.session_state['datos_fac']
                 num_fac = f"FAC-{datetime.now().strftime('%y%m%d%H%M')}"
                 
-                # --- DISEÑO DE FACTURA CON BALANCE PENDIENTE ---
-                factura_html = f"""
-                <div style="background: white; padding: 40px; border-radius: 8px; color: #1e293b; box-shadow: 0 10px 25px rgba(0,0,0,0.5); font-family: 'Arial', sans-serif; margin-bottom: 20px;">
-                    <div style="text-align: center; border-bottom: 3px solid #0b0f19; padding-bottom: 20px; margin-bottom: 20px;">
-                        <h1 style="color: #0b0f19; margin: 0; font-size: 32px; font-weight: 900; letter-spacing: 2px;">⚖️ AboAgrim</h1>
-                        <p style="margin: 5px 0 0 0; color: #475569; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Despacho Legal y Agrimensura</p>
-                        <p style="margin: 2px 0; color: #0b0f19; font-size: 14px; font-weight: bold;">Lic. Jhonny Matos | Presidente Fundador</p>
-                    </div>
+                # --- NUEVO DISEÑO NATIVO DE STREAMLIT (Seguro y Elegante) ---
+                with st.container(border=True):
+                    # Encabezado Institucional
+                    st.markdown("<h2 style='text-align: center; color: #d4af37;'>⚖️ AboAgrim</h2>", unsafe_allow_html=True)
+                    st.markdown("<p style='text-align: center; margin-top: -10px;'>DESPACHO LEGAL Y AGRIMENSURA</p>", unsafe_allow_html=True)
+                    st.markdown("<p style='text-align: center; font-weight: bold;'>Lic. Jhonny Matos | Presidente Fundador</p>", unsafe_allow_html=True)
+                    st.divider()
                     
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 25px; font-size: 15px;">
-                        <div>
-                            <b style="color:#0b0f19;">No. Factura:</b> {num_fac}<br>
-                            <b style="color:#0b0f19;">Fecha:</b> {dfact['fecha']}
-                        </div>
-                        <div style="text-align: right;">
-                            <b style="color:#0b0f19;">Modalidad:</b> {dfact['tipo']}<br>
-                            <b style="color:#0b0f19;">Vía:</b> {dfact['metodo']}
-                        </div>
-                    </div>
+                    # Datos del Recibo
+                    col_f1, col_f2 = st.columns(2)
+                    col_f1.markdown(f"**No. Factura:** {num_fac}<br>**Fecha:** {dfact['fecha']}", unsafe_allow_html=True)
+                    col_f2.markdown(f"<div style='text-align: right;'>**Modalidad:** {dfact['tipo']}<br>**Vía:** {dfact['metodo']}</div>", unsafe_allow_html=True)
                     
-                    <div style="background: #f8fafc; padding: 20px; border-left: 5px solid #d4af37; margin-bottom: 25px;">
-                        <b style="color:#0b0f19;">Cliente / Expediente:</b><br>{dfact['expediente']}<br><br>
-                        <b style="color:#0b0f19;">Concepto:</b><br>{dfact['concepto']}
-                    </div>
+                    # Detalles del Cliente
+                    st.info(f"**Cliente / Expediente:** {dfact['expediente']}  \n**Concepto:** {dfact['concepto']}")
                     
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                        <tr style="border-bottom: 2px solid #e2e8f0;">
-                            <td style="padding: 10px 0; font-size: 18px; color: #0b0f19;">MONTO RECIBIDO:</td>
-                            <td style="padding: 10px 0; text-align: right; font-size: 20px; font-weight: bold; color: #0b0f19;">RD$ {dfact['pago']:,.2f}</td>
-                        </tr>
-                        <tr style="color: #64748b;">
-                            <td style="padding: 10px 0; font-size: 16px;">BALANCE PENDIENTE:</td>
-                            <td style="padding: 10px 0; text-align: right; font-size: 16px; font-weight: bold; color: #ef4444;">RD$ {dfact['resta']:,.2f}</td>
-                        </tr>
-                    </table>
+                    # Los Números Claros
+                    st.markdown(f"### 💰 MONTO RECIBIDO: RD$ {dfact['pago']:,.2f}")
+                    st.markdown(f"#### 🔴 BALANCE PENDIENTE: RD$ {dfact['resta']:,.2f}")
                     
-                    <div style="text-align: center; margin-top: 40px; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px;">
-                        Plaza Jasansa, Calle Boy Scout 83, Santiago, R.D.<br>
-                        Contactos: 829-826-5888 | 809-691-3333
-                    </div>
-                </div>
-                """
+                    # Pie de página
+                    st.divider()
+                    st.caption("Plaza Jasansa, Calle Boy Scout 83, Santiago, R.D. | 829-826-5888 | Aboagrim@gmail.com")
                 
-                st.markdown(factura_html, unsafe_allow_html=True)
-                
+                # --- BOTONES DE ACCIÓN ---
                 st.markdown("#### 🚀 Acciones Rápidas")
                 col_wa, col_dl, col_gd = st.columns(3)
                 
-                # WhatsApp con el desglose de lo pendiente
                 mensaje_wa = f"Saludos desde *AboAgrim*. Confirmamos el pago de *RD$ {dfact['pago']:,.2f}*. Su balance restante es de *RD$ {dfact['resta']:,.2f}*. Gracias por su confianza."
                 link_wa = f"https://wa.me/?text={mensaje_wa.replace(' ', '%20')}"
                 
                 col_wa.link_button("🟢 WhatsApp", link_wa, use_container_width=True)
                 col_dl.button("🖨️ PDF / Imprimir", use_container_width=True)
-                col_gd.button("☁️ Guardar en Drive", use_container_width=True)
+                if col_gd.button("☁️ Guardar en Drive", use_container_width=True):
+                    # Aquí iría la lógica futura para guardar el PDF en Drive
+                    st.success("Guardado registrado.")
             else:
                 st.info("👈 Complete los montos para visualizar la factura.")
 
+    with tab_historial:
+        st.write("Aquí se conectará el historial completo de honorarios en la siguiente fase.")
 
 def vista_configuracion():
     st.title("⚙️ Panel de Control Maestro")
