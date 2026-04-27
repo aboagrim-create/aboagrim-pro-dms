@@ -897,6 +897,11 @@ def vista_plantillas_auto():
 # ==========================================
 
 # Definimos los módulos con los emojis exactos
+# ==========================================
+# 🚦 MENÚ LATERAL Y ENRUTADOR MAESTRO
+# ==========================================
+
+# 1. Definimos los módulos base
 modulos = [
     "🏠 Mando Central", 
     "👤 Registro Maestro", 
@@ -905,36 +910,40 @@ modulos = [
     "📅 Alertas y Plazos"
 ]
 
+# 2. Agregamos módulos según el nivel de acceso
 if st.session_state.get("admin_autenticado", False):
-    modulos.append("💵 Facturación")
+    if "💵 Facturación" not in modulos:
+        modulos.append("💵 Facturación")
 
 if not st.session_state.get("admin_autenticado", False) or st.session_state.get("rol") == "Presidente Fundador":
-    modulos.append("⚙️ Configuración")
-# ... (esto es lo que ya tiene arriba)
-    modulos.append("⚙️ Configuración")
+    if "⚙️ Configuración" not in modulos:
+        modulos.append("⚙️ Configuración")
 
-# --- INSERTE ESTO AQUÍ ---
+# 3. Renderizamos la barra lateral (El Capitán)
 with st.sidebar:
     st.markdown(f"**Firmado como:** {st.session_state.get('usuario', 'Invitado')}")
+    st.caption(f"**Nivel de Acceso:** {st.session_state.get('rol', 'Pasante')}")
     menu = st.radio("Ir a:", modulos)
-# -------------------------
 
-# Lógica de salto (esto es lo que ya tiene en la línea 916)
-if menu == "🏠 Mando Central":
-
-# Lógica de salto (Enrutador)
+# 4. Enrutador: ¿A qué pantalla vamos?
 if menu == "🏠 Mando Central":
     st.info("Bienvenido al Mando Central de AboAgrim Pro")
+    
 elif menu == "👤 Registro Maestro":
     vista_registro_maestro()
+
 elif menu == "📂 Archivo Digital":
     vista_archivo_digital()
+
 elif menu == "📄 Plantillas Auto":
-    vista_plantillas_auto() # <--- ¡Aquí es donde se activa!
+    vista_plantillas_auto()
+
 elif menu == "📅 Alertas y Plazos":
     vista_alertas_plazos()
+
 elif menu == "💵 Facturación":
     vista_facturacion()
+
 elif menu == "⚙️ Configuración":
     vista_configuracion()
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
