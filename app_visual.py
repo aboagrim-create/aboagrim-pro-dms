@@ -583,31 +583,27 @@ def vista_configuracion():
         st.button("Guardar Cambios de Identidad")
 
     with tab3:
-        st.markdown("### 👥 Administración de Colaboradores")
+        st.markdown("### 👥 Administración de Personal")
         
-        # --- SECCIÓN A: ALTA DE NUEVOS MIEMBROS ---
         with st.expander("➕ Dar de Alta Nuevo Usuario"):
-            u_nombre = st.text_input("Nombre de Usuario", placeholder="Ej: LuisVentura", key="reg_u_nom")
-            u_pass = st.text_input("Asignar PIN de Acceso", type="password", key="reg_u_pin")
-            u_rol = st.selectbox("Rol en la Firma", ["Abogado", "Agrimensor", "Asistente", "Pasante"], key="reg_u_rol")
+            u_nom = st.text_input("Nombre de Usuario", key="add_u_name_final")
+            u_pass = st.text_input("PIN de Acceso", type="password", key="add_u_pass_final")
             
-            if st.button("🚀 Registrar Colaborador", use_container_width=True):
-                if u_nombre and u_pass:
-                    try:
-                        # Insertamos el nuevo usuario en su tabla de Supabase
-                        data_nuevo = {"nombre_usuario": u_nombre, "pin_acceso": u_pass, "rol": u_rol}
-                        supabase.table("usuarios_sistema").insert(data_nuevo).execute()
-                        st.success(f"✅ Acceso creado para {u_nombre} como {u_rol}.")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error al registrar: {e}")
-                else:
-                    st.warning("Debe completar el nombre y el PIN.")
+            # Los roles deben coincidir exactamente con los del enrutador
+            u_rol = st.selectbox("Nivel de Acceso (Rol):", 
+                                ["Pasante", "Asistente", "Abogado", "Agrimensor"])
+            
+            if st.button("🚀 Confirmar Alta"):
+                if u_nom and u_pass:
+                    # Guardamos en la base de datos
+                    data = {"nombre_usuario": u_nom, "pin_acceso": u_pass, "rol": u_rol}
+                    supabase.table("usuarios_sistema").insert(data).execute()
+                    st.success(f"✅ Acceso configurado para {u_nom} como {u_rol}.")
+                    st.rerun()
 
         st.divider()
-
-        # --- SECCIÓN B: BAJA Y BLOQUEO (NUEVA FUNCIÓN) ---
-        st.markdown("### 🗑️ Quitar o Bloquear Acceso")
+        st.markdown("### 🗑️ Gestión de Bajas")
+        # [Aquí se mantiene su código anterior para eliminar usuarios]
         st.caption("Seleccione un colaborador para revocar sus credenciales de entrada.")
 
         try:
