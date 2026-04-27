@@ -28,11 +28,6 @@ def generar_documento_word(nombre_plantilla, diccionario_datos):
         st.error(f"Error al generar {nombre_plantilla}: {e}")
         return None
 
-# Línea 14: Así debe empezar la función
-import streamlit as st
-# --- ESTO VA AL PRINCIPIO DEL ARCHIVO ---
-if "autenticado_global" not in st.session_state:
-    st.session_state.autenticado_global = False
 
 if "usuario_actual" not in st.session_state:
     st.session_state.usuario_actual = None
