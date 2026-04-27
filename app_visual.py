@@ -388,8 +388,8 @@ def resaltar(s):
                 elif dias <= 7: color = 'background-color: #fef3c7' # Amarillo
                 return [color] * len(s)
 
-            st.dataframe(df_v[["Vencimiento", "Trámite", "Exp.", "cliente"]].style.apply(resaltar, axis=1), use_container_width=True, hide_index=True)
-            st.caption("🔴 Rojo: Vencido | 🟡 Amarillo: Menos de 7 días.")
+st.dataframe(df_v[["Vencimiento", "Trámite", "Exp.", "cliente"]].style.apply(resaltar, axis=1), use_container_width=True, hide_index=True)
+st.caption("🔴 Rojo: Vencido | 🟡 Amarillo: Menos de 7 días.")
         else:
             st.info("No hay plazos en seguimiento.")
     except Exception as e:
