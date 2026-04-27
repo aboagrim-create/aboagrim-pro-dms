@@ -897,89 +897,131 @@ with st.sidebar:
         
 def vista_plantillas_auto():
     st.title("📄 Fábrica de Documentos AboAgrim Pro")
-    st.write("Complete la información técnica y legal para generar el documento.")
+    st.subheader("Módulo de la Jurisdicción Inmobiliaria")
 
-    # 1. EL CEREBRO DE TRÁMITES (Jurisdicción Inmobiliaria)
+    # 1. EL DICCIONARIO MAESTRO DE TRÁMITES (Extraído de sus imágenes)
     TRAMITES_JI = {
-        "📍 Mensuras Catastrales": ["Deslinde", "Saneamiento", "Subdivisión", "Refundición", "Actualización de Mensura", "Regularización Parcelaria"],
-        "📜 Registro de Títulos": ["Transferencia de Inmueble", "Hipoteca Convencional", "Cancelación de Hipoteca", "Determinación de Herederos", "Duplicado por Pérdida"],
-        "⚖️ Tribunales de Tierras": ["Litis sobre Derechos Registrados", "Recurso de Apelación", "Partición Amigable", "Desglose de Instancia"]
+        "📍 Mensuras Catastrales": [
+            "Deslinde", "Saneamiento", "Subdivisión", "Refundición", 
+            "Actualización de Mensura", "Urbanización Parcelaria", 
+            "Regularización Parcelaria", "Modificación de Condominio",
+            "Oposición Expediente Técnico", "Prorroga de Autorización"
+        ],
+        "📜 Registro de Títulos": [
+            "Transferencia de Inmueble", "Hipoteca Convencional", 
+            "Cancelación de Hipoteca", "Certificación de Estado Jurídico", 
+            "Actualización de Generales", "Duplicado por Pérdida", 
+            "Constitución de Condominio", "Corrección de Certificación",
+            "Inscripción de Embargo", "Aporte en Naturaleza"
+        ],
+        "⚖️ Tribunales de Tierras": [
+            "Determinación de Herederos", "Litis sobre Derechos Registrados", 
+            "Recurso de Apelación", "Partición Amigable", 
+            "Solicitud de Desglose", "Revisión por Causa de Fraude",
+            "Solicitud de Transferencia Administrativa"
+        ]
     }
 
     try:
-        # 2. SELECCIÓN DE CLIENTE Y TRÁMITE
+        # 2. SELECCIÓN DE EXPEDIENTE Y TRÁMITE
         res = supabase.table("expedientes_maestros").select("id, nombre_propietario").order("id", desc=True).execute()
         opciones_exp = {f"RES-{e['id']} | {e['nombre_propietario']}": e['id'] for e in res.data}
 
-        col_a, col_b, col_c = st.columns(3)
-        with col_a:
-            sel_cliente = st.selectbox("👤 Cliente:", list(opciones_exp.keys()))
+        col_menu1, col_menu2, col_menu3 = st.columns(3)
+        with col_menu1:
+            sel_cliente = st.selectbox("👤 Seleccione Cliente:", list(opciones_exp.keys()))
             id_cliente = opciones_exp[sel_cliente]
-        with col_b:
+        with col_menu2:
             jurisdiccion = st.selectbox("🏛️ Jurisdicción:", list(TRAMITES_JI.keys()))
-        with col_c:
-            tramite = st.selectbox("📋 Trámite:", TRAMITES_JI[jurisdiccion])
+        with col_menu3:
+            tramite = st.selectbox(f"📋 Trámite de {jurisdiccion}:", TRAMITES_JI[jurisdiccion])
 
         st.divider()
 
-        # 3. PANEL TÉCNICO Y LEGAL (Aquí es donde ocurre la magia)
-        st.subheader("📍 Datos Técnicos y Órganos de la JI")
-        exp_col1, exp_col2, exp_col3 = st.columns(3)
+        # 3. PANELES DINÁMICOS POR JURISDICCIÓN
+        st.write(f"### 📑 Datos para: {tramite}")
         
-        with exp_col1:
-            ji_parcela = st.text_input("Parcela No.", placeholder="Ej: 123-B")
-            ji_dc = st.text_input("Distrito Catastral (DC)", placeholder="Ej: 04")
+        # Columnas para datos técnicos y legales
+        c1, c2, c3 = st.columns(3)
+        
+        with c1:
+            st.markdown("**📍 Datos Catastrales**")
+            ji_parcela = st.text_input("Parcela No.", placeholder="Ej: 123-A")
+            ji_dc = st.text_input("Distrito Catastral (DC)", placeholder="Ej: 01")
+            ji_solar = st.text_input("Solar / Manzana")
             ji_superficie = st.text_input("Superficie (m²)")
-            
-        with exp_col2:
-            ji_matricula = st.text_input("Certificado / Matrícula")
+
+        with c2:
+            st.markdown("**📜 Datos de Registro**")
+            ji_matricula = st.text_input("Matrícula / Certificado")
             ji_libro = st.text_input("Libro / Folio")
-            ji_registro = st.text_input("Registro de Títulos de:", value="Santiago")
-            
-        with exp_col3:
-            ji_tribunal = st.text_input("Tribunal de Tierras de:", value="Santiago")
-            ji_municipio = st.text_input("Municipio / Provincia", value="Santiago, Rep. Dom.")
-            ji_coords = st.text_input("Coordenadas (UTM/WGS84)")
+            ji_registro_loc = st.text_input("Registro de Títulos de:", value="Santiago")
+            ji_estado_j = st.selectbox("Estado Jurídico:", ["Registrado", "En Saneamiento", "Adjudicado"])
+
+        with c3:
+            st.markdown("**⚖️ Datos Judiciales**")
+            ji_exp_ji = st.text_input("Expediente JI No.", placeholder="601-202X-...")
+            ji_tribunal_loc = st.text_input("Tribunal de Tierras de:", value="Santiago")
+            ji_juez = st.text_input("Juez Apoderado (Si aplica)")
+            ji_fecha = st.date_input("Fecha de Acto/Instancia")
 
         st.divider()
 
-        # 4. LÓGICA DE RUTA Y FABRICACIÓN
+        # 4. LÓGICA DE RUTA Y GENERACIÓN
         archivo_nombre = tramite.lower().replace(" ", "_") + ".docx"
-        carpeta = "1_mensuras_catastrales" if "Mensuras" in jurisdiccion else "3_registro_titulos" if "Registro" in jurisdiccion else "2_jurisdiccion_original"
+        if "Mensuras" in jurisdiccion:
+            carpeta = "1_mensuras_catastrales"
+        elif "Registro" in jurisdiccion:
+            carpeta = "3_registro_titulos"
+        else:
+            carpeta = "2_jurisdiccion_original"
+
         ruta_final = f"plantillas_maestras/{carpeta}/{archivo_nombre}"
 
+        # 5. BOTÓN DE ACCIÓN FINAL
         if st.button(f"🚀 FABRICAR {tramite.upper()}", type="primary", use_container_width=True):
-            with st.status("🛠️ Inyectando datos legales en la plantilla...", expanded=False):
+            with st.status(f"🛠️ Generando {tramite} para la Jurisdicción Inmobiliaria...", expanded=False):
                 try:
-                    # Traemos datos base del cliente
-                    res_base = supabase.table("expedientes_maestros").select("*").eq("id", id_cliente).single().execute()
+                    # Traemos datos base del cliente de Supabase
+                    res_db = supabase.table("expedientes_maestros").select("*").eq("id", id_cliente).single().execute()
                     
-                    # UNIMOS TODO: Datos del cliente + Datos técnicos que acaba de escribir
-                    datos_finales = {
-                        **res_base.data,
+                    # Consolidamos TODAS las variables para el Word
+                    contexto_word = {
+                        **res_db.data,
                         "parcela": ji_parcela,
                         "dc": ji_dc,
+                        "solar_manzana": ji_solar,
                         "superficie": ji_superficie,
                         "matricula": ji_matricula,
-                        "libro_folio": f"Libro {ji_libro}",
-                        "registro_titulos": f"Registro de Títulos de {ji_registro}",
-                        "tribunal": f"Tribunal de Jurisdicción Original de {ji_tribunal}",
-                        "municipio": ji_municipio,
-                        "coordenadas": ji_coords,
+                        "libro_folio": ji_libro,
+                        "registro_titulos": f"Registro de Títulos de {ji_registro_loc}",
+                        "tribunal": f"Tribunal de Jurisdicción Original de {ji_tribunal_loc}",
+                        "expediente_ji": ji_exp_ji,
+                        "juez": ji_juez,
+                        "fecha_acto": ji_fecha.strftime("%d/%m/%Y"),
+                        "municipio": "Santiago de los Caballeros, Rep. Dom.",
                         "firma_presidente": "Lic. Jhonny Matos. M.A.",
-                        "cargo_presidente": "Presidente Fundador"
+                        "cargo_presidente": "Presidente Fundador AboAgrim"
                     }
 
-                    archivo_listo = generar_documento_word(ruta_final, datos_finales)
+                    # Ejecutamos el motor de Word
+                    archivo_bin = generar_documento_word(ruta_final, contexto_word)
 
-                    if archivo_listo:
-                        st.success(f"✅ ¡{tramite} generado para {datos_finales['nombre_propietario']}!")
-                        st.download_button("📥 DESCARGAR PARA FIRMA Y DEPÓSITO", archivo_listo, f"{tramite}.docx", use_container_width=True)
+                    if archivo_bin:
+                        st.success(f"✅ ¡{tramite} generado con éxito!")
+                        st.download_button(
+                            label="📥 DESCARGAR DOCUMENTO LISTO PARA DEPÓSITO",
+                            data=archivo_bin,
+                            file_name=f"{tramite}_{res_db.data['nombre_propietario']}.docx",
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            use_container_width=True
+                        )
                 except Exception as e:
-                    st.error(f"❌ Error: Verifique que '{archivo_nombre}' esté en la carpeta '{carpeta}'. {e}")
+                    st.error(f"❌ Error: El archivo '{archivo_nombre}' no se encuentra en la carpeta '{carpeta}'.")
+                    st.info("Sugerencia: Suba la plantilla a GitHub con ese nombre exacto.")
 
     except Exception as e:
-        st.error(f"❌ Error de carga: {e}")
+        st.error(f"❌ Error en el sistema de plantillas: {e}")
 # Aquí debajo empieza su def generar_documento_word...
 
 def generar_documento_word(nombre_plantilla, diccionario_datos):
