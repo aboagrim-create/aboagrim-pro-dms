@@ -380,20 +380,6 @@ def vista_alertas_plazos():
         st.error(f"Falta configurar la base de datos: {e}")
         st.info("💡 Asegúrese de tener la columna 'f_audiencia' (tipo date) y 'tribunal' (tipo text) en su tabla 'expedientes_maestros' de Supabase.")
             
-        # Aplicamos colores de forma segura
-def resaltar(s):
-                color = ''
-                dias = (s.Vencimiento - date.today()).days
-                if dias < 0: color = 'background-color: #fee2e2' # Rojo
-                elif dias <= 7: color = 'background-color: #fef3c7' # Amarillo
-                return [color] * len(s)
-
-st.dataframe(df_v[["Vencimiento", "Trámite", "Exp.", "cliente"]].style.apply(resaltar, axis=1), use_container_width=True, hide_index=True)
-st.caption("🔴 Rojo: Vencido | 🟡 Amarillo: Menos de 7 días.")
-        else:
-            st.info("No hay plazos en seguimiento.")
-    except Exception as e:
-        st.error(f"Error al cargar monitor: {e}")
 
 from fpdf import FPDF
 import io
