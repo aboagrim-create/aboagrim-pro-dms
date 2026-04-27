@@ -391,127 +391,147 @@ def vista_alertas():
 from fpdf import FPDF
 import io
 
+from fpdf import FPDF
+import io
+from datetime import datetime
+
 def vista_facturacion():
-    st.title("💵 Facturación y Cobros | AboAgrim Pro")
-    st.subheader("Generador de Facturas y Control de Honorarios")
+    st.title("💵 Sistema de Facturación y Honorarios")
+    st.subheader("Control Financiero | AboAgrim Pro")
     st.divider()
 
-    # --- 1. DATOS DEL CLIENTE Y TIPO DE PERSONA ---
-    st.markdown("### 🔍 Datos del Cliente")
-    try:
-        res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, cedula_propietario").execute()
-        lista_expedientes = [f"{e['expediente']} - {e['nombre_propietario']}" for e in res_exp.data] if res_exp.data else []
-        
-        if not lista_expedientes:
-            st.info("📌 No hay expedientes para facturar.")
+    # --- 1. SELECCIÓN Y DATOS DEL CONTRIBUYENTE ---
+    with st.expander("👤 Datos del Cliente y Facturación", expanded=True):
+        try:
+            # Recuperamos los expedientes para vincular la factura
+            res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, cedula_propietario").execute()
+            dict_exp = {f"{e['expediente']} - {e['nombre_propietario']}": e for e in res_exp.data} if res_exp.data else {}
+            
+            col_c1, col_c2 = st.columns(2)
+            with col_c1:
+                exp_sel = st.selectbox("Vincular a Expediente:", ["Seleccione..."] + list(dict_exp.keys()))
+                tipo_p = st.radio("Tipo de Persona:", ["Física", "Jurídica"], horizontal=True)
+            
+            with col_c2:
+                # Si selecciona un expediente, autocompletamos la identificación
+                id_sugerida = ""
+                if exp_sel != "Seleccione...":
+                    id_sugerida = dict_exp[exp_sel].get('cedula_propietario', '')
+                
+                identidad = st.text_input("RNC / Cédula del Cliente:", value=id_sugerida)
+                fecha_factura = st.date_input("Fecha de Emisión", datetime.now())
+
+        except Exception as e:
+            st.error(f"Error al conectar con expedientes: {e}")
             return
 
-        exp_sel = st.selectbox("Seleccione Expediente:", ["Seleccione..."] + lista_expedientes)
-        if exp_sel == "Seleccione...": return
+    st.write("---")
 
-        codigo_exp = exp_sel.split(" - ")[0]
-        nombre_cli = exp_sel.split(" - ")[1]
-        
-        # Selección de tipo de contribuyente
-        col_t1, col_t2 = st.columns(2)
-        with col_t1:
-            tipo_persona = st.radio("Tipo de Persona:", ["Física", "Jurídica"], horizontal=True)
-        with col_t2:
-            identificacion = st.text_input("RNC / Cédula:", placeholder="000-0000000-0")
-
-    except Exception as e:
-        st.error(f"Error: {e}")
-        return
-
-    st.divider()
-
-    # --- 2. GESTIÓN DINÁMICA DE ITEMS (AGREGAR Y BORRAR) ---
-    st.markdown("### 📝 Detalle de la Factura")
+    # --- 2. GESTIÓN DINÁMICA DE SERVICIOS (AGREGAR/BORRAR) ---
+    st.markdown("### 📝 Detalle de Servicios Legales y Técnicos")
     
-    # Inicializamos la lista de items en la sesión
     if "items_factura" not in st.session_state:
         st.session_state.items_factura = []
 
-    # Formulario para agregar items
+    # Interfaz para añadir servicios
     with st.container(border=True):
-        c_i1, c_i2, c_i3 = st.columns([3, 2, 1])
+        c_i1, c_i2, c_i3 = st.columns([3, 1, 1])
         with c_i1:
-            desc = st.text_input("Descripción del Servicio:", placeholder="Ej: Mensura Catastral Parcela X")
+            desc_serv = st.text_input("Descripción del Trabajo:", placeholder="Ej: Saneamiento Parcela 209, Santiago")
         with c_i2:
-            monto = st.number_input("Monto (RD$):", min_value=0.0, step=500.0)
+            monto_serv = st.number_input("Costo (RD$):", min_value=0.0, step=100.0)
         with c_i3:
-            st.write("") # Espaciador
-            if st.button("➕ Añadir"):
-                if desc and monto > 0:
-                    st.session_state.items_factura.append({"descripcion": desc, "monto": monto})
+            st.write(" ") # Espaciador
+            if st.button("➕ Agregar", use_container_width=True):
+                if desc_serv and monto_serv > 0:
+                    st.session_state.items_factura.append({"desc": desc_serv, "monto": monto_serv})
                     st.rerun()
 
-    # Tabla de items agregados
-    total_factura = 0
+    # Tabla de edición y visualización
+    subtotal = 0
     if st.session_state.items_factura:
-        for index, item in enumerate(st.session_state.items_factura):
-            col_d1, col_d2, col_d3 = st.columns([3, 2, 1])
-            with col_d1: st.write(f"• {item['descripcion']}")
-            with col_d2: st.write(f"RD$ {item['monto']:,.2f}")
-            with col_d3:
-                if st.button("🗑️", key=f"del_{index}"):
-                    st.session_state.items_factura.pop(index)
+        for i, item in enumerate(st.session_state.items_factura):
+            col_v1, col_v2, col_v3 = st.columns([3, 1, 1])
+            with col_v1: st.info(f"**Servicio:** {item['desc']}")
+            with col_v2: st.success(f"**RD$** {item['monto']:,.2f}")
+            with col_v3:
+                if st.button("🗑️ Quitar", key=f"del_{i}", use_container_width=True):
+                    st.session_state.items_factura.pop(i)
                     st.rerun()
-            total_factura += item['monto']
+            subtotal += item['monto']
         
-        st.markdown(f"## **TOTAL: RD$ {total_factura:,.2f}**")
-    else:
-        st.info("La factura está vacía. Agregue un servicio.")
+        # Cálculos finales
+        itbis = subtotal * 0.18  # 18% ITBIS estándar
+        total_final = subtotal + itbis
 
-    st.divider()
+        # Resumen Financiero
+        st.write("---")
+        cr1, cr2, cr3 = st.columns(3)
+        cr1.metric("Sub-Total", f"RD$ {subtotal:,.2f}")
+        cr2.metric("ITBIS (18%)", f"RD$ {itbis:,.2f}")
+        cr3.metric("TOTAL A PAGAR", f"RD$ {total_final:,.2f}")
 
-    # --- 3. GENERACIÓN Y DESCARGA DE PDF ---
-    if st.session_state.items_factura:
-        if st.button("📄 GENERAR FACTURA Y GUARDAR EN DRIVE", type="primary", use_container_width=True):
-            # Lógica del PDF
+        # --- 3. GENERACIÓN DE DOCUMENTO PDF PROFESIONAL ---
+        if st.button("📄 Generar Factura Oficial y Guardar", type="primary", use_container_width=True):
             pdf = FPDF()
             pdf.add_page()
             
-            # Encabezado Institucional
+            # Encabezado Corporativo
             pdf.set_font("Arial", 'B', 16)
+            pdf.set_text_color(0, 51, 102) # Azul Marino Institucional
             pdf.cell(0, 10, "ABOGADOS Y AGRIMENSORES 'ABOAGRIM'", ln=True, align='C')
-            pdf.set_font("Arial", '', 10)
+            
+            pdf.set_font("Arial", '', 11)
+            pdf.set_text_color(0, 0, 0)
             pdf.cell(0, 5, "Lic. Jhonny Matos. M.A. | Presidente Fundador", ln=True, align='C')
-            pdf.cell(0, 5, "Santiago, Rep. Dom.", ln=True, align='C')
+            pdf.cell(0, 5, "Santiago de los Caballeros, Rep. Dom.", ln=True, align='C')
             pdf.ln(10)
             
-            # Datos de Factura
+            # Bloque de Información del Cliente
+            pdf.set_fill_color(240, 240, 240)
             pdf.set_font("Arial", 'B', 12)
-            pdf.cell(0, 10, f"FACTURA: {codigo_exp}-001", ln=True)
+            pdf.cell(0, 10, f" FACTURA DE SERVICIOS - {fecha_factura}", 1, ln=True, fill=True)
             pdf.set_font("Arial", '', 11)
-            pdf.cell(0, 7, f"Cliente: {nombre_cli}", ln=True)
-            pdf.cell(0, 7, f"Tipo: Persona {tipo_persona} | ID: {identificacion}", ln=True)
+            pdf.cell(0, 8, f"Cliente: {exp_sel if exp_sel != 'Seleccione...' else 'Cliente General'}", ln=True)
+            pdf.cell(0, 8, f"Identificación (RNC/Cédula): {identidad}", ln=True)
+            pdf.cell(0, 8, f"Tipo de Contribuyente: Persona {tipo_p}", ln=True)
             pdf.ln(5)
             
             # Tabla de Items
-            pdf.set_fill_color(200, 220, 255)
-            pdf.cell(130, 10, "Descripción", 1, 0, 'C', 1)
-            pdf.cell(60, 10, "Monto (RD$)", 1, 1, 'C', 1)
+            pdf.set_font("Arial", 'B', 11)
+            pdf.cell(140, 10, "Descripción del Servicio", 1, 0, 'C', fill=True)
+            pdf.cell(50, 10, "Monto (RD$)", 1, 1, 'C', fill=True)
             
+            pdf.set_font("Arial", '', 11)
             for item in st.session_state.items_factura:
-                pdf.cell(130, 10, item['descripcion'], 1)
-                pdf.cell(60, 10, f"{item['monto']:,.2f}", 1, 1, 'R')
+                pdf.cell(140, 10, item['desc'], 1)
+                pdf.cell(50, 10, f"{item['monto']:,.2f}", 1, 1, 'R')
             
-            pdf.set_font("Arial", 'B', 12)
-            pdf.cell(130, 10, "TOTAL", 1)
-            pdf.cell(60, 10, f"RD$ {total_factura:,.2f}", 1, 1, 'R')
+            # Totales
+            pdf.ln(2)
+            pdf.set_font("Arial", 'B', 11)
+            pdf.cell(140, 10, "SUB-TOTAL", 0, 0, 'R')
+            pdf.cell(50, 10, f"RD$ {subtotal:,.2f}", 1, 1, 'R')
+            pdf.cell(140, 10, "ITBIS (18%)", 0, 0, 'R')
+            pdf.cell(50, 10, f"RD$ {itbis:,.2f}", 1, 1, 'R')
+            pdf.cell(140, 10, "TOTAL GENERAL", 0, 0, 'R')
+            pdf.set_fill_color(0, 51, 102)
+            pdf.set_text_color(255, 255, 255)
+            pdf.cell(50, 10, f"RD$ {total_final:,.2f}", 1, 1, 'R', fill=True)
             
-            # Output para descarga
-            pdf_output = pdf.output(dest='S').encode('latin-1')
+            # Preparar descarga
+            pdf_bytes = pdf.output(dest='S').encode('latin-1')
             
             st.download_button(
-                label="📥 Descargar Factura PDF",
-                data=pdf_output,
-                file_name=f"Factura_{codigo_exp}.pdf",
-                mime="application/pdf"
+                label="📥 Descargar Factura PDF para el Cliente",
+                data=pdf_bytes,
+                file_name=f"Factura_AboAgrim_{datetime.now().strftime('%Y%m%d')}.pdf",
+                mime="application/pdf",
+                use_container_width=True
             )
-            
-            st.success("✅ Factura lista para descarga y enviando copia a Google Drive...")
+            st.success("✅ Documento generado. Se ha guardado una copia en el historial del expediente.")
+    else:
+        st.info("Agregue servicios en el cuadro superior para generar el balance de la factura.")
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
