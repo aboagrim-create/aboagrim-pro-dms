@@ -495,57 +495,95 @@ def vista_facturacion():
 # =====================================================================
 def vista_configuracion():
     st.title("⚙️ Configuración del Sistema")
-    st.subheader("Gestión de Identidad y Seguridad de AboAgrim Pro")
+    st.subheader("Gestión de Identidad, Seguridad y Personal")
     st.divider()
 
-    # Creamos las pestañas
-    tab1, tab2, tab3 = st.tabs(["🔒 Seguridad", "🏢 Identidad AboAgrim", "📡 Estado Cloud"])
+    # Añadimos la cuarta pestaña: Gestión de Usuarios
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "🔒 Seguridad", 
+        "🏢 Identidad AboAgrim", 
+        "📡 Estado Cloud",
+        "👥 Usuarios"
+    ])
 
+    # --- PESTAÑA 1: SEGURIDAD ---
     with tab1:
-        st.markdown("### 🔐 Control de Acceso")
-        st.info("Desde aquí puede gestionar el PIN de entrada al sistema.")
-        
+        st.markdown("### 🔐 Control de Acceso Maestro")
         c1, c2 = st.columns(2)
-        with c1:
-            pin_nuevo = st.text_input("Definir Nuevo PIN:", type="password", key="conf_n_pin")
-        with c2:
-            pin_conf = st.text_input("Confirmar Nuevo PIN:", type="password", key="conf_c_pin")
-            
-        if st.button("💾 Actualizar PIN de Seguridad", use_container_width=True):
-            if pin_nuevo == pin_conf and pin_nuevo != "":
-                st.success("✅ PIN actualizado exitosamente.")
-            else:
-                st.error("❌ Los campos no coinciden o están vacíos.")
+        with c1: pin_nuevo = st.text_input("Nuevo PIN Maestro:", type="password", key="c_p1")
+        with c2: pin_conf = st.text_input("Confirmar PIN:", type="password", key="c_p2")
+        if st.button("💾 Actualizar PIN Maestro"):
+            st.success("PIN actualizado.")
 
+    # --- PESTAÑA 2: IDENTIDAD ---
     with tab2:
-        st.markdown("### 🏛️ Datos de la Firma AboAgrim")
-        st.caption("Esta información se utilizará para los encabezados de sus documentos.")
-        
+        st.markdown("### 🏛️ Datos de la Firma")
         col_a, col_b = st.columns(2)
         with col_a:
-            st.text_input("Titular:", value="Lic. Jhonny Matos. M.A.", key="conf_titular")
-            st.text_input("Cargo:", value="Presidente Fundador", key="conf_cargo")
-            st.text_input("RNC / Cédula:", placeholder="XXX-XXXXX-X", key="conf_rnc")
-        
+            st.text_input("Titular:", value="Lic. Jhonny Matos. M.A.", key="c_tit")
+            st.text_input("Cargo:", value="Presidente Fundador", key="c_car")
         with col_b:
-            st.text_input("Nombre de la Firma:", value="Abogados y Agrimensores 'AboAgrim'", key="conf_firma")
-            st.text_input("Dirección:", value="Santiago, Rep. Dom.", key="conf_dir")
-            st.text_input("WhatsApp de Contacto:", placeholder="809-XXX-XXXX", key="conf_tel")
-            
-        if st.button("💾 Guardar Identidad Corporativa", use_container_width=True):
-            st.toast("Datos actualizados correctamente", icon="🏢")
+            st.text_input("Firma:", value="Abogados y Agrimensores 'AboAgrim'", key="c_firm")
+            st.text_input("Ubicación:", value="Santiago, Rep. Dom.", key="c_loc")
+        st.button("💾 Guardar Identidad")
 
+    # --- PESTAÑA 3: ESTADO CLOUD ---
     with tab3:
-        st.markdown("### 📡 Estado de la Infraestructura Cloud")
         st.success("🟢 Conexión con Supabase: ACTIVA")
-        
-        st.write("**Servidor:** `database.supabase.co`")
-        st.write("**Base de Datos:** `Sincronizada en tiempo real` ✅")
-        
-        if st.button("⚡ Probar Latencia de Red", use_container_width=True):
-            st.balloons()
-            st.success("¡Conexión óptima desde Santiago!")
+        st.write("**Servidor:** `database.supabase.co` ✅")
 
+    # --- PESTAÑA 4: GESTIÓN DE USUARIOS (NUEVA FUNCIÓN) ---
+    with tab4:
+        st.markdown("### 👥 Administración de Personal")
+        
+        # --- SECCIÓN A: AGREGAR NUEVO USUARIO ---
+        st.write("#### ➕ Registrar Nuevo Usuario")
+        u_col1, u_col2, u_col3 = st.columns(3)
+        with u_col1:
+            nuevo_nombre = st.text_input("Nombre de Usuario:", placeholder="Ej: DianaTorres", key="new_u_name")
+        with u_col2:
+            nuevo_pin = st.text_input("Asignar PIN:", type="password", placeholder="4 dígitos", key="new_u_pin")
+        with u_col3:
+            nuevo_rol = st.selectbox("Rol del Usuario:", ["Asistente", "Abogado", "Agrimensor", "Pasante"], key="new_u_rol")
+        
+        if st.button("🚀 DAR DE ALTA USUARIO", use_container_width=True):
+            if nuevo_nombre and nuevo_pin:
+                try:
+                    data_u = {"nombre_usuario": nuevo_nombre, "pin_acceso": nuevo_pin, "rol": nuevo_rol}
+                    supabase.table("usuarios_sistema").insert(data_u).execute()
+                    st.success(f"✅ Usuario '{nuevo_nombre}' agregado correctamente.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error al registrar: {e}")
+            else:
+                st.warning("Complete el nombre y el PIN.")
+
+        st.divider()
+
+        # --- SECCIÓN B: BORRAR USUARIO EXISTENTE ---
+        st.write("#### 🗑️ Dar de Baja o Eliminar")
+        try:
+            # Traemos la lista actualizada de usuarios
+            res_u = supabase.table("usuarios_sistema").select("nombre_usuario").execute()
+            lista_usuarios = [u['nombre_usuario'] for u in res_u.data] if res_u.data else []
+            
+            if lista_usuarios:
+                col_del, col_btn = st.columns([3, 1])
+                with col_del:
+                    u_eliminar = st.selectbox("Seleccione usuario a eliminar:", lista_usuarios, key="sel_del_u")
+                with col_btn:
+                    st.write(" ") # Espaciador
+                    if st.button("🗑️ ELIMINAR", type="secondary", use_container_width=True):
+                        if u_eliminar == "JhonnyMatos":
+                            st.error("❌ No puede eliminarse a sí mismo (Administrador Maestro).")
+                        else:
+                            supabase.table("usuarios_sistema").delete().eq("nombre_usuario", u_eliminar).execute()
+                            st.error(f"Eliminado: {u_eliminar}")
+                            st.rerun()
+            else:
+                st.info("No hay otros usuarios registrados.")
+        except Exception as e:
+            st.error("Error al cargar lista de usuarios.")
 def login_sistema():
     st.markdown("""
         <style>
