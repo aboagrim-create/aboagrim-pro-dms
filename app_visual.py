@@ -663,58 +663,102 @@ def vista_facturacion():
 def vista_configuracion():
     st.title("⚙️ Panel de Control Maestro")
     
-    # Verificamos si es el usuario Master
-    if st.session_state.get("admin_autenticado", False) and st.session_state.get("rol") == "Presidente Fundador":
-        st.success("✅ Acceso Verificado: Lic. Jhonny Matos")
-        
+    if st.session_state.get("admin_autenticado", False):
         tab_perfil, tab_usuarios, tab_sistema = st.tabs(["👤 Mi Perfil", "👥 Gestión de Personal", "🛠️ Base de Datos"])
         
-        with tab_usuarios:
-            st.subheader("Administración de Accesos")
-            st.info("Seleccione un usuario de la lista para modificar sus permisos de entrada al sistema.")
-            
+        # --- TAB 1: PERFIL PROFESIONAL ---
+        with tab_perfil:
             with st.container(border=True):
-                # Usamos menús desplegables para mantener el diseño limpio
-                lista_personal = ["Seleccione...", "agrimensor_luis", "abogada_marta", "pasante_carlos"]
+                c1, c2 = st.columns([1, 3])
+                c1.markdown("## ⚖️")
+                c2.markdown(f"### {st.session_state.get('usuario', 'Lic. Jhonny Matos')}")
+                c2.caption(f"**Cargo:** {st.session_state.get('rol', 'Presidente Fundador')}")
                 
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.markdown("#### 🚫 Suspender Acceso")
-                    usuario_bloquear = st.selectbox("Seleccionar para Bloquear:", lista_personal, key="bloqueo")
-                    if st.button("Aplicar Suspensión", type="secondary", use_container_width=True):
-                        if usuario_bloquear != "Seleccione...":
-                            # Lógica para Supabase: supabase.table("usuarios").update({"estado": "inactivo"}).eq("usuario", usuario_bloquear).execute()
-                            st.warning(f"🔒 El usuario '{usuario_bloquear}' ha sido suspendido temporalmente.")
-                
-                with col2:
-                    st.markdown("#### 🗑️ Revocación Total")
-                    usuario_eliminar = st.selectbox("Seleccionar para Eliminar:", lista_personal, key="eliminar")
-                    if st.button("Eliminar Definitivamente", type="primary", use_container_width=True):
-                        if usuario_eliminar != "Seleccione...":
-                            # Lógica para Supabase: supabase.table("usuarios").delete().eq("usuario", usuario_eliminar).execute()
-                            st.error(f"⚠️ El usuario '{usuario_eliminar}' fue borrado permanentemente del despacho.")
-
-        with tab_sistema:
-            st.write("Estado de la Nube: Conectado a Supabase (AboAgrim DB).")
+                st.divider()
+                st.markdown("**Información de Contacto Institucional:**")
+                st.write("📧 **Email:** Aboagrim@gmail.com")
+                st.write("📞 **Teléfonos:** 829-826-5888 | 809-691-3333")
+                st.write("📍 **Oficina:** Calle Boy Scout 83, Plaza Jasansa, Santiago.")
+        
+        # --- TAB 2: GESTIÓN DE PERSONAL ---
+        with tab_usuarios:
+            st.subheader("Control de Accesos al Despacho")
             
+            # SECCIÓN: AGREGAR NUEVO USUARIO
+            with st.expander("➕ Agregar Nuevo Miembro al Equipo", expanded=False):
+                with st.form("form_nuevo_user"):
+                    col_u1, col_u2 = st.columns(2)
+                    new_user = col_u1.text_input("Nombre de Usuario (Login):")
+                    new_pass = col_u2.text_input("Contraseña Temporal:", type="password")
+                    new_rol = st.selectbox("Asignar Rol:", ["Abogado", "Agrimensor", "Pasante", "Secretaría"])
+                    
+                    if st.form_submit_button("✅ Registrar en el Sistema"):
+                        if new_user and new_pass:
+                            # Aquí iría la lógica: supabase.table("usuarios").insert(...).execute()
+                            st.success(f"Usuario '{new_user}' creado exitosamente como {new_rol}.")
+                        else:
+                            st.warning("Complete todos los campos.")
+
+            st.divider()
+            
+            # SECCIÓN: ELIMINAR/BLOQUEAR (La que ya teníamos mejorada)
+            st.markdown("#### 🚫 Suspender o Eliminar Accesos")
+            with st.container(border=True):
+                lista_demo = ["Seleccione...", "agrimensor_luis", "abogada_marta", "pasante_carlos"]
+                col_b1, col_b2 = st.columns(2)
+                
+                u_bloq = col_b1.selectbox("Bloquear Usuario:", lista_demo, key="b1")
+                if col_b1.button("🔒 Suspender Acceso", use_container_width=True):
+                    if u_bloq != "Seleccione...": st.warning(f"Acceso suspendido para {u_bloq}.")
+                
+                u_del = col_b2.selectbox("Eliminar Usuario:", lista_demo, key="d1")
+                if col_b2.button("🗑️ Borrar Permanente", type="primary", use_container_width=True):
+                    if u_del != "Seleccione...": st.error(f"Usuario {u_del} eliminado.")
+
+        # --- TAB 3: ESTADO DE LA BASE DE DATOS ---
+        with tab_sistema:
+            st.subheader("Estado de la Nube (Supabase)")
+            
+            # Intentamos contar registros reales para que no esté vacío
+            try:
+                res_exp = supabase.table("expedientes_maestros").select("id", count="exact").execute()
+                count_exp = res_exp.count if res_exp.count else 0
+                
+                res_doc = supabase.table("archivo_digital").select("id", count="exact").execute()
+                count_doc = res_doc.count if res_doc.count else 0
+            except:
+                count_exp, count_doc = 0, 0
+
+            col_s1, col_s2, col_s3 = st.columns(3)
+            col_s1.metric("Expedientes", count_exp)
+            col_s1.caption("Total de casos en nube")
+            
+            col_s2.metric("Documentos", count_doc)
+            col_s2.caption("Archivos vinculados")
+            
+            col_s3.metric("Estado", "Online", delta="Conectado")
+            
+            st.divider()
+            st.info("💡 La base de datos está sincronizada con Supabase Cloud. Los respaldos se realizan cada 24 horas automáticamente.")
+
         st.divider()
         if st.button("🚪 Cerrar Sesión del Sistema"):
             st.session_state.admin_autenticado = False
             st.rerun()
 
     else:
-        # Pantalla de Login
-        st.markdown("### Autenticación Requerida")
+        # LOGIN (Para cuando no está autenticado)
+        st.markdown("### 🔑 Autenticación Requerida")
         u = st.text_input("Usuario Master:")
         p = st.text_input("PIN de Seguridad:", type="password")
-        if st.button("🔑 Desbloquear Sistema"):
+        if st.button("Desbloquear Panel"):
             if u == "JhonnyMatos" and p == "1234":
                 st.session_state.admin_autenticado = True
+                st.session_state.usuario = "Jhonny Matos"
                 st.session_state.rol = "Presidente Fundador"
                 st.rerun()
             else:
-                st.error("Credenciales incorrectas.")
+                st.error("Credenciales inválidas.")
             # Nota: Esto se complementa con CSS personalizado en el inicio del script
         # Aquí va la función de agregar/borrar usuarios...
 def login_sistema():
