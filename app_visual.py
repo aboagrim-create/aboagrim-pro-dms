@@ -1262,8 +1262,8 @@ def vista_mando_central():
     with c_izq:
         st.subheader("🕒 Últimos Expedientes Registrados")
         try:
-            # Traemos los últimos 5 clientes para tenerlos a mano
-            res_ultimos = supabase.table("expedientes_maestros").select("expediente_codigo, nombre_propietario, tipo_persona").order("id", desc=True).limit(5).execute()
+            # Pedimos solo 'id' y 'nombre_propietario' para asegurar compatibilidad
+            res_ultimos = supabase.table("expedientes_maestros").select("id, nombre_propietario").order("id", desc=True).limit(5).execute()
             
             if res_ultimos.data:
                 # Mostramos una tabla profesional y limpia
@@ -1272,15 +1272,15 @@ def vista_mando_central():
                     use_container_width=True, 
                     hide_index=True,
                     column_config={
-                        "expediente_codigo": "Expediente No.",
-                        "nombre_propietario": "Cliente / Razón Social",
-                        "tipo_persona": "Tipo"
+                        "id": "ID del Expediente",
+                        "nombre_propietario": "Cliente / Razón Social"
                     }
                 )
             else:
                 st.info("Aún no hay expedientes registrados en el sistema.")
         except Exception as e:
-            st.warning("Conectando con la base de datos para mostrar el historial...")
+            # Si hay un error, ahora lo veremos en rojo para saber qué es
+            st.error(f"Error al leer la base de datos: {e}")
 
     with c_der:
         st.subheader("⚡ Estado del Sistema")
