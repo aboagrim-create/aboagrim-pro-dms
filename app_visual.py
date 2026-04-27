@@ -1348,96 +1348,86 @@ def vista_mando_central():
         st.write("")
         st.info("📌 Recuerde: Mantener su Archivo Digital actualizado garantiza la agilidad de los procesos en la Jurisdicción Inmobiliaria de Santiago y el resto del país.")
 def vista_registro_maestro():
-    st.title("🗂️ Registro Maestro de Clientes")
-    st.subheader("Gestión de Expedientes y Generales de Ley")
-
-    # --- 1. LÓGICA DE NÚMERO DE EXPEDIENTE AUTOMÁTICO ---
-    try:
-        # Consultamos el último registro para seguir el orden ascendente
-        res_ultimo = supabase.table("expedientes_maestros").select("id").order("id", desc=True).limit(1).execute()
-        if res_ultimo.data:
-            siguiente_id = res_ultimo.data[0]['id'] + 1
-        else:
-            siguiente_id = 1
-        
-        # Formato: 2026-0001
-        n_expediente_auto = f"2026-{siguiente_id:04d}"
-        st.info(f"📂 Próximo Expediente a Generar: **{n_expediente_auto}**")
-    except Exception:
-        n_expediente_auto = "2026-0001"
-
-    # --- 2. DATOS PRINCIPALES DEL REGISTRO ---
-    st.write("---")
-    with st.container():
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            es_compania = st.toggle("🏢 ¿Es una Compañía / Entidad Jurídica?", value=False)
-            if es_compania:
-                nombre_cliente = st.text_input("Razón Social de la Empresa:", placeholder="Ej: Inversiones Inmobiliarias S.R.L.")
-                identificacion = st.text_input("RNC (Registro Nacional de Contribuyente):")
-            else:
-                nombre_cliente = st.text_input("Nombre Completo del Cliente:", placeholder="Ej: Juan Pérez Martínez")
-                identificacion = st.text_input("Cédula o Pasaporte:")
-
-        with col2:
-            telefono = st.text_input("Número de Teléfono / WhatsApp:", placeholder="809-XXX-XXXX")
-            domicilio = st.text_area("Domicilio o Residencia Física:", placeholder="Calle, No., Sector, Ciudad...")
-
-    # --- 3. MÓDULO DINÁMICO DE GENERALES ADICIONALES ---
-    st.write("---")
-    st.markdown("### ➕ Generales de Ley Adicionales")
-    st.caption("Agregue Nacionalidad, Estado Civil, Profesión u otros datos necesarios para el expediente.")
-    
-    if 'cant_gen_reg' not in st.session_state: st.session_state.cant_gen_reg = 0
-
-    c_btn1, c_btn2, c_sp = st.columns([1, 1, 3])
-    with c_btn1:
-        if st.button("➕ Agregar Dato", key="add_gen_reg"): st.session_state.cant_gen_reg += 1
-    with c_btn2:
-        if st.button("➖ Borrar Dato", key="del_gen_reg") and st.session_state.cant_gen_reg > 0: st.session_state.cant_gen_reg -= 1
-
-    datos_adicionales = {}
-    for i in range(st.session_state.cant_gen_reg):
-        rg1, rg2 = st.columns(2)
-        with rg1: 
-            etiqueta = st.text_input(f"Dato {i+1} (Ej: Estado Civil)", key=f"reg_et_{i}")
-        with rg2: 
-            valor = st.text_input(f"Descripción {i+1}", key=f"reg_vl_{i}")
-        if etiqueta: 
-            datos_adicionales[etiqueta.lower().replace(" ", "_")] = valor
-
+    st.title("👤 Registro Maestro de Expedientes")
+    st.subheader("Control de Casos Legales y Técnicos | AboAgrim")
     st.divider()
 
-    # --- 4. BOTÓN DE GUARDADO FINAL ---
-    if st.button("💾 COMPLETAR REGISTRO MAESTRO", type="primary", use_container_width=True):
-        if not nombre_cliente:
-            st.error("❌ El nombre o razón social es obligatorio para el registro.")
-        else:
-            with st.status("📡 Conectando con la base de datos de AboAgrim...", expanded=False):
-                try:
-                    # Preparamos el paquete de datos
-                    data_insert = {
-                        "expediente_codigo": n_expediente_auto,
-                        "nombre_propietario": nombre_cliente,
-                        "cedula_rnc": identificacion,
-                        "telefono": telefono,
-                        "domicilio": domicilio,
-                        "tipo_persona": "Jurídica" if es_compania else "Física",
-                        "datos_adicionales": datos_adicionales
-                    }
-                    
-                    # Insertamos en Supabase
-                    supabase.table("expedientes_maestros").insert(data_insert).execute()
-                    
-                    st.success(f"✅ ¡Expediente {n_expediente_auto} creado con éxito para {nombre_cliente}!")
-                    st.balloons()
-                    # Reiniciamos contadores para el próximo registro
-                    st.session_state.cant_gen_reg = 0
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Error al guardar en el servidor: {e}")
+    # --- 1. DATOS GENERALES DEL CLIENTE ---
+    with st.expander("📝 Información Básica del Propietario/Cliente", expanded=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            nombre_cliente = st.text_input("Nombre Completo / Razón Social:")
+            identificacion = st.text_input("Cédula o RNC:", placeholder="001-0000000-0")
+        with col2:
+            telefono = st.text_input("Teléfono de Contacto:")
+            domicilio = st.text_area("Dirección / Domicilio:", height=68)
 
+    # --- 2. DEPARTAMENTO DE AGRIMENSURA (DATOS TÉCNICOS) ---
+    st.markdown("### 🗺️ Módulo de Agrimensura y Catastro")
+    with st.container(border=True):
+        at1, at2, at3 = st.columns(3)
+        with at1:
+            parcela = st.text_input("Número de Parcela:", placeholder="Ej: 209-B")
+            distrito = st.text_input("Distrito Catastral:")
+        with at2:
+            municipio = st.text_input("Municipio:", value="Santiago")
+            provincia = st.text_input("Provincia:", value="Santiago")
+        with at3:
+            superficie = st.text_input("Superficie (m²):")
+            estatus_t = st.selectbox("Estatus Técnico:", ["Saneamiento", "Deslinde", "Subdivisión", "Refundición"])
+
+        # CAMPOS DE COORDENADAS (LO QUE SE HABÍA BORRADO)
+        st.write("**📍 Ubicación Georreferenciada (UTM/WGS84)**")
+        c_coord1, c_coord2, c_coord3 = st.columns(3)
+        with c_coord1:
+            coord_east = st.text_input("Coordenada Este (X):")
+        with c_coord2:
+            coord_north = st.text_input("Coordenada Norte (Y):")
+        with c_coord3:
+            puntos_gps = st.text_input("Puntos de Control / Vértices:")
+
+    # --- 3. DEPARTAMENTO LEGAL (LITIS Y TRIBUNALES) ---
+    st.markdown("### ⚖️ Módulo Jurídico y Litigios")
+    with st.container(border=True):
+        jurisdiccion = st.selectbox("Jurisdicción:", ["Inmobiliaria", "Civil y Comercial", "Laboral", "Penal"])
+        
+        jl1, jl2 = st.columns(2)
+        with jl1:
+            tribunal = st.text_input("Tribunal / Corte:", placeholder="Ej: Tribunal de Tierras de Jurisdicción Original")
+            sala = st.text_input("Sala / Cámara:")
+            juez = st.text_input("Magistrado / Juez Apoderado:")
+        with jl2:
+            no_rol = st.text_input("Número de Rol / Cuaderno:")
+            f_audiencia = st.date_input("Fecha de Próxima Audiencia")
+            etapa_procesal = st.selectbox("Etapa del Proceso:", ["Inicio", "Instrucción", "Fallo Pendiente", "Sentencia", "Recurso"])
+
+    # --- 4. ACCIÓN DE GUARDADO ---
+    st.divider()
+    if st.button("🚀 REGISTRAR EXPEDIENTE MAESTRO", type="primary", use_container_width=True):
+        if nombre_cliente and parcela:
+            # Generamos código único
+            codigo_generado = f"AA-{datetime.now().strftime('%y%m%d%H%M')}"
+            
+            data_insert = {
+                "expediente": codigo_generado,
+                "nombre_propietario": nombre_cliente,
+                "cedula_propietario": identificacion,
+                "parcela": parcela,
+                "municipio": municipio,
+                "provincia": provincia,
+                "estatus": estatus_t,
+                "jurisdiccion": jurisdiccion,
+                "fecha_creacion": str(datetime.now())
+            }
+            
+            try:
+                supabase.table("expedientes_maestros").insert(data_insert).execute()
+                st.success(f"✅ Expediente {codigo_generado} creado exitosamente para {nombre_cliente}.")
+                st.balloons()
+            except Exception as e:
+                st.error(f"Error al guardar en la nube: {e}")
+        else:
+            st.warning("⚠️ El nombre del cliente y el número de parcela son obligatorios.")
 # =========================================================
 # ENRUTADOR SEGURO - RECUPERACIÓN DE MANDO
 # =========================================================
