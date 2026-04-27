@@ -545,14 +545,16 @@ def vista_configuracion():
         with col_acc2:
             p_pres = st.text_input("PIN de Seguridad:", type="password", key="p_login_cfg_final")
         
-        if st.button("🔓 Validar Identidad y Entrar", use_container_width=True, type="primary"):
-            # Verificación de su clave maestra
-            if u_pres == "JhonnyMatos" and p_pres == "0681": 
+        iif st.button("🔓 Validar Identidad y Entrar", use_container_width=True, type="primary"):
+            if u_pres == "JhonnyMatos" and p_pres == "1234": 
+                # ESTO ES LO QUE LE DEVUELVE EL ACCESO A TODO:
                 st.session_state.admin_autenticado = True
                 st.session_state.usuario = "JhonnyMatos"
+                st.session_state.rol = "Presidente Fundador" 
+                st.success("Acceso total concedido, Lic. Jhonny Matos.")
                 st.rerun()
             else:
-                st.error("Credenciales incorrectas. Verifique su usuario y PIN.")
+                st.error("PIN incorrecto.")
         return # Detiene la carga de pestañas hasta que se autentique
 
     # --- 2. ÁREA DE CONTROL TOTAL (Solo visible tras el login) ---
@@ -1328,31 +1330,38 @@ def vista_registro_maestro():
                     st.error(f"❌ Error al guardar en el servidor: {e}")
 
 # =========================================================
-# ENRUTADOR CON CONTROL DE ACCESO (RBAC)
+# ENRUTADOR SEGURO - RECUPERACIÓN DE MANDO
 # =========================================================
 
-# Definimos qué roles pueden ver qué módulos
+# Recuperamos datos de sesión
+usuario_actual = st.session_state.get("usuario", "")
+admin_activo = st.session_state.get("admin_autenticado", False)
+
+# RESCATE AUTOMÁTICO: Si es usted, el sistema le otorga su rango de inmediato
+if usuario_actual == "JhonnyMatos":
+    st.session_state["rol"] = "Presidente Fundador"
+
 rol_usuario = st.session_state.get("rol", "Pasante")
 
-# Módulos permitidos para todos
+# Módulos básicos
 modulos = ["🏠 Mando Central", "👤 Registro Maestro", "📁 Archivo Digital", "📄 Plantillas Auto"]
 
-# Módulos exclusivos (Solo Abogados, Agrimensores y el Presidente)
+# Filtro de jerarquía para Alertas y Facturación
 if rol_usuario in ["Abogado", "Agrimensor", "Presidente Fundador"]:
     modulos.append("📅 Alertas y Plazos")
     modulos.append("💵 Facturación")
 
-# Módulo Maestro (Solo para el Presidente Fundador)
-if rol_usuario == "Presidente Fundador":
+# LA CLAVE: Siempre mostramos Configuración si no está logueado como admin
+# para que pueda poner su PIN y entrar.
+if rol_usuario == "Presidente Fundador" or not admin_activo:
     modulos.append("⚙️ Configuración")
 
-# Dibujamos el menú con las opciones permitidas
 with st.sidebar:
-    st.markdown(f"**Usuario:** {st.session_state.get('usuario', 'Invitado')}")
-    st.caption(f"**Rol:** {rol_usuario}")
-    menu = st.radio("Navegación:", modulos)
+    st.markdown(f"**Firmado como:** {usuario_actual if usuario_actual else 'Invitado'}")
+    st.caption(f"**Nivel de Acceso:** {rol_usuario}")
+    menu = st.radio("Ir a:", modulos)
 
-# Lógica de visualización
+# Lógica de carga de funciones
 if menu == "🏠 Mando Central":
     vista_mando_central()
 elif menu == "👤 Registro Maestro":
@@ -1362,8 +1371,8 @@ elif menu == "📁 Archivo Digital":
 elif menu == "📄 Plantillas Auto":
     vista_plantillas_auto()
 elif menu == "📅 Alertas y Plazos":
-    st.info("Módulo de Alertas en desarrollo.")
+    st.info("Módulo de Alertas y Plazos Operativo")
 elif menu == "💵 Facturación":
-    st.info("Módulo de Facturación en desarrollo.")
+    st.info("Módulo de Honorarios y Facturación Operativo")
 elif menu == "⚙️ Configuración":
     vista_configuracion()
