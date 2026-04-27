@@ -510,6 +510,7 @@ def vista_configuracion():
         p_admin = st.text_input("PIN Maestro:", type="password", key="admin_pin")
 
         if st.button("Validar Identidad de Propietario"):
+            # RECUERDE: Cambie '1234' por su PIN real
             if u_admin == "JhonnyMatos" and p_admin == "1234": 
                 st.session_state.admin_autenticado = True
                 st.success("Bienvenido, Licenciado.")
@@ -519,32 +520,8 @@ def vista_configuracion():
         return 
 
     # --- 2. PANEL DE CONFIGURACIÓN POR PESTAÑAS ---
-    tab1, tab2, tab3 = st.tabs(["🔒 Seguridad de Acceso", "🏢 Identidad AboAgrim", "📡 Estado Cloud"])
-
-    with tab1:
-        st.write("### Cambio de PIN General")
-        nuevo_pin = st.text_input("Nuevo PIN del Sistema", type="password")
-        if st.button("Actualizar PIN"):
-            st.success("✅ PIN actualizado correctamente.")
-
-    with tab2:
-        st.write("### Datos para Documentos y Firmas")
-        col_a, col_b = st.columns(2)
-        with col_a:
-            st.text_input("Nombre Titular", value="Lic. Jhonny Matos. M.A.")
-            st.text_input("Firma Oficial", value="Abogados y Agrimensores 'AboAgrim'")
-        with col_b:
-            st.text_input("Oficina Principal", value="Santiago, Rep. Dom.")
-            st.text_input("Contacto", value="809-XXX-XXXX")
-        st.button("Guardar Identidad Corporativa")
-
-    with tab3:
-        st.write("### Estado de la Infraestructura")
-        st.success("🟢 Conexión con Supabase: Activa")
-        st.info("Proyecto: database.supabase.co")
-        if st.button("Cerrar Sesión de Administrador"):
-            st.session_state.admin_autenticado = False
-            st.rerun()
+    tab1, tab2, tab3 = st.tabs(["🔒 Seguridad", "🏢 Identidad AboAgrim", "📡 Estado Cloud"])
+    # ... resto del código que ya tiene ...
 
 def login_sistema():
     st.markdown("""
@@ -1262,8 +1239,8 @@ def vista_registro_maestro():
 if menu == "🏠 Mando Central":
     vista_mando_central() # ¡Le quitamos el # y borramos el st.info!
 
-elif menu == "👤 Registro Maestro":
-    vista_registro_maestro()
+elif menu == "⚙️ Configuración":
+    vista_configuracion() # <--- Asegúrese de que diga esto y NO st.info
 
 # ... (El resto sigue igual) ...
 
