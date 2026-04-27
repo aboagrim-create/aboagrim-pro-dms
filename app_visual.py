@@ -1317,20 +1317,20 @@ def vista_registro_maestro():
         else:
             st.warning("⚠️ El nombre del cliente y el número de parcela son obligatorios.")
 # ==========================================
-# 🚦 ENRUTADOR SEGURO - NAVEGACIÓN MAESTRA
+# 🚦 ENRUTADOR REFORZADO - ABOAGRIM PRO
 # ==========================================
 
-# 1. Recuperamos datos de sesión
-usuario_actual = st.session_state.get("usuario", "")
-admin_activo = st.session_state.get("admin_autenticado", False)
+# 1. Asegurar el Rol de Presidente (Blindaje)
+usuario_actual = st.session_state.get("usuario", "Invitado")
 
-# RESCATE AUTOMÁTICO
-if usuario_actual == "JhonnyMatos":
+# Si es usted, forzamos el rango máximo automáticamente
+if "Jhonny" in usuario_actual or usuario_actual == "JhonnyMatos":
     st.session_state["rol"] = "Presidente Fundador"
+    st.session_state["admin_autenticado"] = True
 
 rol_usuario = st.session_state.get("rol", "Pasante")
 
-# 2. Definición de Módulos Básicos
+# 2. Definición Dinámica de Módulos
 modulos = [
     "🏠 Mando Central", 
     "👤 Registro Maestro", 
@@ -1339,24 +1339,25 @@ modulos = [
     "📅 Alertas y Plazos"
 ]
 
-# Filtro de jerarquía financiera
-if rol_usuario in ["Abogado", "Agrimensor", "Presidente Fundador"]:
-    modulos.append("💵 Facturación")
+# 💳 VALIDACIÓN CRÍTICA PARA FACTURACIÓN
+# Si es usted o tiene rango alto, se agrega el módulo
+if rol_usuario in ["Presidente Fundador", "Abogado", "Agrimensor"]:
+    if "💵 Facturación" not in modulos:
+        modulos.append("💵 Facturación")
 
-# Seguridad de configuración
-if rol_usuario == "Presidente Fundador" or not admin_activo:
-    modulos.append("⚙️ Configuración")
+# Siempre ver configuración si es el jefe o no está logueado
+if rol_usuario == "Presidente Fundador" or not st.session_state.get("admin_autenticado"):
+    if "⚙️ Configuración" not in modulos:
+        modulos.append("⚙️ Configuración")
 
-# 3. Interfaz con botones visibles (Radio Buttons)
+# 3. Interfaz de Barra Lateral
 with st.sidebar:
-    st.markdown(f"**Firmado como:** {usuario_actual if usuario_actual else 'Invitado'}")
-    st.caption(f"**Nivel de Acceso:** {rol_usuario}")
+    st.markdown(f"**Firmado como:** {usuario_actual}")
+    st.caption(f"**Cargo:** {rol_usuario}")
     st.divider()
-    
-    # Volvemos al diseño de botones visibles para mayor rapidez
-    menu = st.radio("Seleccione el Módulo:", modulos)
+    menu = st.radio("Navegación:", modulos, key="menu_final_v4")
 
-# 4. Lógica de Enrutamiento (El Gatillo)
+# 4. El Gatillo (Enrutamiento)
 if menu == "🏠 Mando Central":
     vista_mando_central()
 elif menu == "👤 Registro Maestro":
