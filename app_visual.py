@@ -989,34 +989,42 @@ st.divider() # Esto pone una línea bonita para separar
 btn_guardar = st.button("💾 GUARDAR EXPEDIENTE Y CREAR BÓVEDA", type="primary", use_container_width=True)
 
 if btn_guardar:
-        if st.session_state.get('in_np', '') != '': # Verificamos que haya un nombre escrito
+        if st.session_state.get('in_np', '') != '':
             try:
-            # 1. Guardamos en Supabase PRIMERO
-            datos_a_guardar = {
-                "expediente": st.session_state.get('in_exp', ''),
-                "nombre_propietario": st.session_state.get('in_np', ''),
-                "cedula_propietario": st.session_state.get('in_cp', ''),
-                "parcela": st.session_state.get('in_par', ''),
-                "municipio": st.session_state.get('in_mun', ''),
-                "provincia": st.session_state.get('in_prov', '')
-            }
+                # 1. Preparamos los datos para la Base de Datos (Supabase)
+                datos_a_guardar = {
+                    "expediente": st.session_state.get('in_exp', ''),
+                    "nombre_propietario": st.session_state.get('in_np', ''),
+                    "cedula_propietario": st.session_state.get('in_cp', ''),
+                    "parcela": st.session_state.get('in_par', ''),
+                    "municipio": st.session_state.get('in_mun', ''),
+                    "provincia": st.session_state.get('in_prov', '')
+                }
 
-            res = supabase.table("expedientes_maestros").insert(datos_a_guardar).execute()
-            id_generado = res.data[0]['id']
-            nombre_cliente = st.session_state.get('in_np', 'Sin_Nombre')
+                # Guardamos y obtenemos el ID generado
+                res = supabase.table("expedientes_maestros").insert(datos_a_guardar).execute()
+                id_generado = res.data[0]['id']
+                nombre_cliente = st.session_state.get('in_np', 'Sin_Nombre')
 
-            # 2. PREPARACIÓN DE LA FICHA MAESTRA (CARÁTULA)
-            datos_resumen = {
-                "num_expediente": f"RES-{id_generado}", 
-                "cliente_nombre": nombre_cliente,
-                "cli_correo": st.session_state.get('in_mail', 'No provisto'),
-                "cliente_cedula": st.session_state.get('in_cp'),
-                "inm_direccion": st.session_state.get('in_dir_detallada', 'Santiago, R.D.'),
-                "inm_coordenadas": st.session_state.get('in_coord', 'Verificar en campo'),
-                "inmueble_parcela": st.session_state.get('in_par'),
-                "inmueble_dc": st.session_state.get('in_dc'),
-                "profesional_a_cargo": "Lic. Jhonny Matos. M.A."
-            }
+                # 2. Preparamos los datos para la Carátula de Word
+                datos_resumen = {
+                    "num_expediente": f"RES-{id_generado}", 
+                    "cliente_nombre": nombre_cliente,
+                    "cli_correo": st.session_state.get('in_mail', 'No provisto'),
+                    "cliente_cedula": st.session_state.get('in_cp'),
+                    "inm_direccion": st.session_state.get('in_dir_detallada', 'Santiago, R.D.'),
+                    "inm_coordenadas": st.session_state.get('in_coord', 'Verificar en campo'),
+                    "inmueble_parcela": st.session_state.get('in_par'),
+                    "inmueble_dc": st.session_state.get('in_dc'),
+                    "profesional_a_cargo": "Lic. Jhonny Matos. M.A."
+                }
+                
+                st.success(f"✅ Expediente RES-{id_generado} guardado con éxito.")
+
+            except Exception as e:
+                st.error(f"❌ Error al procesar: {e}")
+        else:
+            st.warning("⚠️ Por favor, ingrese al menos el nombre del propietario.")
             
             # --- Aquí abajo debe continuar su código normal de Google Drive que dice: ---
             # with st.status("⏳ Creando oficina virtual... 
