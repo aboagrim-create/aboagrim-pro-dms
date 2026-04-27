@@ -822,436 +822,130 @@ def vista_archivo_digital():
                     st.warning("Por favor, complete todos los campos obligatorios.")
         
         
-import io
-from docxtpl import DocxTemplate
-
+# =================================================================
+# 📂 SECCIÓN 1: IMPORTACIONES (Asegúrate de que no se repitan arriba)
+# =================================================================
 import io
 from docxtpl import DocxTemplate
 from datetime import datetime
 
-# ==========================================
-# 📄 MÓDULO DE PLANTILLAS AUTOMÁTICAS
-# ==========================================
-def vista_plantillas_auto():
-    st.title("📄 Generador Automático de Documentos")
-    st.subheader("Redacción Asistida | AboAgrim Pro")
-    st.divider()
+# =================================================================
+# ⚖️ SECCIÓN 2: MÓDULOS OPERATIVOS (FUNCIONES)
+# =================================================================
 
-    try:
-        res = supabase.table("expedientes_maestros").select("*").execute()
-        if not res.data:
-            st.warning("⚠️ No hay expedientes en el Registro Maestro.")
-            return
-
-        dict_exp = {f"EXP: {e['expediente']} - {e['nombre_propietario']}": e for e in res.data}
-        seleccion = st.selectbox("🔍 Seleccione el expediente:", ["Seleccione..."] + list(dict_exp.keys()))
-        
-        if seleccion != "Seleccione...":
-            caso = dict_exp[seleccion]
-            tipo_doc = st.selectbox("📝 Tipo de Documento:", [
-                "Instancia de Solicitud de Mensura",
-                "Contrato de Cuota Litis",
-                "Acto de Alguacil"
-            ])
-
-            if st.button("🚀 Generar y Descargar Word", type="primary", use_container_width=True):
-                with st.spinner("Vinculando datos..."):
-                    try:
-                        mapa = {
-                            "Instancia de Solicitud de Mensura": "plantilla_mensura.docx",
-                            "Contrato de Cuota Litis": "plantilla_cuota_litis.docx",
-                            "Acto de Alguacil": "plantilla_alguacil.docx"
-                        }
-                        nombre_base = mapa.get(tipo_doc)
-                        doc = DocxTemplate(nombre_base)
-                        
-                        contexto = {
-                            'nombre_cliente': caso.get('nombre_propietario', '__________'),
-                            'cedula_cliente': caso.get('cedula', '__________'),
-                            'parcela': caso.get('parcela', '__________'),
-                            'dc': caso.get('dc', '__________'),
-                            'fecha_hoy': datetime.now().strftime("%d de %B del %Y")
-                        }
-                        
-                        doc.render(contexto)
-                        buffer = io.BytesIO()
-                        doc.save(buffer)
-                        buffer.seek(0)
-                        
-                        st.download_button(
-                            label="📥 Descargar Documento Listo",
-                            data=buffer,
-                            file_name=f"{caso['expediente']}_{tipo_doc.replace(' ', '_')}.docx",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                            use_container_width=True
-                        )
-                    except FileNotFoundError:
-                        st.error(f"❌ Falta el archivo `{nombre_base}` en GitHub.")
-                    except Exception as e:
-                        st.error(f"Error: {e}")
-    except Exception as e:
-        st.error(f"Error de conexión: {e}")
-
-# ==========================================
-# 🚦 ENRUTADOR Y MENÚ (EL GATILLO)
-# ==========================================
-
-# Definimos los módulos con los emojis exactos
-# ==========================================
-# 🚦 MENÚ LATERAL Y ENRUTADOR MAESTRO
-# ==========================================
-
-# 1. Definimos los módulos base
-modulos = [
-    "🏠 Mando Central", 
-    "👤 Registro Maestro", 
-    "📂 Archivo Digital", 
-    "📄 Plantillas Auto", 
-    "📅 Alertas y Plazos"
-]
-
-# 2. Agregamos módulos según el nivel de acceso
-if st.session_state.get("admin_autenticado", False):
-    if "💵 Facturación" not in modulos:
-        modulos.append("💵 Facturación")
-
-if not st.session_state.get("admin_autenticado", False) or st.session_state.get("rol") == "Presidente Fundador":
-    if "⚙️ Configuración" not in modulos:
-        modulos.append("⚙️ Configuración")
-
-# 3. Renderizamos la barra lateral (El Capitán)
-with st.sidebar:
-    st.markdown(f"**Firmado como:** {st.session_state.get('usuario', 'Invitado')}")
-    st.caption(f"**Nivel de Acceso:** {st.session_state.get('rol', 'Pasante')}")
-    menu = st.radio("Ir a:", modulos)
-
-# 4. Enrutador: ¿A qué pantalla vamos?
-if menu == "🏠 Mando Central":
-    st.info("Bienvenido al Mando Central de AboAgrim Pro")
-    
-elif menu == "👤 Registro Maestro":
-    vista_registro_maestro()
-
-elif menu == "📂 Archivo Digital":
-    vista_archivo_digital()
-
-elif menu == "📄 Plantillas Auto":
-    vista_plantillas_auto()
-
-elif menu == "📅 Alertas y Plazos":
-    vista_alertas_plazos()
-
-elif menu == "💵 Facturación":
-    vista_facturacion()
-
-elif menu == "⚙️ Configuración":
-    vista_configuracion()
-# Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
-
-# Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
-# Aquí debajo empieza su def generar_documento_word...
-
-def generar_documento_word(nombre_plantilla, diccionario_datos):
-    """
-    Toma una plantilla de la carpeta 'plantillas_maestras' y la llena con los datos.
-    Devuelve un objeto de memoria (BytesIO) listo para descargar o subir a Drive.
-    """
-    # 1. Ruta exacta de tu plantilla
-    ruta_plantilla = f"plantillas_maestras/{nombre_plantilla}"
-    
-    try:
-        # 2. Cargar el documento con docxtpl
-        doc = DocxTemplate(ruta_plantilla)
-        
-        # 3. Inyectar el diccionario de variables (El que viene de Supabase o session_state)
-        doc.render(diccionario_datos)
-        
-        # 4. Guardar en memoria (sin crear archivos basura en tu disco duro)
-        archivo_salida = io.BytesIO()
-        doc.save(archivo_salida)
-        archivo_salida.seek(0)
-        
-        return archivo_salida
-    except Exception as e:
-        st.error(f"Error al generar {nombre_plantilla}: {e}")
-        return None
-def guardar_y_actualizar(tipo_perfil, datos, ventana_origen, menu_desplegable=None):
-    """Guarda en la base de datos y refresca el menú desplegable."""
-    
-    # 1. Lógica de inserción (Ejemplo SQL)
-    # query = f"INSERT INTO {tipo_perfil} (nombre, cedula, profesion, ...) VALUES (...)"
-    # ejecutar_query(query)
-    
-    print(f"Datos guardados en la nube para {tipo_perfil}: {datos}")
-    
-    # 2. Refrescar el Menú Desplegable si existe
-    if menu_desplegable:
-    
-        nueva_lista = ["Seleccione..."] + ["Juan Pérez", "Lic. Matos", "Nuevo Registro..."] # Ejemplo
-        menu_desplegable.configure(values=nueva_lista)
-        menu_desplegable.set(datos["Nombre Completo"]) # Selecciona el recién creado
-
-def ventana_registro_profesional(tipo, menu_a_refrescar=None):
-    ventana = ctk.CTkToplevel()
-    ventana.title(f"AboAgrim Pro - Registro de {tipo}")
-    ventana.geometry("450x650")
-    ventana.attributes('-topmost', True)
-
-    # Contenedor con scroll para que sea moderno si hay muchos campos
-    scroll_frame = ctk.CTkScrollableFrame(ventana, width=400, height=450)
-    scroll_frame.pack(pady=10, padx=20, fill="both", expand=True)
-
-    campos = ["Nombre Completo", "Cédula / RNC", "Dirección", "Teléfono", "Correo", "Profesión"]
-    entradas = {}
-
-    for campo in campos:
-        ctk.CTkLabel(scroll_frame, text=campo, font=("Roboto", 12, "bold")).pack(anchor="w", padx=10)
-        entry = ctk.CTkEntry(scroll_frame, placeholder_text=f"Escriba {campo.lower()}...", width=320)
-        entry.pack(pady=(0, 15), padx=10)
-        entradas[campo] = entry
-
-    # Botón dinámico
-    btn_guardar = ctk.CTkButton(
-        ventana, 
-        text=f"CONFIRMAR REGISTRO", 
-        fg_color="#1a5276", # Azul profesional
-        hover_color="#21618c",
-        height=45,
-        command=lambda: guardar_y_actualizar(
-            tipo, 
-            {k: v.get() for k, v in entradas.items()}, 
-            ventana, 
-            menu_a_refrescar
-        )
-    )
-    btn_guardar.pack(pady=20)
-
-
-# =======================================================
-# 1. DISEÑO DE LA PANTALLA DE PLANTILLAS
-# =======================================================
-
-def crear_carpeta_expediente(nombre_cliente, id_expediente):
-    # 1. Definimos el nombre de la carpeta principal
-    nombre_carpeta = f"EXP_{id_expediente}_{nombre_cliente}"
-    
-    # 2. Lógica para crear carpeta en Google Drive (usando service account o OAuth)
-    # (Aquí va la conexión técnica con Google)
-    folder_metadata = {
-        'name': nombre_carpeta,
-        'mimeType': 'application/vnd.google-apps.folder',
-        'parents': ['ID_DE_SU_CARPETA_MAESTRA_ABOAGRIM'] # Su carpeta raíz
-    }
-    
-    # El sistema crea la carpeta y nos devuelve un Link
-    # drive_service.files().create(body=folder_metadata).execute()
-    
-    link_drive = f"https://drive.google.com/drive/folders/ID_GENERADO"
-    return link_drive
-import googleapiclient.discovery
-def vista_mando_central():
-    st.title("🏠 Mando Central | AboAgrim Pro")
-    st.markdown("**Bienvenido al panel de control principal, Lic. Jhonny Matos.**")
-    st.divider()
-
-    # --- 1. MÉTRICAS PRINCIPALES (KPIs) ---
-    st.subheader("📊 Resumen de Operaciones")
-    m1, m2, m3, m4 = st.columns(4)
-    
-    # Intentamos obtener el total real de expedientes desde Supabase
-    total_expedientes = 0
-    try:
-        res = supabase.table("expedientes_maestros").select("id", count="exact").execute()
-        total_expedientes = res.count if res.count else 0
-    except Exception:
-        pass
-
-    with m1:
-        st.metric(label="Expedientes Totales", value=total_expedientes, delta="Registrados")
-    with m2:
-        st.metric(label="Mensuras Catastrales", value="Activas") 
-    with m3:
-        st.metric(label="Registro de Títulos", value="Activos")
-    with m4:
-        st.metric(label="Tribunales de Tierras", value="En Litigio")
-
-    st.write("---")
-
-    # --- 2. ACCESOS RÁPIDOS Y ÚLTIMOS REGISTROS ---
-    c_izq, c_der = st.columns([2, 1])
-    
-    with c_izq:
-        st.subheader("🕒 Últimos Expedientes Registrados")
-        try:
-            # Pedimos solo 'id' y 'nombre_propietario' para asegurar compatibilidad
-            res_ultimos = supabase.table("expedientes_maestros").select("id, nombre_propietario").order("id", desc=True).limit(5).execute()
-            
-            if res_ultimos.data:
-                # Mostramos una tabla profesional y limpia
-                st.dataframe(
-                    res_ultimos.data, 
-                    use_container_width=True, 
-                    hide_index=True,
-                    column_config={
-                        "id": "ID del Expediente",
-                        "nombre_propietario": "Cliente / Razón Social"
-                    }
-                )
-            else:
-                st.info("Aún no hay expedientes registrados en el sistema.")
-        except Exception as e:
-            # Si hay un error, ahora lo veremos en rojo para saber qué es
-            st.error(f"Error al leer la base de datos: {e}")
-
-    with c_der:
-        st.subheader("⚡ Estado del Sistema")
-        st.success("🟢 Conexión a Servidor: Óptima")
-        st.success("🟢 Motor de Plantillas: Activo")
-        st.success("🟢 Base de Datos: Sincronizada")
-        st.write("")
-        st.info("📌 Recuerde: Mantener su Archivo Digital actualizado garantiza la agilidad de los procesos en la Jurisdicción Inmobiliaria de Santiago y el resto del país.")
 def vista_registro_maestro():
     st.title("👤 Registro Maestro de Expedientes")
-    st.subheader("Control de Casos Legales y Técnicos | AboAgrim")
-    st.divider()
-
-    # --- 1. DATOS GENERALES DEL CLIENTE ---
-    with st.expander("📝 Información Básica del Propietario/Cliente", expanded=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            nombre_cliente = st.text_input("Nombre Completo / Razón Social:")
-            identificacion = st.text_input("Cédula o RNC:", placeholder="001-0000000-0")
-        with col2:
-            telefono = st.text_input("Teléfono de Contacto:")
-            domicilio = st.text_area("Dirección / Domicilio:", height=68)
-
-    # --- 2. DEPARTAMENTO DE AGRIMENSURA (DATOS TÉCNICOS) ---
-    st.markdown("### 🗺️ Módulo de Agrimensura y Catastro")
-    with st.container(border=True):
-        at1, at2, at3 = st.columns(3)
-        with at1:
-            parcela = st.text_input("Número de Parcela:", placeholder="Ej: 209-B")
-            distrito = st.text_input("Distrito Catastral:")
-        with at2:
-            municipio = st.text_input("Municipio:", value="Santiago")
-            provincia = st.text_input("Provincia:", value="Santiago")
-        with at3:
-            superficie = st.text_input("Superficie (m²):")
-            estatus_t = st.selectbox("Estatus Técnico:", ["Saneamiento", "Deslinde", "Subdivisión", "Refundición"])
-
-        # CAMPOS DE COORDENADAS (LO QUE SE HABÍA BORRADO)
-        st.write("**📍 Ubicación Georreferenciada (UTM/WGS84)**")
-        c_coord1, c_coord2, c_coord3 = st.columns(3)
-        with c_coord1:
-            coord_east = st.text_input("Coordenada Este (X):")
-        with c_coord2:
-            coord_north = st.text_input("Coordenada Norte (Y):")
-        with c_coord3:
-            puntos_gps = st.text_input("Puntos de Control / Vértices:")
-
-    # --- 3. DEPARTAMENTO LEGAL (LITIS Y TRIBUNALES) ---
-    st.markdown("### ⚖️ Módulo Jurídico y Litigios")
-    with st.container(border=True):
-        jurisdiccion = st.selectbox("Jurisdicción:", ["Inmobiliaria", "Civil y Comercial", "Laboral", "Penal"])
-        
-        jl1, jl2 = st.columns(2)
-        with jl1:
-            tribunal = st.text_input("Tribunal / Corte:", placeholder="Ej: Tribunal de Tierras de Jurisdicción Original")
-            sala = st.text_input("Sala / Cámara:")
-            juez = st.text_input("Magistrado / Juez Apoderado:")
-        with jl2:
-            no_rol = st.text_input("Número de Rol / Cuaderno:")
-            f_audiencia = st.date_input("Fecha de Próxima Audiencia")
-            etapa_procesal = st.selectbox("Etapa del Proceso:", ["Inicio", "Instrucción", "Fallo Pendiente", "Sentencia", "Recurso"])
-
-    # --- 4. ACCIÓN DE GUARDADO ---
-    st.divider()
-    if st.button("🚀 REGISTRAR EXPEDIENTE MAESTRO", type="primary", use_container_width=True):
-        if nombre_cliente and parcela:
-            # Generamos código único
-            codigo_generado = f"AA-{datetime.now().strftime('%y%m%d%H%M')}"
+    st.subheader("Control de Casos | AboAgrim Pro")
+    
+    # Formulario de Registro (Basado en su estructura de Supabase)
+    with st.expander("➕ Registrar Nuevo Expediente", expanded=False):
+        with st.form("form_registro"):
+            col1, col2 = st.columns(2)
+            exp = col1.text_input("Número de Expediente:")
+            prop = col2.text_input("Nombre del Propietario:")
+            ced = col1.text_input("Cédula/RNC:")
+            tipo = col2.selectbox("Tipo de Acto:", ["Mensura Catastral", "Deslinde", "Litis sobre Derecho Registrado", "Cierre de Condominio"])
+            parc = col1.text_input("Parcela:")
+            dc = col2.text_input("D.C.:")
             
-            data_insert = {
-                "expediente": codigo_generado,
-                "nombre_propietario": nombre_cliente,
-                "cedula_propietario": identificacion,
-                "parcela": parcela,
-                "municipio": municipio,
-                "provincia": provincia,
-                "estatus": estatus_t,
-                "jurisdiccion": jurisdiccion,
-                "fecha_creacion": str(datetime.now())
-            }
-            
-            try:
-                supabase.table("expedientes_maestros").insert(data_insert).execute()
-                st.success(f"✅ Expediente {codigo_generado} creado exitosamente para {nombre_cliente}.")
-                st.balloons()
-            except Exception as e:
-                st.error(f"Error al guardar en la nube: {e}")
-        else:
-            st.warning("⚠️ El nombre del cliente y el número de parcela son obligatorios.")
-# =========================================================
-# ENRUTADOR SEGURO - RECUPERACIÓN DE MANDO
-# =========================================================
+            if st.form_submit_button("💾 Guardar en Registro Maestro"):
+                if exp and prop:
+                    data = {"expediente": exp, "nombre_propietario": prop, "cedula": ced, "tipo_acto": tipo, "parcela": parc, "dc": dc}
+                    supabase.table("expedientes_maestros").insert(data).execute()
+                    st.success(f"✅ Expediente {exp} registrado exitosamente.")
+                else:
+                    st.error("Faltan campos obligatorios.")
 
-# Recuperamos datos de sesión
-usuario_actual = st.session_state.get("usuario", "")
-admin_activo = st.session_state.get("admin_autenticado", False)
+def vista_archivo_digital():
+    st.title("📂 Archivo Digital Centralizado")
+    tab_exp, tab_sub = st.tabs(["🔍 Explorar", "📤 Vincular"])
+    
+    with tab_exp:
+        try:
+            res = supabase.table("archivo_digital").select("*").execute()
+            if res.data:
+                for doc in res.data:
+                    with st.container(border=True):
+                        c1, c2 = st.columns([4, 1])
+                        c1.write(f"📄 **{doc['nombre_documento']}** | Exp: {doc['codigo_expediente']}")
+                        c2.link_button("👁️ Abrir", doc['url_enlace'])
+            else:
+                st.info("No hay documentos en la bóveda.")
+        except: st.error("Error al conectar con el archivo.")
 
-# RESCATE AUTOMÁTICO: Si es usted, el sistema le otorga su rango de inmediato
-if usuario_actual == "JhonnyMatos":
-    st.session_state["rol"] = "Presidente Fundador"
+def vista_plantillas_auto():
+    st.title("📄 Plantillas Automáticas")
+    try:
+        res = supabase.table("expedientes_maestros").select("*").execute()
+        if res.data:
+            dict_exp = {f"{e['expediente']} - {e['nombre_propietario']}": e for e in res.data}
+            sel = st.selectbox("Seleccione el expediente:", ["Seleccione..."] + list(dict_exp.keys()))
+            if sel != "Seleccione...":
+                caso = dict_exp[sel]
+                tipo_doc = st.selectbox("Documento a generar:", ["Instancia de Mensura", "Cuota Litis", "Acto de Alguacil"])
+                if st.button("🚀 Generar Word"):
+                    st.info(f"Procesando {tipo_doc} para {caso['nombre_propietario']}...")
+    except: st.error("Error en el módulo de plantillas.")
 
-rol_usuario = st.session_state.get("rol", "Pasante")
+def vista_alertas_plazos():
+    st.title("📅 Radar de Alertas y Plazos")
+    st.subheader("Control Normativo JI 2026")
+    t1, t2, t3 = st.tabs(["🛠️ Técnico", "⚖️ Judicial", "📝 Administrativo"])
+    t1.info("Monitoreo de 60 días para Mensuras Catastrales.")
+    t2.info("Control de audiencias y plazos de apelación (30 días).")
+    t3.info("Recursos Administrativos (15 días).")
 
-# --- MÓDULOS DEL SISTEMA ---
-modulos = [
-    "🏠 Mando Central", 
-    "👤 Registro Maestro", 
-    "📂 Archivo Digital", 
-    "📄 Plantillas Auto", 
-    "📅 Alertas y Plazos"
-]
+def vista_facturacion():
+    st.title("💵 Módulo de Honorarios y Cobros")
+    st.write("Gestión financiera de AboAgrim.")
 
-# Filtro de jerarquía para módulos financieros
-if rol_usuario in ["Abogado", "Agrimensor", "Presidente Fundador"]:
+def vista_configuracion():
+    st.title("⚙️ Configuración y Accesos")
+    if st.session_state.get("admin_autenticado", False):
+        st.success(f"Sesión activa: {st.session_state.get('rol')}")
+        if st.button("🚪 Cerrar Sesión"):
+            st.session_state.admin_autenticado = False
+            st.rerun()
+    else:
+        u = st.text_input("Usuario Master:")
+        p = st.text_input("PIN:", type="password")
+        if st.button("🔑 Entrar"):
+            if u == "JhonnyMatos" and p == "1234":
+                st.session_state.admin_autenticado = True
+                st.session_state.rol = "Presidente Fundador"
+                st.rerun()
+
+# =================================================================
+# 🚦 SECCIÓN 3: NAVEGACIÓN ÚNICA (EL CEREBRO FINAL)
+# =================================================================
+
+# 1. Definir lista de módulos
+modulos = ["🏠 Mando Central", "👤 Registro Maestro", "📂 Archivo Digital", "📄 Plantillas Auto", "📅 Alertas y Plazos"]
+
+if st.session_state.get("admin_autenticado", False):
     modulos.append("💵 Facturación")
-
-# La configuración siempre visible para loguearse, o si es el presdente
-if rol_usuario == "Presidente Fundador" or not admin_activo:
+    modulos.append("⚙️ Configuración")
+else:
     modulos.append("⚙️ Configuración")
 
-# Renderizado de la barra lateral
+# 2. Barra Lateral (Solo una para evitar el DuplicateElementId)
 with st.sidebar:
-    st.markdown(f"**Firmado como:** {usuario_actual if usuario_actual else 'Invitado'}")
-    st.caption(f"**Nivel de Acceso:** {rol_usuario}")
-    menu = st.radio("Ir a:", modulos)
+    st.markdown(f"**Firmado como:** {st.session_state.get('usuario', 'Invitado')}")
+    menu = st.radio("Ir a:", modulos, key="menu_final_aboagrim_2026")
 
-# ==========================================
-# 🚦 ENRUTADOR PRINCIPAL DEL SISTEMA
-# ==========================================
-
+# 3. Enrutador Principal
 if menu == "🏠 Mando Central":
-    st.info("Bienvenido al Mando Central de AboAgrim Pro")
-    # Si tiene la función de mando central, quite el "#" de la línea de abajo:
-    # vista_mando_central()
-
+    st.markdown(f"### Bienvenido, {st.session_state.get('rol', 'Invitado')}")
+    st.info("Seleccione una opción en el menú lateral para empezar.")
 elif menu == "👤 Registro Maestro":
     vista_registro_maestro()
-
 elif menu == "📂 Archivo Digital":
     vista_archivo_digital()
-
 elif menu == "📄 Plantillas Auto":
-    # Borre el st.info que había antes y deje solo esta línea:
     vista_plantillas_auto()
-
 elif menu == "📅 Alertas y Plazos":
     vista_alertas_plazos()
-
 elif menu == "💵 Facturación":
     vista_facturacion()
-
 elif menu == "⚙️ Configuración":
     vista_configuracion()
