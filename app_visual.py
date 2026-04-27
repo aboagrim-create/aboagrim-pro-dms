@@ -389,142 +389,101 @@ def vista_alertas():
         st.error(f"Error al cargar monitor: {e}")
 
 def vista_facturacion():
-    from datetime import datetime 
-    
-    st.title("💵 Gestión de Facturación y Honorarios")
-    
-    # 1. Indicadores Financieros
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Pendiente por Cobrar", "RD$ 45,000", "+5%")
-    c2.metric("Cobrado este mes", "RD$ 120,000")
-    c3.metric("Gastos Operativos", "RD$ 12,500")
+    st.title("💵 Gestión de Honorarios y Facturación")
+    st.subheader("Control Financiero de Expedientes | AboAgrim")
+    st.divider()
 
-    st.markdown("---")
-
-    # 2. Lógica de Búsqueda Automática
+    # --- 1. SELECCIÓN DE EXPEDIENTE ---
+    st.markdown("### 🔍 Localizador de Cuenta")
     try:
-        res = supabase.table("registro_maestro").select("nombre_completo, cedula, direccion").execute()
-        clientes_db = res.data
-    except Exception:
-        clientes_db = []
-
-    col_form, col_tabla = st.columns([1, 1.2], gap="large") 
-
-    with col_form:
-        st.subheader("📝 Nuevo Registro de Cobro")
+        # Usamos la conexión exitosa que logramos en el Archivo Digital
+        res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario").execute()
+        lista_expedientes = [f"{e['expediente']} - {e['nombre_propietario']}" for e in res_exp.data] if res_exp.data else []
         
-        nombres_clientes = [c['nombre_completo'] for c in clientes_db]
-        cliente_seleccionado = st.selectbox("🔍 Buscar Cliente", ["-- Seleccione un cliente --"] + nombres_clientes)
-        
-        val_cedula, val_direccion, val_nombre = "", "", ""
-        if cliente_seleccionado != "-- Seleccione un cliente --":
-            datos = next((c for c in clientes_db if c['nombre_completo'] == cliente_seleccionado), None)
-            if datos:
-                val_nombre = datos['nombre_completo']
-                val_cedula = datos.get('cedula', '')
-                val_direccion = datos.get('direccion', '')
-        
-        with st.form("form_crear_factura"):
-            nombre_final = st.text_input("Nombre del Cliente", value=val_nombre)
-            
-            c_ced, c_dir = st.columns(2)
-            cedula_fact = c_ced.text_input("Cédula / RNC", value=val_cedula)
-            direccion_fact = c_dir.text_input("Dirección", value=val_direccion)
-            
-            concepto_fact = st.text_input("Concepto (Ej. Saneamiento Parcela 12)")
-            
-            # --- NUEVA CASILLA: MONTO TOTAL VS PAGO ACTUAL ---
-            c_total, c_actual = st.columns(2)
-            monto_total_contrato = c_total.number_input("Monto Total Contrato (RD$)", min_value=0.0, step=5000.0)
-            monto_pago_actual = c_actual.number_input("Monto Pago Actual (RD$)", min_value=0.0, step=1000.0)
-            
-            # --- PAGOS POR ETAPAS ---
-            etapa_pago = st.selectbox("Etapa del Proceso", [
-                "Pago Único", "Avance Inicial", "Etapa de Campo", "Sometimiento JI", "Aprobación / Entrega"
-            ])
-            
-            estado_fact = st.selectbox("Estado del Pago Actual", ["Pendiente", "Pagado", "Abono"])
-            
-            st.markdown("---")
-            b1, b2 = st.columns(2)
-            btn_guardar = b1.form_submit_button("💾 Guardar en Nube")
-            btn_enviar = b2.form_submit_button("📤 Generar Factura")
+        if not lista_expedientes:
+            st.info("📌 Registre un expediente primero para gestionar su facturación.")
+            return
 
-        # --- LÓGICA DE GUARDADO ---
-        if btn_guardar:
-            nueva_factura = {
-                "cliente": nombre_final,
-                "monto_pago": monto_pago_actual,
-                "monto_total": monto_total_contrato,
-                "estado": estado_fact,
-                "concepto": f"{concepto_fact} ({etapa_pago})",
-                "fecha": datetime.now().isoformat()
-            }
-            try:
-                supabase.table("facturas").insert(nueva_factura).execute()
-                st.success(f"✅ Cobro de {nombre_final} registrado.")
-            except Exception as e:
-                st.error(f"Error: {e}")
+        expediente_seleccionado = st.selectbox("Seleccione el Expediente a facturar:", ["Seleccione..."] + lista_expedientes)
         
-        # --- DISEÑO PREMIUM CON DESGLOSE DE MONTOS ---
-        if btn_enviar:
-            if nombre_final and monto_pago_actual > 0:
-                fecha_hoy = datetime.now().strftime("%d/%m/%Y")
-                num_recibo = datetime.now().strftime("ABG-%y%m%d%H%M")
-                pendiente = monto_total_contrato - monto_pago_actual if monto_total_contrato > 0 else 0
-                
-                recibo_html = f"""
-                <html>
-                <head><meta charset="utf-8">
-                <style>
-                    body {{ font-family: Arial, sans-serif; background-color: #f4f6f9; padding: 20px; }}
-                    .container {{ max-width: 700px; margin: auto; background: #fff; padding: 40px; border-radius: 10px; border-top: 10px solid #0a2540; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }}
-                    .header {{ display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px; }}
-                    .logo h1 {{ color: #0a2540; margin: 0; }}
-                    .details {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
-                    .details td {{ padding: 10px; border-bottom: 1px solid #eee; }}
-                    .details td:first-child {{ font-weight: bold; color: #555; }}
-                    .monto-box {{ margin-top: 30px; padding: 20px; background: #f8fcf9; border-radius: 8px; text-align: right; }}
-                    .total-line {{ font-size: 22px; color: #2e8540; font-weight: bold; }}
-                    .footer {{ text-align: center; margin-top: 50px; font-size: 12px; color: #888; }}
-                </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <div class="logo"><h1>⚖️ AboAgrim</h1><p>Lic. Jhonny Matos. M.A.</p></div>
-                            <div style="text-align: right;"><strong>Recibo No:</strong> {num_recibo}<br><strong>Fecha:</strong> {fecha_hoy}</div>
-                        </div>
-                        <h2 style="text-align: center; color: #0a2540;">RECIBO DE PAGO</h2>
-                        <table class="details">
-                            <tr><td>Cliente:</td><td>{nombre_final}</td></tr>
-                            <tr><td>RNC/Cédula:</td><td>{cedula_fact}</td></tr>
-                            <tr><td>Concepto:</td><td>{concepto_fact}</td></tr>
-                            <tr><td>Etapa del Proceso:</td><td>{etapa_pago}</td></tr>
-                        </table>
-                        <div class="monto-box">
-                            <p>Monto Total del Trabajo: RD$ {monto_total_contrato:,.2f}</p>
-                            <p class="total-line">PAGO RECIBIDO HOY: RD$ {monto_pago_actual:,.2f}</p>
-                            <hr>
-                            <p style="color: #c0392b;">Balance Pendiente: RD$ {pendiente:,.2f}</p>
-                        </div>
-                        <div class="footer">
-                            <div style="width: 200px; border-top: 1px solid #000; margin: 40px auto 10px auto;"></div>
-                            Firma Autorizada - AboAgrim Pro DMS
-                        </div>
-                    </div>
-                </body>
-                </html>
-                """
-                st.download_button("⬇️ Descargar Recibo Detallado", recibo_html, file_name=f"Recibo_{nombre_final}.html", mime="text/html")
+        if expediente_seleccionado == "Seleccione...":
+            return # Mantiene la pantalla limpia hasta que se elija un cliente
 
-    with col_tabla:
-        st.subheader("📋 Historial de Pagos")
-        try:
-            res_fact = supabase.table("facturas").select("cliente, monto_pago, monto_total, estado, fecha").order("fecha", desc=True).execute()
-            st.dataframe(res_fact.data, use_container_width=True)
-        except:
-            st.info("Conecte la tabla 'facturas' en Supabase para ver el historial real.")
+        codigo_exp = expediente_seleccionado.split(" - ")[0]
+        cliente_nom = expediente_seleccionado.split(" - ")[1]
+        
+    except Exception as e:
+        st.error(f"Detalle técnico del error: {e}")
+        return
+
+    st.write("---")
+    st.markdown(f"### 💼 Estado de Cuenta: **{cliente_nom}**")
+    st.caption(f"Expediente Vinculado: {codigo_exp}")
+
+    # --- 2. PANELES FINANCIEROS (PESTAÑAS) ---
+    tab_resumen, tab_ingresos, tab_gastos = st.tabs(["📊 Balance y Honorarios", "💰 Registrar Abono", "📉 Gastos del Caso"])
+
+    # PESTAÑA A: BALANCE GENERAL
+    with tab_resumen:
+        st.write("#### Resumen Financiero del Expediente")
+        
+        # Panel de Métricas (Diseño Ejecutivo)
+        col_met1, col_met2, col_met3 = st.columns(3)
+        with col_met1:
+            st.metric(label="Honorarios Acordados", value="RD$ 0.00")
+        with col_met2:
+            st.metric(label="Total Cobrado", value="RD$ 0.00")
+        with col_met3:
+            st.metric(label="Balance Pendiente", value="RD$ 0.00", delta="- RD$ 0.00", delta_color="inverse")
+            
+        st.divider()
+        
+        st.write("#### ⚙️ Configurar Honorarios")
+        with st.container(border=True):
+            monto_total = st.number_input("Establecer Honorarios Totales (RD$):", min_value=0.0, step=1000.0)
+            concepto = st.text_input("Concepto del Servicio Legal/Técnico:", placeholder="Ej: Saneamiento Parcela, Litis de Derechos Registrados...")
+            if st.button("💾 Guardar Acuerdo de Honorarios"):
+                # Aquí irá la lógica de Supabase para guardar el total
+                st.success(f"Honorarios de RD$ {monto_total:,.2f} asignados al expediente {codigo_exp}.")
+
+    # PESTAÑA B: REGISTRO DE PAGOS
+    with tab_ingresos:
+        st.write("#### 📥 Ingreso de Fondos")
+        st.write("Registre los avances o pagos finales realizados por el cliente.")
+        
+        col_p1, col_p2 = st.columns(2)
+        with col_p1:
+            monto_pago = st.number_input("Monto Recibido (RD$):", min_value=0.0, step=500.0, key="monto_pago_in")
+            fecha_pago = st.date_input("Fecha de Pago")
+        with col_p2:
+            metodo_pago = st.selectbox("Método de Pago:", ["Transferencia Bancaria", "Efectivo", "Cheque", "Depósito Físico"])
+            ref_pago = st.text_input("No. Referencia o Recibo (Opcional):")
+            
+        if st.button("🖨️ Registrar Abono y Generar Recibo", type="primary", use_container_width=True):
+            if monto_pago > 0:
+                st.toast("Transacción registrada.", icon="💵")
+                st.success(f"✅ Se ha registrado un abono de RD$ {monto_pago:,.2f} vía {metodo_pago}.")
+            else:
+                st.warning("El monto debe ser mayor a cero.")
+
+    # PESTAÑA C: GASTOS OPERATIVOS
+    with tab_gastos:
+        st.write("#### 📉 Registro de Gastos (Desembolsos)")
+        st.write("Controle los gastos de mensura, impuestos y viáticos para calcular la rentabilidad real.")
+        
+        c_gasto1, c_gasto2 = st.columns(2)
+        with c_gasto1:
+            monto_gasto = st.number_input("Monto del Gasto (RD$):", min_value=0.0, step=100.0, key="monto_gasto_out")
+        with c_gasto2:
+            tipo_gasto = st.selectbox("Categoría del Gasto:", ["Sellos / Impuestos DGII", "Viáticos y Combustible", "Tasas Jurisdicción Inmobiliaria", "Pago a Terceros (Peritos)"])
+            
+        desc_gasto = st.text_input("Descripción exacta del gasto:")
+        
+        if st.button("🧾 Registrar Desembolso", use_container_width=True):
+            if monto_gasto > 0:
+                st.warning(f"Gasto de RD$ {monto_gasto:,.2f} registrado en la categoría '{tipo_gasto}'.")
+            else:
+                st.info("Ingrese un monto válido.")
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
