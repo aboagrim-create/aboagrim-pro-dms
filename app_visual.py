@@ -900,146 +900,44 @@ with st.sidebar:
     if st.button("🚪 Cerrar Sesión"):
         st.session_state.autenticado_global = False
         st.rerun()
-def vista_registro_maestro():
-    st.header("👤 Registro Maestro de Expedientes")
-    st.write("Llene los datos. Puede generar todos los documentos del expediente a la vez.")
+def vista_plantillas_auto():
+    st.title("📄 Fábrica de Documentos AboAgrim")
+    st.write("Seleccione un expediente existente para generar sus documentos legales al instante.")
 
-    # --- PESTAÑAS DE ORGANIZACIÓN ---
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📍 Inmueble y Fechas", "👥 Propietario / Reclamante", "🤝 Vendedor (Contratos)", "🧭 Colindancias", "⚖️ Profesionales"])
-
-    with tab1:
-        st.subheader("Datos Técnicos y del Inmueble")
+    try:
+        # 1. Buscamos todos los expedientes en su base de datos (Supabase)
+        res = supabase.table("expedientes_maestros").select("id, nombre_propietario").order("id", desc=True).execute()
         
-        # Fila 1
-        col1, col2, col3 = st.columns(3)
-        exp = col1.text_input("No. Expediente", key="in_exp")
-        fecha_men = col2.text_input("Fecha Mensura (Ej: 12/11/2025)", key="in_fm")
-        hora_men = col3.text_input("Hora Mensura (Ej: 9:00 A.M.)", key="in_hm")
+        if not res.data:
+            st.warning("⚠️ No hay expedientes registrados todavía. Vaya a Registro Maestro para crear uno.")
+            return
 
-        # Fila 2 (¡Esto era lo que faltaba!)
-        col4, col5, col6 = st.columns(3)
-        dc = col4.text_input("Distrito Catastral (DC)", key="in_dc")
-        parcela = col5.text_input("Parcela", key="in_par")
-        area_m2 = col6.text_input("Área (M²)", key="in_area")
+        # 2. Preparamos la lista para que usted los vea bonitos en pantalla
+        opciones_exp = {f"RES-{e['id']} | {e['nombre_propietario']}": e['id'] for e in res.data}
 
-        # Fila 3 (¡Y esto también!)
-        col7, col8 = st.columns(2)
-        municipio = col7.text_input("Municipio", key="in_mun")
-        provincia = col8.text_input("Provincia", key="in_prov")
-
-        ubicacion_det = st.text_area("Ubicación Detallada (Ruta para Letreros/Avisos)", key="in_ubi")
-        coordenadas = st.text_input("Coordenadas (Ej: 19.494634, -70.893367)", key="in_coord")
-    with tab2:
-        st.subheader("Datos del Propietario / Reclamante / Comprador")
-        col9, col10 = st.columns(2)
-        # --- TAB 2: CLIENTE (Reemplazo para líneas 1020-1021) ---
-        nom_prop = col9.text_input("Nombre Completo", key="in_np")
-        ced_prop = col10.text_input("Cédula", key="in_cp")
-
-        col11, col12, col13 = st.columns(3)
-        est_prop = col11.selectbox("Estado Civil", ["Soltero", "Casado", "Divorciado", "Viudo"], key="in_ep")
-        nac_prop = col12.text_input("Nacionalidad", value="Dominicano", key="in_nap")
-        prof_prop = col13.text_input("Profesión/Oficio", key="in_prp")
+        # --- DISEÑO DE LA PANTALLA ---
+        col1, col2 = st.columns(2)
         
-        st.session_state['dom_prop'] = st.text_input("Domicilio", key="in_dp")
+        with col1:
+            seleccion = st.selectbox("🔍 1. Busque al Cliente/Expediente:", list(opciones_exp.keys()))
+            id_seleccionado = opciones_exp[seleccion]
+            
+        with col2:
+            tipo_doc = st.selectbox("📝 2. ¿Qué documento desea generar?", 
+                                    ["Carátula Maestra", 
+                                     "Contrato Cuota Litis", 
+                                     "Poder Especial", 
+                                     "Aviso de Mensura"])
 
-    with tab3:
-        st.subheader("Datos del Vendedor (Solo para Contratos de Venta)")
-        col14, col15 = st.columns(2)
-        st.session_state['nom_ven'] = col14.text_input("Nombre del Vendedor", key="in_nv")
-        st.session_state['ced_ven'] = col15.text_input("Cédula Vendedor", key="in_cv")
+        st.divider() # Una línea separadora elegante
 
-        col16, col17, col18 = st.columns(3)
-        st.session_state['est_ven'] = col16.selectbox("Estado Civil Vendedor", ["Soltero", "Casado", "Divorciado", "Viudo"], key="in_ev")
-        st.session_state['nac_ven'] = col17.text_input("Nacionalidad V.", value="Dominicano", key="in_nav")
-        st.session_state['prof_ven'] = col18.text_input("Profesión V.", key="in_prv")
+        # 3. El botón de Acción
+        if st.button("🚀 Fabricar Documento", type="primary"):
+            st.info(f"⏳ Buscando datos del ID {id_seleccionado} para crear el documento: {tipo_doc}...")
+            # (En el próximo paso conectaremos aquí las plantillas de Word reales)
 
-        st.session_state['dom_ven'] = st.text_input("Domicilio Vendedor", key="in_dv")
-
-    with tab4:
-        st.subheader("Colindancias Actuales")
-        col19, col20 = st.columns(2)
-        st.session_state['col_norte'] = col19.text_input("Al Norte", key="in_cn")
-        st.session_state['med_norte'] = col20.text_input("Medida Norte (m)", key="in_mn")
-        
-        col21, col22 = st.columns(2)
-        st.session_state['col_sur'] = col21.text_input("Al Sur", key="in_cs")
-        st.session_state['med_sur'] = col22.text_input("Medida Sur (m)", key="in_ms")
-
-        col23, col24 = st.columns(2)
-        st.session_state['col_este'] = col23.text_input("Al Este", key="in_ce")
-        st.session_state['med_este'] = col24.text_input("Medida Este (m)", key="in_me")
-
-        col25, col26 = st.columns(2)
-        st.session_state['col_oeste'] = col25.text_input("Al Oeste", key="in_co")
-        st.session_state['med_oeste'] = col26.text_input("Medida Oeste (m)", key="in_mo")
-
-    with tab5:
-        st.subheader("Profesionales Legales Actuantes")
-        col27, col28 = st.columns(2)
-        st.session_state['nom_notario'] = col27.text_input("Nombre del Notario", key="in_nnot")
-        st.session_state['mat_notario'] = col28.text_input("Matrícula Notario", key="in_mnot")
-
-        col29, col30 = st.columns(2)
-        st.session_state['nom_abogado'] = col29.text_input("Nombre Abogado/Apoderado", key="in_nabo")
-        st.session_state['mat_abogado'] = col30.text_input("Colegiatura Abogado", key="in_mabo")
-
-
-st.divider() # Esto pone una línea bonita para separar
-btn_guardar = st.button("💾 GUARDAR EXPEDIENTE Y CREAR BÓVEDA", type="primary", use_container_width=True)
-
-if btn_guardar:
-        if st.session_state.get('in_np', '') != '':
-            try:
-                # 1. RECEPCIÓN: Guardar datos en la base de datos
-                datos_a_guardar = {
-                    "expediente": st.session_state.get('in_exp', ''),
-                    "nombre_propietario": st.session_state.get('in_np', ''),
-                    "cedula_propietario": st.session_state.get('in_cp', ''),
-                    "parcela": st.session_state.get('in_par', ''),
-                    "municipio": st.session_state.get('in_mun', ''),
-                    "provincia": st.session_state.get('in_prov', '')
-                }
-                res = supabase.table("expedientes_maestros").insert(datos_a_guardar).execute()
-                id_generado = res.data[0]['id']
-                nombre_cliente = st.session_state.get('in_np', 'Sin_Nombre')
-
-                # 2. ARCHIVO: Abrir el folder vacío en Google Drive
-                with st.status("📁 Preparando Bóveda Digital del Cliente...", expanded=True):
-                    ID_MAESTRA = "1d1FmJhurQ_Ojj8j_fKxyLBOr-zFqUTuz"
-                    url_carpeta = crear_oficina_virtual(nombre_cliente, id_generado, ID_MAESTRA)
-
-                    if url_carpeta:
-                        # Asociamos el link de Drive al expediente en la base de datos
-                        supabase.table("expedientes_maestros").update({"url_drive": url_carpeta}).eq("id", id_generado).execute()
-                        
-                        st.success(f"✅ ¡Registro Exitoso! Expediente RES-{id_generado} creado.")
-                        st.link_button("📂 Ver Bóveda del Cliente", url_carpeta)
-
-            except Exception as e:
-                st.error(f"❌ Error al registrar en la base de datos: {e}")
-        else:
-            st.warning("⚠️ El nombre del propietario es obligatorio para abrir un expediente.")
-                
-
-# Botón de descarga Dinámico (ZIP o Word)
-if 'archivo_listo' in st.session_state and st.session_state['archivo_listo']:
-    st.sidebar.download_button(
-        label="📦 DESCARGAR AHORA EN PC",
-        data=st.session_state['archivo_listo'],
-        file_name=st.session_state.get('nombre_descarga', 'Paquete.zip'),
-        mime=st.session_state.get('tipo_mime', 'application/zip')
-    )
-# Supongamos que esta es su función de conexión (ajuste según su db.py)
-# from database import ejecutar_query 
-
-
-
-                
-# --- EL INTERRUPTOR FINAL ---
-# ==========================================
-# MOTOR DE NAVEGACIÓN (DICCIONARIO FINAL)
-# ==========================================
+    except Exception as e:
+        st.error(f"❌ Error al buscar en la base de datos: {e}")
 vistas = {
     "🏠 Mando Central": vista_mando,
     "👤 Registro Maestro": vista_registro_maestro,
