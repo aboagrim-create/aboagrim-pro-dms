@@ -498,92 +498,116 @@ def vista_configuracion():
     st.subheader("Gestión de Identidad, Seguridad y Personal")
     st.divider()
 
-    # Añadimos la cuarta pestaña: Gestión de Usuarios
+    # =========================================================
+    # 🔐 FILTRO DE SEGURIDAD TOTAL (BLOQUEA TODO EL MÓDULO)
+    # =========================================================
+    if "admin_autenticado" not in st.session_state:
+        st.session_state.admin_autenticado = False
+
+    if not st.session_state.admin_autenticado:
+        st.warning("🔒 Esta sección contiene datos sensibles de la firma y requiere validación.")
+        
+        col_log_1, col_log_2 = st.columns([1, 1])
+        with col_log_1:
+            u_admin = st.text_input("Usuario Maestro:", key="admin_user_maestro")
+        with col_log_2:
+            p_admin = st.text_input("PIN Maestro:", type="password", key="admin_pin_maestro")
+
+        if st.button("🔓 VALIDAR ACCESO ADMINISTRATIVO", use_container_width=True, type="primary"):
+            # Validación de identidad
+            if u_admin == "JhonnyMatos" and p_admin == "1234": 
+                st.session_state.admin_autenticado = True
+                st.success("Acceso concedido. Cargando privilegios...")
+                st.rerun()
+            else:
+                st.error("Credenciales incorrectas. Acceso denegado.")
+        
+        # El 'return' es vital: detiene la ejecución aquí y no deja ver nada más
+        return 
+
+    # =========================================================
+    # 🛠️ PANEL DE CONFIGURACIÓN (SOLO VISIBLE SI ESTÁ AUTENTICADO)
+    # =========================================================
+    
+    # Botón para cerrar la sesión administrativa y volver a bloquear
+    if st.button("🔒 Bloquear Configuración"):
+        st.session_state.admin_autenticado = False
+        st.rerun()
+
     tab1, tab2, tab3, tab4 = st.tabs([
-        "🔒 Seguridad", 
+        "🔒 Seguridad de Acceso", 
         "🏢 Identidad AboAgrim", 
         "📡 Estado Cloud",
-        "👥 Usuarios"
+        "👥 Gestión de Usuarios"
     ])
 
     # --- PESTAÑA 1: SEGURIDAD ---
     with tab1:
-        st.markdown("### 🔐 Control de Acceso Maestro")
+        st.markdown("### 🔐 Cambio de PIN Maestro")
         c1, c2 = st.columns(2)
-        with c1: pin_nuevo = st.text_input("Nuevo PIN Maestro:", type="password", key="c_p1")
-        with c2: pin_conf = st.text_input("Confirmar PIN:", type="password", key="c_p2")
-        if st.button("💾 Actualizar PIN Maestro"):
-            st.success("PIN actualizado.")
+        with c1: pin_nuevo = st.text_input("Definir Nuevo PIN Maestro:", type="password", key="c_p1_final")
+        with c2: pin_conf = st.text_input("Confirmar Nuevo PIN:", type="password", key="c_p2_final")
+        if st.button("💾 Guardar Nuevo PIN Maestro"):
+            st.success("El PIN Maestro ha sido actualizado.")
 
     # --- PESTAÑA 2: IDENTIDAD ---
     with tab2:
-        st.markdown("### 🏛️ Datos de la Firma")
+        st.markdown("### 🏛️ Datos Maestros de la Firma")
         col_a, col_b = st.columns(2)
         with col_a:
-            st.text_input("Titular:", value="Lic. Jhonny Matos. M.A.", key="c_tit")
-            st.text_input("Cargo:", value="Presidente Fundador", key="c_car")
+            st.text_input("Titular:", value="Lic. Jhonny Matos. M.A.", key="c_tit_final")
+            st.text_input("Cargo:", value="Presidente Fundador", key="c_car_final")
         with col_b:
-            st.text_input("Firma:", value="Abogados y Agrimensores 'AboAgrim'", key="c_firm")
-            st.text_input("Ubicación:", value="Santiago, Rep. Dom.", key="c_loc")
-        st.button("💾 Guardar Identidad")
+            st.text_input("Firma:", value="Abogados y Agrimensores 'AboAgrim'", key="c_firm_final")
+            st.text_input("Ubicación:", value="Santiago, Rep. Dom.", key="c_loc_final")
+        st.button("💾 Actualizar Identidad Corporativa")
 
     # --- PESTAÑA 3: ESTADO CLOUD ---
     with tab3:
+        st.markdown("### 📡 Infraestructura")
         st.success("🟢 Conexión con Supabase: ACTIVA")
-        st.write("**Servidor:** `database.supabase.co` ✅")
+        st.info("Host: database.supabase.co")
 
-    # --- PESTAÑA 4: GESTIÓN DE USUARIOS (NUEVA FUNCIÓN) ---
+    # --- PESTAÑA 4: GESTIÓN DE USUARIOS ---
     with tab4:
         st.markdown("### 👥 Administración de Personal")
         
-        # --- SECCIÓN A: AGREGAR NUEVO USUARIO ---
         st.write("#### ➕ Registrar Nuevo Usuario")
         u_col1, u_col2, u_col3 = st.columns(3)
         with u_col1:
-            nuevo_nombre = st.text_input("Nombre de Usuario:", placeholder="Ej: DianaTorres", key="new_u_name")
+            nuevo_nombre = st.text_input("Nombre de Usuario:", key="new_u_name_final")
         with u_col2:
-            nuevo_pin = st.text_input("Asignar PIN:", type="password", placeholder="4 dígitos", key="new_u_pin")
+            nuevo_pin = st.text_input("Asignar PIN:", type="password", key="new_u_pin_final")
         with u_col3:
-            nuevo_rol = st.selectbox("Rol del Usuario:", ["Asistente", "Abogado", "Agrimensor", "Pasante"], key="new_u_rol")
+            nuevo_rol = st.selectbox("Rol:", ["Asistente", "Abogado", "Agrimensor"], key="new_u_rol_final")
         
-        if st.button("🚀 DAR DE ALTA USUARIO", use_container_width=True):
+        if st.button("🚀 DAR DE ALTA"):
             if nuevo_nombre and nuevo_pin:
                 try:
                     data_u = {"nombre_usuario": nuevo_nombre, "pin_acceso": nuevo_pin, "rol": nuevo_rol}
                     supabase.table("usuarios_sistema").insert(data_u).execute()
-                    st.success(f"✅ Usuario '{nuevo_nombre}' agregado correctamente.")
+                    st.success(f"✅ Usuario '{nuevo_nombre}' creado.")
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Error al registrar: {e}")
-            else:
-                st.warning("Complete el nombre y el PIN.")
+                    st.error(f"Error: {e}")
 
         st.divider()
-
-        # --- SECCIÓN B: BORRAR USUARIO EXISTENTE ---
-        st.write("#### 🗑️ Dar de Baja o Eliminar")
+        
+        st.write("#### 🗑️ Borrar Usuario")
         try:
-            # Traemos la lista actualizada de usuarios
             res_u = supabase.table("usuarios_sistema").select("nombre_usuario").execute()
             lista_usuarios = [u['nombre_usuario'] for u in res_u.data] if res_u.data else []
-            
             if lista_usuarios:
-                col_del, col_btn = st.columns([3, 1])
-                with col_del:
-                    u_eliminar = st.selectbox("Seleccione usuario a eliminar:", lista_usuarios, key="sel_del_u")
-                with col_btn:
-                    st.write(" ") # Espaciador
-                    if st.button("🗑️ ELIMINAR", type="secondary", use_container_width=True):
-                        if u_eliminar == "JhonnyMatos":
-                            st.error("❌ No puede eliminarse a sí mismo (Administrador Maestro).")
-                        else:
-                            supabase.table("usuarios_sistema").delete().eq("nombre_usuario", u_eliminar).execute()
-                            st.error(f"Eliminado: {u_eliminar}")
-                            st.rerun()
-            else:
-                st.info("No hay otros usuarios registrados.")
-        except Exception as e:
-            st.error("Error al cargar lista de usuarios.")
+                u_eliminar = st.selectbox("Usuario a eliminar:", lista_usuarios, key="sel_del_final")
+                if st.button("🗑️ ELIMINAR USUARIO"):
+                    if u_eliminar == "JhonnyMatos":
+                        st.error("No se puede eliminar al administrador maestro.")
+                    else:
+                        supabase.table("usuarios_sistema").delete().eq("nombre_usuario", u_eliminar).execute()
+                        st.success(f"Usuario {u_eliminar} eliminado.")
+                        st.rerun()
+        except:
+            st.info("No hay usuarios para mostrar.")
 def login_sistema():
     st.markdown("""
         <style>
