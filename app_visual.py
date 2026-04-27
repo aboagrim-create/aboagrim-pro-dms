@@ -1330,22 +1330,24 @@ with st.sidebar:
 
 # --- LÓGICA DE CARGA DE FUNCIONES (ENRUTADOR FINAL) ---
 if menu == "🏠 Mando Central":
-    vista_mando_central()
+    # vista_mando_central()
+    st.info("Bienvenido al Mando Central de AboAgrim Pro")
 
 elif menu == "👤 Registro Maestro":
     vista_registro_maestro()
 
-elif menu == "📁 Archivo Digital":
+elif menu == "📂 Archivo Digital":  # <-- ¡Aquí estaba la diferencia de la carpeta!
     vista_archivo_digital()
 
 elif menu == "📄 Plantillas Auto":
-    vista_plantillas_auto()
+    # vista_plantillas_auto()
+    st.info("Módulo de plantillas en construcción.")
 
 elif menu == "📅 Alertas y Plazos":
-    vista_alertas_plazos() # <--- Reemplace el st.info que había antes por esta llamada
+    vista_alertas_plazos()
 
 elif menu == "💵 Facturación":
-    vista_facturacion()  # <--- Aquí está la llamada real
+    vista_facturacion()
 
 elif menu == "⚙️ Configuración":
     vista_configuracion()
