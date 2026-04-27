@@ -780,8 +780,8 @@ def vista_archivo_digital():
     
     try:
         # Consulta a Supabase para obtener los expedientes activos
-        res_exp = supabase.table("expedientes_maestros").select("expediente_codigo, nombre_propietario").execute()
-        lista_expedientes = [f"{e['expediente_codigo']} - {e['nombre_propietario']}" for e in res_exp.data] if res_exp.data else []
+        res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario").execute()
+        lista_expedientes = [f"{e['expediente']} - {e['nombre_propietario']}" for e in res_exp.data] if res_exp.data else []
         
         if not lista_expedientes:
             st.info("📌 No hay expedientes registrados. Vaya al 'Registro Maestro' para crear el primer caso.")
