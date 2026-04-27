@@ -991,7 +991,7 @@ btn_guardar = st.button("💾 GUARDAR EXPEDIENTE Y CREAR BÓVEDA", type="primary
 if btn_guardar:
         if st.session_state.get('in_np', '') != '':
             try:
-                # 1. Guardamos en Supabase
+                # 1. RECEPCIÓN: Guardar datos en la base de datos
                 datos_a_guardar = {
                     "expediente": st.session_state.get('in_exp', ''),
                     "nombre_propietario": st.session_state.get('in_np', ''),
@@ -1004,40 +1004,22 @@ if btn_guardar:
                 id_generado = res.data[0]['id']
                 nombre_cliente = st.session_state.get('in_np', 'Sin_Nombre')
 
-                # 2. Generamos la Ficha Maestra de Word
-                datos_resumen = {
-                    "num_expediente": f"RES-{id_generado}",
-                    "cliente_nombre": nombre_cliente,
-                    "cli_correo": st.session_state.get('in_mail', 'No provisto'),
-                    "cliente_cedula": st.session_state.get('in_cp', '_______________'),
-                    "inm_direccion": st.session_state.get('in_dir_detallada', 'Santiago, R.D.'),
-                    "inm_coordenadas": st.session_state.get('in_coord', 'Verificar en campo'),
-                    "inmueble_parcela": st.session_state.get('in_par', '_______'),
-                    "inmueble_dc": st.session_state.get('in_dc', '_______'),
-                    "profesional_a_cargo": "Lic. Jhonny Matos, Presidente Fundador"
-                }
-
-                # 3. Flujo de Google Drive (Oficina Virtual)
-                with st.status("⏳ Creando oficina virtual en Google Drive...", expanded=True):
+                # 2. ARCHIVO: Abrir el folder vacío en Google Drive
+                with st.status("📁 Preparando Bóveda Digital del Cliente...", expanded=True):
                     ID_MAESTRA = "1d1FmJhurQ_Ojj8j_fKxyLBOr-zFqUTuz"
                     url_carpeta = crear_oficina_virtual(nombre_cliente, id_generado, ID_MAESTRA)
 
                     if url_carpeta:
-                        # Guardamos el link de Drive en la base de datos
+                        # Asociamos el link de Drive al expediente en la base de datos
                         supabase.table("expedientes_maestros").update({"url_drive": url_carpeta}).eq("id", id_generado).execute()
                         
-                        id_drive_carpeta = url_carpeta.split('/')[-1]
-                        archivo_resumen = generar_documento_word("0_sistema/caratula_maestra.docx", datos_resumen)
-                        
-                        if archivo_resumen:
-                            subir_archivo_a_drive(archivo_resumen, f"00_CARATULA_{nombre_cliente}.docx", id_drive_carpeta)
-                            
-                        st.success(f"✅ Bóveda virtual lista. Expediente RES-{id_generado} creado con éxito.")
+                        st.success(f"✅ ¡Registro Exitoso! Expediente RES-{id_generado} creado.")
+                        st.link_button("📂 Ver Bóveda del Cliente", url_carpeta)
 
             except Exception as e:
-                st.error(f"❌ Error al procesar: {e}")
+                st.error(f"❌ Error al registrar en la base de datos: {e}")
         else:
-            st.warning("⚠️ El nombre del propietario es obligatorio para crear el expediente.")
+            st.warning("⚠️ El nombre del propietario es obligatorio para abrir un expediente.")
                 
 
 # Botón de descarga Dinámico (ZIP o Word)
