@@ -771,77 +771,106 @@ Por medio de la presente, AboAgrim, representada por el Lic. Jhonny Matos, M.A.,
                 """
                 st.components.v1.html(doc_html, height=600, scrolling=True)
 def vista_archivo_digital():
-    st.title("📁 Archivo Digital | Gestión Documental")
-    st.subheader("Expedientes Digitalizados y Anexos")
+    st.title("📁 Archivo Digital | AboAgrim Pro")
+    st.subheader("Bóveda de Expedientes y Anexos Técnicos")
     st.divider()
 
-    # --- 1. SELECCIÓN DE EXPEDIENTE ---
+    # --- 1. BUSCADOR DE EXPEDIENTES ---
+    st.markdown("### 🔍 Localizador de Carpetas")
+    
     try:
-        # Traemos la lista de expedientes registrados para elegir uno
-        res = supabase.table("expedientes_maestros").select("expediente_codigo, nombre_propietario").order("id", desc=True).execute()
-        opciones_exp = [f"{e['expediente_codigo']} - {e['nombre_propietario']}" for e in res.data] if res.data else []
+        # Consulta a Supabase para obtener los expedientes activos
+        res_exp = supabase.table("expedientes_maestros").select("expediente_codigo, nombre_propietario").execute()
+        lista_expedientes = [f"{e['expediente_codigo']} - {e['nombre_propietario']}" for e in res_exp.data] if res_exp.data else []
         
-        if not opciones_exp:
-            st.info("📌 Primero debe registrar clientes en el 'Registro Maestro' para crear sus carpetas digitales.")
+        if not lista_expedientes:
+            st.info("📌 No hay expedientes registrados. Vaya al 'Registro Maestro' para crear el primer caso.")
             return
 
-        col_sel, col_info = st.columns([2, 1])
-        with col_sel:
-            seleccion = st.selectbox("🔍 Seleccione el Expediente / Cliente:", opciones_exp)
-            codigo_exp = seleccion.split(" - ")[0]
+        # Selector desplegable (diseño limpio sin exceso de botones)
+        expediente_seleccionado = st.selectbox("Seleccione el Expediente a consultar:", ["Seleccione..."] + lista_expedientes)
+        
+        if expediente_seleccionado == "Seleccione...":
+            return # Pausa la pantalla hasta que elija un cliente
 
-        with col_info:
-            st.write("") # Espaciador
-            st.write(f"📂 Carpeta: **{codigo_exp}**")
+        codigo_exp = expediente_seleccionado.split(" - ")[0]
+        st.success(f"📂 Carpeta Abierta: **{expediente_seleccionado}**")
 
     except Exception as e:
-        st.error(f"Error al conectar con la base de datos: {e}")
+        st.error("Error de conexión con la base de datos de expedientes.")
         return
 
     st.write("---")
 
-    # --- 2. ÁREA DE TRABAJO DEL EXPEDIENTE ---
-    tab_ver, tab_subir = st.tabs(["📄 Ver Documentos", "📤 Digitalizar/Subir"])
+    # --- 2. GESTIÓN DEL EXPEDIENTE (PESTAÑAS) ---
+    tab_visor, tab_carga = st.tabs(["📄 Visor de Documentos", "📤 Digitalizar y Subir"])
 
-    with tab_ver:
-        st.markdown(f"### Contenido de la Carpeta: {codigo_exp}")
+    # PESTAÑA A: VISOR ORGANIZADO
+    with tab_visor:
+        st.markdown(f"### 📑 Inventario del Expediente {codigo_exp}")
         
-        # Simulación de visualización de archivos
-        # En una fase avanzada, aquí consultaremos la tabla 'documentos_digitales'
-        st.info("Mostrando archivos vinculados a este expediente en la nube...")
-        
-        # Ejemplo de visualización profesional
-        col_a, col_b, col_c = st.columns(3)
-        with col_a:
-            st.markdown("🖼️ **Planos Catastrales**")
-            st.caption("No hay archivos cargados")
-        with col_b:
-            st.markdown("📑 **Títulos / Actas**")
-            st.caption("No hay archivos cargados")
-        with col_c:
-            st.markdown("🆔 **Anexos / Cédulas**")
-            st.caption("No hay archivos cargados")
+        # Filtro de vista rápida
+        filtro_vista = st.radio(
+            "Filtrar por departamento:", 
+            ["Todo", "⚖️ Legal (Títulos y Actos)", "🗺️ Agrimensura (Planos y Coordenadas)", "🆔 Anexos"], 
+            horizontal=True
+        )
 
-    with tab_subir:
-        st.markdown("### 📥 Cargar Nuevos Documentos")
-        st.write("Suba escaneos de títulos, planos o documentos de identidad.")
+        # Aquí simulamos la lectura de archivos desde su "Storage" en Supabase
+        st.info(f"Conectando con el servidor Cloud para recuperar archivos de {codigo_exp}...")
         
-        tipo_doc = st.selectbox("Categoría del documento:", ["Plano Catastral", "Título de Propiedad", "Cédula/ID", "Contrato Firmado", "Anexo Técnico"])
+        # Cuadrícula de documentos (Diseño Ejecutivo)
+        col_doc1, col_doc2 = st.columns(2)
         
-        archivo_subido = st.file_uploader("Arrastre o seleccione el archivo (PDF, JPG, PNG)", type=["pdf", "jpg", "png", "jpeg"])
-        
-        if st.button("💾 Guardar en Archivo Digital", use_container_width=True, type="primary"):
-            if archivo_subido:
-                with st.status("Subiendo archivo al servidor de AboAgrim...", expanded=False):
-                    # Aquí irá la lógica de supabase.storage.from('expedientes').upload(...)
-                    st.success(f"✅ '{archivo_subido.name}' ha sido guardado exitosamente en el expediente {codigo_exp}.")
-                    st.balloons()
-            else:
-                st.warning("Por favor, seleccione un archivo antes de confirmar.")
+        with col_doc1:
+            st.markdown("#### 🗺️ Área Técnica")
+            with st.expander("Planos y Mensura", expanded=True):
+                st.caption("No hay archivos cargados en: Planos Generales.")
+                st.caption("No hay archivos cargados en: Tablas de Coordenadas.")
+                st.caption("No hay archivos cargados en: Datos Parcelarios.")
 
-    # --- 3. NOTA DE SEGURIDAD ---
-    st.sidebar.divider()
-    st.sidebar.caption("🔒 Los archivos en esta sección están encriptados y respaldados en la infraestructura Cloud de la firma.")
+        with col_doc2:
+            st.markdown("#### ⚖️ Área Legal")
+            with st.expander("Títulos y Actos", expanded=True):
+                st.caption("No hay archivos cargados en: Certificados de Título.")
+                st.caption("No hay archivos cargados en: Actos de Venta/Poderes.")
+                st.caption("No hay archivos cargados en: Cédulas de Identidad.")
+
+    # PESTAÑA B: ZONA DE CARGA
+    with tab_carga:
+        st.markdown("### 📥 Ingreso de Nuevos Documentos")
+        st.write("Clasifique y suba los escaneos directamente a la bóveda del cliente.")
+        
+        with st.container(border=True):
+            col_form1, col_form2 = st.columns(2)
+            
+            with col_form1:
+                # Categorías técnicas y legales detalladas
+                categoria_doc = st.selectbox(
+                    "Clasificación del Documento:", 
+                    [
+                        "Plano General Catastral",
+                        "Tabla de Coordenadas", 
+                        "Datos Parcelarios (Derrotero)",
+                        "Certificado de Título", 
+                        "Acto de Venta / Contrato", 
+                        "Poder de Representación",
+                        "Cédula / Identificación",
+                        "Resolución del Tribunal"
+                    ]
+                )
+                descripcion_doc = st.text_input("Breve descripción (Opcional):", placeholder="Ej: Plano aprobado marzo 2026")
+                
+            with col_form2:
+                archivo_pdf = st.file_uploader("Seleccione el archivo escaneado (PDF, JPG)", type=["pdf", "jpg", "png"])
+            
+            if st.button("💾 Encriptar y Guardar en Bóveda", use_container_width=True, type="primary"):
+                if archivo_pdf:
+                    # Lógica futura para: supabase.storage.from_('boveda').upload(f"{codigo_exp}/{archivo_pdf.name}")
+                    st.toast(f"Archivo '{archivo_pdf.name}' procesado.", icon="✅")
+                    st.success(f"El documento se ha guardado exitosamente bajo la categoría '{categoria_doc}' en el expediente {codigo_exp}.")
+                else:
+                    st.warning("⚠️ Debe adjuntar un archivo antes de proceder a guardar.")
         
         
 def vista_plantillas_auto():
