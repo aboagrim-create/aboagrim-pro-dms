@@ -926,7 +926,7 @@ def vista_plantillas_auto():
         st.divider()
 
         # ==========================================
-        # 1. BLOQUE DE DATOS TÉCNICOS BASE (ACTUALIZADO)
+        # 1. BLOQUE DE DATOS TÉCNICOS BASE
         # ==========================================
         st.write(f"### 📑 Datos Estándar de JI")
         c1, c2, c3 = st.columns(3)
@@ -966,7 +966,7 @@ def vista_plantillas_auto():
             if nombre_campo: datos_extras_dict[nombre_campo.replace(" ", "_").lower()] = valor_campo
 
         # ==========================================
-        # 3. PROFESIONALES ACTUANTES DINÁMICOS
+        # 3. PROFESIONALES ACTUANTES DINÁMICOS (CON GENERALES)
         # ==========================================
         st.write("---")
         st.subheader("👥 Profesionales Actuantes")
@@ -978,14 +978,25 @@ def vista_plantillas_auto():
 
         profesionales_lista = []
         for i in range(st.session_state.cant_profesionales):
+            st.markdown(f"**Profesional {i+1}**")
             cp1, cp2, cp3 = st.columns(3)
-            with cp1: n = st.text_input(f"Nombre del Profesional {i+1}", key=f"p_nom_{i}")
-            with cp2: r = st.selectbox(f"Rol {i+1}", ["Abogado", "Agrimensor", "Notario Público"], key=f"p_rol_{i}")
-            with cp3: c = st.text_input(f"Colegiatura {i+1}", key=f"p_col_{i}")
-            profesionales_lista.append({"nombre": n, "rol": r, "colegiatura": c})
+            with cp1: n = st.text_input(f"Nombre Completo", key=f"p_nom_{i}")
+            with cp2: r = st.selectbox(f"Rol", ["Abogado", "Agrimensor", "Notario Público"], key=f"p_rol_{i}")
+            with cp3: c = st.text_input(f"Colegiatura", key=f"p_col_{i}")
+            
+            cpg1, cpg2, cpg3 = st.columns(3)
+            with cpg1: p_ced = st.text_input(f"Cédula", key=f"p_ced_{i}")
+            with cpg2: p_ec = st.selectbox(f"Estado Civil", ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a"], key=f"p_ec_{i}")
+            with cpg3: p_dom = st.text_input(f"Domicilio Profesional", key=f"p_dom_{i}")
+            
+            profesionales_lista.append({
+                "nombre": n, "rol": r, "colegiatura": c, 
+                "cedula": p_ced, "estado_civil": p_ec, "domicilio": p_dom
+            })
+            st.write("") # Pequeño espacio entre cada profesional
 
         # ==========================================
-        # 4. APODERADOS / REPRESENTANTES DINÁMICOS
+        # 4. APODERADOS / REPRESENTANTES DINÁMICOS (CON GENERALES)
         # ==========================================
         st.write("---")
         st.subheader("🤝 Representantes o Apoderados")
@@ -997,11 +1008,22 @@ def vista_plantillas_auto():
 
         apoderados_lista = []
         for i in range(st.session_state.cant_apoderados):
+            st.markdown(f"**Apoderado / Representante {i+1}**")
             ca1, ca2, ca3 = st.columns(3)
-            with ca1: an = st.text_input(f"Nombre Apoderado {i+1}", key=f"a_nom_{i}")
-            with ca2: ac = st.text_input(f"Cédula {i+1}", key=f"a_ced_{i}")
-            with ca3: ar = st.text_input(f"En representación de {i+1}", key=f"a_rep_{i}")
-            apoderados_lista.append({"nombre": an, "cedula": ac, "representa": ar})
+            with ca1: an = st.text_input(f"Nombre Completo", key=f"a_nom_{i}")
+            with ca2: ac = st.text_input(f"Cédula / Pasaporte", key=f"a_ced_{i}")
+            with ca3: ar = st.text_input(f"En representación de", key=f"a_rep_{i}")
+            
+            cag1, cag2, cag3 = st.columns(3)
+            with cag1: a_nac = st.text_input(f"Nacionalidad", value="Dominicano/a", key=f"a_nac_{i}")
+            with cag2: a_ec = st.selectbox(f"Estado Civil", ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a"], key=f"a_ec_{i}")
+            with cag3: a_dom = st.text_input(f"Domicilio", key=f"a_dom_{i}")
+            
+            apoderados_lista.append({
+                "nombre": an, "cedula": ac, "representa": ar,
+                "nacionalidad": a_nac, "estado_civil": a_ec, "domicilio": a_dom
+            })
+            st.write("") # Pequeño espacio entre cada apoderado
 
         st.divider()
 
@@ -1079,7 +1101,6 @@ def vista_plantillas_auto():
 
     except Exception as e:
         st.error(f"❌ Error crítico: {e}")
-
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
 
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
