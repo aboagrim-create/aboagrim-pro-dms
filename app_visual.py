@@ -1300,55 +1300,57 @@ def vista_registro_maestro():
                 st.error(f"Error al guardar en la nube: {e}")
         else:
             st.warning("⚠️ El nombre del cliente y el número de parcela son obligatorios.")
-# =========================================================
-# ENRUTADOR SEGURO - RECUPERACIÓN DE MANDO
-# =========================================================
+# ==========================================
+# 🚦 ENRUTADOR SEGURO - NAVEGACIÓN MAESTRA
+# ==========================================
 
-# Recuperamos datos de sesión
+# 1. Recuperamos datos de sesión
 usuario_actual = st.session_state.get("usuario", "")
 admin_activo = st.session_state.get("admin_autenticado", False)
 
-# RESCATE AUTOMÁTICO: Si es usted, el sistema le otorga su rango de inmediato
+# RESCATE AUTOMÁTICO
 if usuario_actual == "JhonnyMatos":
     st.session_state["rol"] = "Presidente Fundador"
 
 rol_usuario = st.session_state.get("rol", "Pasante")
 
-# Módulos básicos (¡Alertas liberado para todo el equipo!)
-modulos = ["🏠 Mando Central", "👤 Registro Maestro", "📂 Archivo Digital", "📄 Plantillas Auto", "📅 Alertas y Plazos"]
+# 2. Definición de Módulos Básicos
+modulos = [
+    "🏠 Mando Central", 
+    "👤 Registro Maestro", 
+    "📂 Archivo Digital", 
+    "📄 Plantillas Auto", 
+    "📅 Alertas y Plazos"
+]
 
-# Filtro de jerarquía (Ahora solo protegemos el módulo financiero)
+# Filtro de jerarquía financiera
 if rol_usuario in ["Abogado", "Agrimensor", "Presidente Fundador"]:
     modulos.append("💵 Facturación")
 
-# LA CLAVE: Siempre mostramos Configuración si no está logueado como admin
-# para que pueda poner su PIN y entrar.
+# Seguridad de configuración
 if rol_usuario == "Presidente Fundador" or not admin_activo:
     modulos.append("⚙️ Configuración")
 
+# 3. Interfaz Limpia: Barra Lateral con Menú Desplegable
 with st.sidebar:
     st.markdown(f"**Firmado como:** {usuario_actual if usuario_actual else 'Invitado'}")
     st.caption(f"**Nivel de Acceso:** {rol_usuario}")
-    menu = st.radio("Ir a:", modulos)
+    st.divider()
+    # Diseño simplificado con menú desplegable
+    menu = st.selectbox("Navegación del Sistema:", modulos)
 
-# --- LÓGICA DE CARGA DE FUNCIONES (ENRUTADOR FINAL) ---
+# 4. Lógica de Enrutamiento (El Gatillo)
 if menu == "🏠 Mando Central":
     vista_mando_central()
-
 elif menu == "👤 Registro Maestro":
     vista_registro_maestro()
-
-elif menu == "📁 Archivo Digital":
+elif menu == "📂 Archivo Digital":
     vista_archivo_digital()
-
 elif menu == "📄 Plantillas Auto":
     vista_plantillas_auto()
-
 elif menu == "📅 Alertas y Plazos":
-    vista_alertas_plazos() # <--- Reemplace el st.info que había antes por esta llamada
-
+    vista_alertas_plazos()
 elif menu == "💵 Facturación":
-    vista_facturacion()  # <--- Aquí está la llamada real
-
+    vista_facturacion()
 elif menu == "⚙️ Configuración":
     vista_configuracion()
