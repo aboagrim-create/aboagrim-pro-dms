@@ -495,7 +495,7 @@ def vista_facturacion():
 # =====================================================================
 def vista_configuracion():
     st.title("⚙️ Configuración del Sistema")
-    st.subheader("Gestión de Identidad, Seguridad y Personal")
+    st.subheader("Gestión de Identidad y Seguridad de AboAgrim Pro")
     st.divider()
 
     # =========================================================
@@ -505,16 +505,16 @@ def vista_configuracion():
         st.session_state.admin_autenticado = False
 
     if not st.session_state.admin_autenticado:
-        st.warning("🔒 Esta sección contiene datos sensibles de la firma y requiere validación.")
+        st.warning("🔒 Esta sección contiene datos sensibles y requiere validación de Presidencia.")
         
-        col_log_1, col_log_2 = st.columns([1, 1])
+        col_log_1, col_log_2 = st.columns(2)
         with col_log_1:
-            u_admin = st.text_input("Usuario Maestro:", key="admin_user_maestro")
+            u_admin = st.text_input("Usuario Maestro:", key="admin_user_final")
         with col_log_2:
-            p_admin = st.text_input("PIN Maestro:", type="password", key="admin_pin_maestro")
+            p_admin = st.text_input("PIN Maestro:", type="password", key="admin_pin_final")
 
         if st.button("🔓 VALIDAR ACCESO ADMINISTRATIVO", use_container_width=True, type="primary"):
-            # Validación de identidad
+            # Validación de identidad del Lic. Jhonny Matos
             if u_admin == "JhonnyMatos" and p_admin == "1234": 
                 st.session_state.admin_autenticado = True
                 st.success("Acceso concedido. Cargando privilegios...")
@@ -522,15 +522,15 @@ def vista_configuracion():
             else:
                 st.error("Credenciales incorrectas. Acceso denegado.")
         
-        # El 'return' es vital: detiene la ejecución aquí y no deja ver nada más
+        # El 'return' es la clave: detiene la ejecución y no deja ver las pestañas
         return 
 
     # =========================================================
-    # 🛠️ PANEL DE CONFIGURACIÓN (SOLO VISIBLE SI ESTÁ AUTENTICADO)
+    # 🛠️ PANEL DE CONTROL (SOLO VISIBLE CON ACCESO VALIDADO)
     # =========================================================
     
     # Botón para cerrar la sesión administrativa y volver a bloquear
-    if st.button("🔒 Bloquear Configuración"):
+    if st.button("🔒 Salir y Bloquear Configuración", use_container_width=True):
         st.session_state.admin_autenticado = False
         st.rerun()
 
@@ -541,73 +541,21 @@ def vista_configuracion():
         "👥 Gestión de Usuarios"
     ])
 
-    # --- PESTAÑA 1: SEGURIDAD ---
     with tab1:
         st.markdown("### 🔐 Cambio de PIN Maestro")
-        c1, c2 = st.columns(2)
-        with c1: pin_nuevo = st.text_input("Definir Nuevo PIN Maestro:", type="password", key="c_p1_final")
-        with c2: pin_conf = st.text_input("Confirmar Nuevo PIN:", type="password", key="c_p2_final")
-        if st.button("💾 Guardar Nuevo PIN Maestro"):
-            st.success("El PIN Maestro ha sido actualizado.")
+        # Aquí va su código de cambio de PIN...
 
-    # --- PESTAÑA 2: IDENTIDAD ---
     with tab2:
-        st.markdown("### 🏛️ Datos Maestros de la Firma")
-        col_a, col_b = st.columns(2)
-        with col_a:
-            st.text_input("Titular:", value="Lic. Jhonny Matos. M.A.", key="c_tit_final")
-            st.text_input("Cargo:", value="Presidente Fundador", key="c_car_final")
-        with col_b:
-            st.text_input("Firma:", value="Abogados y Agrimensores 'AboAgrim'", key="c_firm_final")
-            st.text_input("Ubicación:", value="Santiago, Rep. Dom.", key="c_loc_final")
-        st.button("💾 Actualizar Identidad Corporativa")
+        st.markdown("### 🏛️ Identidad de la Firma")
+        # Aquí van los datos de la oficina en Santiago...
 
-    # --- PESTAÑA 3: ESTADO CLOUD ---
     with tab3:
         st.markdown("### 📡 Infraestructura")
         st.success("🟢 Conexión con Supabase: ACTIVA")
-        st.info("Host: database.supabase.co")
 
-    # --- PESTAÑA 4: GESTIÓN DE USUARIOS ---
     with tab4:
         st.markdown("### 👥 Administración de Personal")
-        
-        st.write("#### ➕ Registrar Nuevo Usuario")
-        u_col1, u_col2, u_col3 = st.columns(3)
-        with u_col1:
-            nuevo_nombre = st.text_input("Nombre de Usuario:", key="new_u_name_final")
-        with u_col2:
-            nuevo_pin = st.text_input("Asignar PIN:", type="password", key="new_u_pin_final")
-        with u_col3:
-            nuevo_rol = st.selectbox("Rol:", ["Asistente", "Abogado", "Agrimensor"], key="new_u_rol_final")
-        
-        if st.button("🚀 DAR DE ALTA"):
-            if nuevo_nombre and nuevo_pin:
-                try:
-                    data_u = {"nombre_usuario": nuevo_nombre, "pin_acceso": nuevo_pin, "rol": nuevo_rol}
-                    supabase.table("usuarios_sistema").insert(data_u).execute()
-                    st.success(f"✅ Usuario '{nuevo_nombre}' creado.")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Error: {e}")
-
-        st.divider()
-        
-        st.write("#### 🗑️ Borrar Usuario")
-        try:
-            res_u = supabase.table("usuarios_sistema").select("nombre_usuario").execute()
-            lista_usuarios = [u['nombre_usuario'] for u in res_u.data] if res_u.data else []
-            if lista_usuarios:
-                u_eliminar = st.selectbox("Usuario a eliminar:", lista_usuarios, key="sel_del_final")
-                if st.button("🗑️ ELIMINAR USUARIO"):
-                    if u_eliminar == "JhonnyMatos":
-                        st.error("No se puede eliminar al administrador maestro.")
-                    else:
-                        supabase.table("usuarios_sistema").delete().eq("nombre_usuario", u_eliminar).execute()
-                        st.success(f"Usuario {u_eliminar} eliminado.")
-                        st.rerun()
-        except:
-            st.info("No hay usuarios para mostrar.")
+        # Aquí va la función de agregar/borrar usuarios...
 def login_sistema():
     st.markdown("""
         <style>
