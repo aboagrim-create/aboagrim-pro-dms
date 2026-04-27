@@ -460,16 +460,13 @@ def vista_alertas_plazos():
             
 
 from fpdf import FPDF
-import io
 from datetime import datetime
-
-from fpdf import FPDF # Asegúrese de tener fpdf2 en sus requirements
 
 def vista_facturacion():
     st.title("💵 Facturación y Cobros Mágicos")
     st.subheader("Control Financiero | AboAgrim Pro")
     
-    # --- FUNCIÓN PARA GENERAR EL PDF REAL ---
+    # --- FUNCIÓN PARA GENERAR EL PDF (CORREGIDA PARA FPDF2) ---
     def generar_pdf_factura(datos, num_fac):
         pdf = FPDF()
         pdf.add_page()
@@ -508,7 +505,8 @@ def vista_facturacion():
         pdf.cell(100, 10, "BALANCE PENDIENTE:")
         pdf.cell(0, 10, f"RD$ {datos['resta']:,.2f}", ln=True, align="R")
         
-        return pdf.output(dest='S').encode('latin-1')
+        # ESTA ES LA CLAVE QUE ARREGLA EL ERROR ROJO:
+        return bytes(pdf.output())
 
     tab_emitir, tab_historial = st.tabs(["📄 Emitir Nueva Factura", "📊 Historial"])
     
@@ -518,55 +516,74 @@ def vista_facturacion():
         with c1:
             with st.container(border=True):
                 st.markdown("### 📝 Datos de Cobro")
-                # (Aquí mantenemos sus inputs iguales)
-                expediente = st.selectbox("Expediente:", ["Seleccione..."] + [f"EXP-{i}" for i in range(100)]) # Simplificado para el ejemplo
-                tipo_pago = st.selectbox("Modalidad:", ["Avance", "Pago Parcial", "Saldo Total"])
-                concepto = st.text_input("Concepto:", placeholder="Ej: Mensura parcela...")
+                
+                try:
+                    res_e = supabase.table("expedientes_maestros").select("expediente, nombre_propietario").execute()
+                    list_e = [f"{e['expediente']} - {e['nombre_propietario']}" for e in res_e.data] if res_e.data else []
+                except:
+                    list_e = []
+                    
+                expediente = st.selectbox("Vinculado a Expediente:", ["Seleccione..."] + list_e)
+                tipo_pago = st.selectbox("Modalidad:", ["Avance Inicial", "Pago Parcial", "Saldo Total"])
+                concepto = st.text_input("Concepto / Descripción:", placeholder="Ej: Mensura parcela...")
                 
                 col_m1, col_m2 = st.columns(2)
-                monto_pago = col_m1.number_input("Paga Hoy (RD$):", min_value=0.0)
-                monto_resta = col_m2.number_input("Resta (RD$):", min_value=0.0)
+                monto_pago = col_m1.number_input("Paga Hoy (RD$):", min_value=0.0, step=1000.0, format="%.2f")
+                monto_resta = col_m2.number_input("Resta (RD$):", min_value=0.0, step=1000.0, format="%.2f")
                 
                 if st.button("✨ Generar Vista Previa", type="primary", use_container_width=True):
-                    st.session_state['datos_fac'] = {
-                        "expediente": expediente, "concepto": concepto, 
-                        "pago": monto_pago, "resta": monto_resta, "tipo": tipo_pago,
-                        "fecha": datetime.now().strftime("%d/%m/%Y")
-                    }
-                    st.session_state['factura_ready'] = True
+                    if expediente != "Seleccione...":
+                        st.session_state['datos_fac'] = {
+                            "expediente": expediente, "concepto": concepto, 
+                            "pago": monto_pago, "resta": monto_resta, "tipo": tipo_pago,
+                            "fecha": datetime.now().strftime("%d/%m/%Y")
+                        }
+                        st.session_state['factura_ready'] = True
+                    else:
+                        st.warning("Seleccione un expediente.")
 
         with c2:
             if st.session_state.get('factura_ready'):
                 d = st.session_state['datos_fac']
-                num_f = f"FAC-{datetime.now().strftime('%M%S')}"
+                num_f = f"FAC-{datetime.now().strftime('%y%m%d%H%M')}"
                 
-                # --- VISTA PREVIA EN PANTALLA ---
+                # --- VISTA PREVIA LIMPIA (Sin códigos raros) ---
                 with st.container(border=True):
-                    st.markdown(f"### ⚖️ AboAgrim - {num_f}")
-                    st.write(f"**Cliente:** {d['expediente']}")
-                    st.write(f"**Pago Hoy:** RD$ {d['pago']:,.2f}")
-                    st.markdown(f"<p style='color:red;'>**Pendiente:** RD$ {d['resta']:,.2f}</p>", unsafe_allow_html=True)
+                    st.markdown("<h2 style='text-align: center; color: #d4af37;'>⚖️ AboAgrim</h2>", unsafe_allow_html=True)
+                    st.markdown("<p style='text-align: center; margin-top: -10px;'>DESPACHO LEGAL Y AGRIMENSURA</p>", unsafe_allow_html=True)
+                    st.markdown("<p style='text-align: center; font-weight: bold;'>Lic. Jhonny Matos | Presidente Fundador</p>", unsafe_allow_html=True)
+                    st.divider()
+                    
+                    st.write(f"**Factura No:** {num_f}")
+                    st.write(f"**Fecha:** {d['fecha']}")
+                    st.write(f"**Cliente / Expediente:** {d['expediente']}")
+                    st.write(f"**Concepto:** {d['concepto']}")
+                    st.divider()
+                    st.markdown(f"### 💰 RECIBIDO: RD$ {d['pago']:,.2f}")
+                    st.markdown(f"#### 🔴 PENDIENTE: RD$ {d['resta']:,.2f}")
                 
-                st.divider()
+                # --- BOTONES FUNCIONALES ---
+                col_wa, col_dl = st.columns(2)
                 
-                # --- LA MAGIA: BOTONES QUE SÍ FUNCIONAN ---
+                # Botón PDF Corregido
+                try:
+                    pdf_data = generar_pdf_factura(d, num_f)
+                    nombre_archivo_limpio = d['expediente'].split()[0].replace("-", "_")
+                    
+                    col_dl.download_button(
+                        label="📥 Descargar PDF",
+                        data=pdf_data,
+                        file_name=f"Factura_{nombre_archivo_limpio}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
+                except Exception as e:
+                    col_dl.error(f"Error generando PDF: {e}")
                 
-                # 1. BOTÓN DE DESCARGA PDF REAL
-                pdf_data = generar_pdf_factura(d, num_f)
-                st.download_button(
-                    label="📥 Descargar Factura PDF",
-                    data=pdf_data,
-                    file_name=f"Factura_{d['expediente']}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
-                
-                # 2. WHATSAPP (Explicación abajo)
-                msg = f"Saludos desde *AboAgrim*. Confirmamos el pago de *RD$ {d['pago']:,.2f}*. Su balance restante es de *RD$ {d['resta']:,.2f}*. Le adjuntamos su factura."
+                # Botón WhatsApp
+                msg = f"Saludos desde *AboAgrim*. Confirmamos el pago de *RD$ {d['pago']:,.2f}*. Su balance restante es de *RD$ {d['resta']:,.2f}*. Le adjuntamos su factura en breve."
                 link_wa = f"https://wa.me/?text={msg.replace(' ', '%20')}"
-                st.link_button("🟢 Enviar Confirmación WhatsApp", link_wa, use_container_width=True)
-                
-                st.caption("Nota: Por seguridad, WhatsApp no permite 'adjuntar' archivos automáticamente desde un link. Primero descargue el PDF y luego envíelo por el chat.")
+                col_wa.link_button("🟢 Enviar WhatsApp", link_wa, use_container_width=True)
 
 def vista_configuracion():
     st.title("⚙️ Panel de Control Maestro")
