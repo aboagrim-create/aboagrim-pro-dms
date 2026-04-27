@@ -1349,18 +1349,24 @@ with st.sidebar:
     st.caption(f"**Nivel de Acceso:** {rol_usuario}")
     menu = st.radio("Ir a:", modulos)
 
-# Lógica de carga de funciones
+# --- LÓGICA DE CARGA DE FUNCIONES (ENRUTADOR FINAL) ---
 if menu == "🏠 Mando Central":
     vista_mando_central()
+
 elif menu == "👤 Registro Maestro":
     vista_registro_maestro()
+
 elif menu == "📁 Archivo Digital":
     vista_archivo_digital()
+
 elif menu == "📄 Plantillas Auto":
     vista_plantillas_auto()
+
 elif menu == "📅 Alertas y Plazos":
     st.info("Módulo de Alertas y Plazos Operativo")
+
 elif menu == "💵 Facturación":
-    vista_facturacion()
+    vista_facturacion()  # <--- Aquí está la llamada real
+
 elif menu == "⚙️ Configuración":
     vista_configuracion()
