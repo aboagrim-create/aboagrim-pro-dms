@@ -583,15 +583,61 @@ def vista_configuracion():
         st.button("Guardar Cambios de Identidad")
 
     with tab3:
-        st.markdown("### Administración de Colaboradores")
-        st.write("Registre personal y asigne contraseñas de acceso.")
+        st.markdown("### 👥 Administración de Colaboradores")
         
-        with st.expander("➕ Dar de Alta Nuevo Usuario", expanded=True):
-            st.text_input("Nombre del Colaborador", key="add_user_name")
-            st.text_input("Asignar Contraseña/PIN", type="password", key="add_user_pass")
-            st.selectbox("Rol en la Firma", ["Abogado", "Agrimensor", "Asistente"])
-            if st.button("Registrar en Sistema"):
-                st.success("Usuario registrado exitosamente.")
+        # --- SECCIÓN A: ALTA DE NUEVOS MIEMBROS ---
+        with st.expander("➕ Dar de Alta Nuevo Usuario"):
+            u_nombre = st.text_input("Nombre de Usuario", placeholder="Ej: LuisVentura", key="reg_u_nom")
+            u_pass = st.text_input("Asignar PIN de Acceso", type="password", key="reg_u_pin")
+            u_rol = st.selectbox("Rol en la Firma", ["Abogado", "Agrimensor", "Asistente", "Pasante"], key="reg_u_rol")
+            
+            if st.button("🚀 Registrar Colaborador", use_container_width=True):
+                if u_nombre and u_pass:
+                    try:
+                        # Insertamos el nuevo usuario en su tabla de Supabase
+                        data_nuevo = {"nombre_usuario": u_nombre, "pin_acceso": u_pass, "rol": u_rol}
+                        supabase.table("usuarios_sistema").insert(data_nuevo).execute()
+                        st.success(f"✅ Acceso creado para {u_nombre} como {u_rol}.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error al registrar: {e}")
+                else:
+                    st.warning("Debe completar el nombre y el PIN.")
+
+        st.divider()
+
+        # --- SECCIÓN B: BAJA Y BLOQUEO (NUEVA FUNCIÓN) ---
+        st.markdown("### 🗑️ Quitar o Bloquear Acceso")
+        st.caption("Seleccione un colaborador para revocar sus credenciales de entrada.")
+
+        try:
+            # Consultamos los usuarios actuales en tiempo real
+            res_usuarios = supabase.table("usuarios_sistema").select("nombre_usuario").execute()
+            lista_usuarios = [u['nombre_usuario'] for u in res_usuarios.data] if res_usuarios.data else []
+            
+            if lista_usuarios:
+                col_del_1, col_del_2 = st.columns([2, 1])
+                with col_del_1:
+                    usuario_a_quitar = st.selectbox("Seleccionar usuario a dar de baja:", lista_usuarios, key="sel_del_user")
+                
+                with col_del_2:
+                    st.write("") # Espaciador para alinear con el selectbox
+                    if st.button("❌ Bloquear/Quitar", type="secondary", use_container_width=True):
+                        # Blindaje de seguridad: Usted no puede eliminarse a sí mismo
+                        if usuario_a_quitar == "JhonnyMatos":
+                            st.error("Protección de Sistema: No se permite la baja del usuario Presidente Fundador.")
+                        else:
+                            try:
+                                supabase.table("usuarios_sistema").delete().eq("nombre_usuario", usuario_a_quitar).execute()
+                                st.toast(f"Acceso revocado para {usuario_a_quitar}", icon="🗑️")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"No se pudo completar la acción: {e}")
+            else:
+                st.info("No hay otros colaboradores registrados actualmente.")
+                
+        except Exception as e:
+            st.warning("Conectando con la base de datos de personal...")
 
     with tab4:
         st.markdown("### 🎨 Personalización de la Oficina Digital")
