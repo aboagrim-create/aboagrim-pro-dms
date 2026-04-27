@@ -1,34 +1,25 @@
-# =====================================================================
-# INTERFAZ GRÁFICA Y SISTEMA EXPERTO LEGAL JI (EDICIÓN PREMIUM FULL)
-# Sistema: AboAgrim Pro DMS 
-# =====================================================================
 import streamlit as st
-import zipfile
+from supabase import create_client, Client
+from datetime import datetime, timedelta
+import pandas as pd
 import io
 from docxtpl import DocxTemplate
-# ... arriba están los import ...
-# =========================================================
-# MOTOR DE ESTILOS VISUALES (Se ejecuta siempre al inicio)
-# =========================================================
-if "tema_color" in st.session_state:
-    # Definimos si el fondo es oscuro o claro
-    bg_color = "#0e1117" if st.session_state["tema_fondo"] == "Oscuro Profundo" else "#ffffff"
-    text_color = "#ffffff" if st.session_state["tema_fondo"] == "Oscuro Profundo" else "#000000"
-    
-    # Inyectamos el diseño personalizado en toda la aplicación
-    custom_css = f"""
-    <style>
-        /* Cambiar color de fondo principal y texto */
-        .stApp {{
-            background-color: {bg_color};
-            color: {text_color};
-            font-family: {st.session_state['tema_fuente']} !important;
-        }}
-        /* Cambiar el color de todos los Títulos */
-        h1, h2, h3, h4, h5, h6 {{
-            color: {st.session_state['tema_color']} !important;
-            font-family: {st.session_state['tema_fuente']} !important;
-        }}
+
+# 1. Configuración de página ÚNICA
+st.set_page_config(page_title="AboAgrim Pro", layout="wide", page_icon="⚖️")
+
+# 2. Conexión a Supabase (Usando sus secretos de Streamlit Cloud)
+url: str = st.secrets["supabase_url"]
+key: str = st.secrets["supabase_key"]
+supabase: Client = create_client(url, key)
+
+# 3. Inicialización de estados de sesión (Para que el sistema no olvide quién es usted)
+if "admin_autenticado" not in st.session_state:
+    st.session_state.admin_autenticado = False
+if "usuario" not in st.session_state:
+    st.session_state.usuario = "Invitado"
+if "rol" not in st.session_state:
+    st.session_state.rol = "Pasante"
         /* Cambiar el color de los botones principales */
         .stButton>button[kind="primary"] {{
             background-color: {st.session_state['tema_color']};
@@ -835,46 +826,59 @@ from datetime import datetime
 
 def vista_registro_maestro():
     st.title("👤 Registro Maestro de Expedientes")
-    st.subheader("Control Centralizado | AboAgrim Pro")
+    st.subheader("Base de Datos Oficial | AboAgrim")
     
-    # --- PESTAÑAS: REGISTRAR Y CONSULTAR ---
-    tab_reg, tab_con = st.tabs(["➕ Nuevo Registro", "🔍 Consultar y Editar"])
+    tab1, tab2 = st.tabs(["➕ Nuevo Ingreso", "🔍 Ver/Editar Expedientes"])
     
-    with tab_reg:
-        with st.form("registro_exp", clear_on_submit=True):
-            c1, c2 = st.columns(2)
-            exp = c1.text_input("Expediente Nro:")
-            prop = c2.text_input("Nombre Completo del Propietario:")
-            ced = c1.text_input("Cédula o RNC:")
-            tipo = c2.selectbox("Tipo de Acto:", ["Mensura Catastral", "Deslinde", "Litis", "Saneamiento", "Condominio"])
+    with tab1:
+        with st.form("form_nuevo_caso", clear_on_submit=True):
+            st.markdown("#### Datos Principales")
+            c1, c2, c3 = st.columns([2, 3, 2])
+            exp_n = c1.text_input("Número de Expediente:", placeholder="Ej: 2024-0001")
+            prop_n = c2.text_input("Nombre del Cliente/Propietario:")
+            ced_n = c3.text_input("Cédula/RNC:")
             
-            # Datos Técnicos
-            c3, c4, c5 = st.columns(3)
-            parc = c3.text_input("Parcela:")
-            dc = c4.text_input("D.C.:")
-            mun = c5.text_input("Municipio/Provincia:")
+            st.markdown("#### Datos Técnicos e Inmobiliarios")
+            c4, c5, c6 = st.columns(3)
+            tipo_n = c4.selectbox("Tipo de Acto:", ["Mensura Catastral", "Deslinde", "Litis", "Condominio", "Saneamiento"])
+            parc_n = c5.text_input("Parcela:")
+            dc_n = c6.text_input("D.C.:")
             
-            if st.form_submit_button("💾 Guardar en la Nube"):
-                if exp and prop:
-                    nueva_data = {
-                        "expediente": exp, "nombre_propietario": prop, "cedula": ced,
-                        "tipo_acto": tipo, "parcela": parc, "dc": dc, "municipio": mun,
-                        "fecha_creacion": datetime.now().strftime("%Y-%m-%d")
-                    }
-                    supabase.table("expedientes_maestros").insert(nueva_data).execute()
-                    st.success(f"✅ Expediente {exp} guardado correctamente.")
+            mun_n = st.text_input("Municipio y Provincia:")
+            
+            if st.form_submit_button("🚀 Registrar en Base de Datos"):
+                if exp_n and prop_n:
+                    try:
+                        nueva_data = {
+                            "expediente": exp_n,
+                            "nombre_propietario": prop_n,
+                            "cedula": ced_n,
+                            "tipo_acto": tipo_n,
+                            "parcela": parc_n,
+                            "dc": dc_n,
+                            "municipio": mun_n,
+                            "fecha_creacion": datetime.now().strftime("%Y-%m-%d")
+                        }
+                        supabase.table("expedientes_maestros").insert(nueva_data).execute()
+                        st.success(f"✅ ¡Éxito! El expediente {exp_n} ha sido blindado en la nube.")
+                        st.balloons()
+                    except Exception as e:
+                        st.error(f"Error al conectar con la nube: {e}")
                 else:
-                    st.error("Error: El número de expediente y nombre son obligatorios.")
+                    st.warning("⚠️ El número de expediente y nombre del propietario son obligatorios.")
 
-    with tab_con:
+    with tab2:
+        st.markdown("#### Buscador de Expedientes")
         try:
             res = supabase.table("expedientes_maestros").select("*").order("fecha_creacion", desc=True).execute()
             if res.data:
-                st.dataframe(res.data, use_container_width=True)
+                df = pd.DataFrame(res.data)
+                columnas = ["expediente", "nombre_propietario", "tipo_acto", "parcela", "dc", "fecha_creacion"]
+                st.dataframe(df[columnas], use_container_width=True)
             else:
-                st.info("No hay datos registrados aún.")
+                st.info("No hay registros disponibles para mostrar.")
         except Exception as e:
-            st.error(f"Error de conexión: {e}")
+            st.error(f"Error al cargar la tabla: {e}")
 def vista_archivo_digital():
     st.title("📂 Archivo Digital Centralizado")
     st.subheader("Bóveda Documental de AboAgrim")
