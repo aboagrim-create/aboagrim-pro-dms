@@ -991,7 +991,7 @@ btn_guardar = st.button("💾 GUARDAR EXPEDIENTE Y CREAR BÓVEDA", type="primary
 if btn_guardar:
         if st.session_state.get('in_np', '') != '':
             try:
-                # 1. Registro en la Base de Datos (Supabase)
+                # 1. Guardamos en Supabase
                 datos_a_guardar = {
                     "expediente": st.session_state.get('in_exp', ''),
                     "nombre_propietario": st.session_state.get('in_np', ''),
@@ -1000,15 +1000,13 @@ if btn_guardar:
                     "municipio": st.session_state.get('in_mun', ''),
                     "provincia": st.session_state.get('in_prov', '')
                 }
-
-                # Ejecutamos la inserción y capturamos el ID
                 res = supabase.table("expedientes_maestros").insert(datos_a_guardar).execute()
                 id_generado = res.data[0]['id']
                 nombre_cliente = st.session_state.get('in_np', 'Sin_Nombre')
 
-                # 2. Generación de la Ficha Maestra (Carátula)
+                # 2. Generamos la Carátula de Word
                 datos_resumen = {
-                    "num_expediente": f"RES-{id_generado}", 
+                    "num_expediente": f"RES-{id_generado}",
                     "cliente_nombre": nombre_cliente,
                     "cli_correo": st.session_state.get('in_mail', 'No provisto'),
                     "cliente_cedula": st.session_state.get('in_cp', '_______________'),
@@ -1016,38 +1014,26 @@ if btn_guardar:
                     "inm_coordenadas": st.session_state.get('in_coord', 'Verificar en campo'),
                     "inmueble_parcela": st.session_state.get('in_par', '_______'),
                     "inmueble_dc": st.session_state.get('in_dc', '_______'),
-                    "profesional_a_cargo": "Lic. Jhonny Matos. M.A."
+                    "profesional_a_cargo": "Lic. Jhonny Matos, Presidente Fundador"
                 }
                 
-                # Aquí es donde el sistema crea el archivo físico
-                st.success(f"✅ Expediente RES-{id_generado} creado y guardado en la Bóveda.")
-                
+                # 3. Flujo de Drive (Oficina Virtual)
+                with st.status("⏳ Creando oficina virtual y subiendo archivos...", expanded=True):
+                    url_carpeta = crear_oficina_virtual(nombre_cliente, f"RES-{id_generado}")
+                    
+                    if url_carpeta:
+                        id_drive_carpeta = url_carpeta.split('/')[-1]
+                        archivo_resumen = generar_documento_word("plantillas_maestras/0_sistema/caratula_maestra.docx", datos_resumen)
+                        
+                        if archivo_resumen:
+                            subir_archivo_a_drive(archivo_resumen, f"00_CARATULA_{nombre_cliente}.docx", id_drive_carpeta)
+                            
+                        st.success(f"✅ Bóveda virtual lista. Expediente RES-{id_generado} creado con éxito.")
+
             except Exception as e:
-                st.error(f"❌ Error técnico en el proceso: {e}")
+                st.error(f"❌ Error al procesar: {e}")
         else:
             st.warning("⚠️ El nombre del propietario es obligatorio para crear el expediente.")
-            
-            # --- Aquí abajo debe continuar su código normal de Google Drive que dice: ---
-            # with st.status("⏳ Creando oficina virtual... 
-    
-    # Datos del Cliente
-    "cliente_nombre": nombre_cliente,
-    "cli_correo": st.session_state.get('in_mail', 'No provisto'),
-    "cliente_cedula": st.session_state.get('in_cp'),
-    
-    # Datos Técnicos del Inmueble
-    "inm_direccion": st.session_state.get('in_dir_detallada', 'Santiago, R.D.'),
-    "inm_coordenadas": st.session_state.get('in_coord', 'Verificar en campo'),
-    "inmueble_parcela": st.session_state.get('in_par'),
-    "inmueble_dc": st.session_state.get('in_dc'),
-    
-    # Su Firma Profesional
-    "profesional_a_cargo": "Lic. Jhonny Matos. M.A."
-}
-
-# El sistema genera el Word y lo sube directamente a la carpeta del cliente
-archivo_resumen = generar_documento_word("plantillas_maestras/0_sistema/caratula_maestra.docx", datos_resumen)
-subir_archivo_a_drive(archivo_resumen, f"00_RESUMEN_TECNICO_{nombre_cliente}.docx", id_drive_carpeta)
                 
                 
                 # 1. Guardamos en Supabase (usando su tabla expedientes_maestros)
