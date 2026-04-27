@@ -748,106 +748,78 @@ Por medio de la presente, AboAgrim, representada por el Lic. Jhonny Matos, M.A.,
                 """
                 st.components.v1.html(doc_html, height=600, scrolling=True)
 def vista_archivo_digital():
-    st.title("📁 Archivo Digital | AboAgrim Pro")
-    st.subheader("Bóveda de Expedientes y Anexos Técnicos")
+    st.title("📂 Archivo Digital Centralizado")
+    st.subheader("Gestión Documental | AboAgrim Pro")
     st.divider()
 
-    # --- 1. BUSCADOR DE EXPEDIENTES ---
-    st.markdown("### 🔍 Localizador de Carpetas")
-    
-    try:
-        # Consulta a Supabase para obtener los expedientes activos
-        res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario").execute()
-        lista_expedientes = [f"{e['expediente']} - {e['nombre_propietario']}" for e in res_exp.data] if res_exp.data else []
+    tab_explorar, tab_subir = st.tabs(["🔍 Explorar Expedientes", "📤 Vincular Nuevo Documento"])
+
+    # --- 1. EXPLORAR ARCHIVOS ---
+    with tab_explorar:
+        st.markdown("### 🗄️ Bóveda de Documentos")
         
-        if not lista_expedientes:
-            st.info("📌 No hay expedientes registrados. Vaya al 'Registro Maestro' para crear el primer caso.")
-            return
+        # Selector de expediente para filtrar
+        try:
+            res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario").execute()
+            list_exp = [f"{e['expediente']} - {e['nombre_propietario']}" for e in res_exp.data] if res_exp.data else []
+            
+            exp_busqueda = st.selectbox("Filtrar por Expediente:", ["Todos"] + list_exp)
+            st.write("---")
 
-        # Selector desplegable (diseño limpio sin exceso de botones)
-        expediente_seleccionado = st.selectbox("Seleccione el Expediente a consultar:", ["Seleccione..."] + lista_expedientes)
-        
-        if expediente_seleccionado == "Seleccione...":
-            return # Pausa la pantalla hasta que elija un cliente
+            query = supabase.table("archivo_digital").select("*")
+            if exp_busqueda != "Todos":
+                query = query.eq("codigo_expediente", exp_busqueda.split(" - ")[0])
+            
+            documentos = query.execute()
 
-        codigo_exp = expediente_seleccionado.split(" - ")[0]
-        st.success(f"📂 Carpeta Abierta: **{expediente_seleccionado}**")
+            if documentos.data:
+                for doc in documentos.data:
+                    with st.container(border=True):
+                        col_icon, col_info, col_btn = st.columns([1, 4, 2])
+                        col_icon.markdown("### 📄")
+                        col_info.markdown(f"**{doc['nombre_documento']}**")
+                        col_info.caption(f"Categoría: {doc['categoria']} | Exp: {doc['codigo_expediente']}")
+                        
+                        # Botón para abrir el archivo (redirige al link de Drive o Nube)
+                        col_btn.link_button("👁️ Ver Documento", doc['url_enlace'], use_container_width=True)
+                        if col_btn.button("🗑️ Eliminar", key=f"del_doc_{doc['id']}", use_container_width=True):
+                            supabase.table("archivo_digital").delete().eq("id", doc['id']).execute()
+                            st.rerun()
+            else:
+                st.info("No se han encontrado documentos vinculados a este criterio.")
 
-    except Exception as e:
-        st.error(f"Detalle técnico del error: {e}")
-        return
+        except Exception as e:
+            st.error(f"Error al cargar el archivo: {e}")
 
-    st.write("---")
-
-    # --- 2. GESTIÓN DEL EXPEDIENTE (PESTAÑAS) ---
-    tab_visor, tab_carga = st.tabs(["📄 Visor de Documentos", "📤 Digitalizar y Subir"])
-
-    # PESTAÑA A: VISOR ORGANIZADO
-    with tab_visor:
-        st.markdown(f"### 📑 Inventario del Expediente {codigo_exp}")
-        
-        # Filtro de vista rápida
-        filtro_vista = st.radio(
-            "Filtrar por departamento:", 
-            ["Todo", "⚖️ Legal (Títulos y Actos)", "🗺️ Agrimensura (Planos y Coordenadas)", "🆔 Anexos"], 
-            horizontal=True
-        )
-
-        # Aquí simulamos la lectura de archivos desde su "Storage" en Supabase
-        st.info(f"Conectando con el servidor Cloud para recuperar archivos de {codigo_exp}...")
-        
-        # Cuadrícula de documentos (Diseño Ejecutivo)
-        col_doc1, col_doc2 = st.columns(2)
-        
-        with col_doc1:
-            st.markdown("#### 🗺️ Área Técnica")
-            with st.expander("Planos y Mensura", expanded=True):
-                st.caption("No hay archivos cargados en: Planos Generales.")
-                st.caption("No hay archivos cargados en: Tablas de Coordenadas.")
-                st.caption("No hay archivos cargados en: Datos Parcelarios.")
-
-        with col_doc2:
-            st.markdown("#### ⚖️ Área Legal")
-            with st.expander("Títulos y Actos", expanded=True):
-                st.caption("No hay archivos cargados en: Certificados de Título.")
-                st.caption("No hay archivos cargados en: Actos de Venta/Poderes.")
-                st.caption("No hay archivos cargados en: Cédulas de Identidad.")
-
-    # PESTAÑA B: ZONA DE CARGA
-    with tab_carga:
-        st.markdown("### 📥 Ingreso de Nuevos Documentos")
-        st.write("Clasifique y suba los escaneos directamente a la bóveda del cliente.")
+    # --- 2. VINCULAR NUEVOS DOCUMENTOS ---
+    with tab_subir:
+        st.markdown("### 📤 Registro de Nueva Documentación")
+        st.write("Vincule archivos alojados en su Google Drive o servidor al expediente correspondiente.")
         
         with st.container(border=True):
-            col_form1, col_form2 = st.columns(2)
+            exp_vincular = st.selectbox("Seleccionar Expediente destino:", list_exp if list_exp else ["Sin expedientes"])
+            nombre_doc = st.text_input("Nombre del Documento:", placeholder="Ej: Plano de Mensura Aprobado")
             
-            with col_form1:
-                # Categorías técnicas y legales detalladas
-                categoria_doc = st.selectbox(
-                    "Clasificación del Documento:", 
-                    [
-                        "Plano General Catastral",
-                        "Tabla de Coordenadas", 
-                        "Datos Parcelarios (Derrotero)",
-                        "Certificado de Título", 
-                        "Acto de Venta / Contrato", 
-                        "Poder de Representación",
-                        "Cédula / Identificación",
-                        "Resolución del Tribunal"
-                    ]
-                )
-                descripcion_doc = st.text_input("Breve descripción (Opcional):", placeholder="Ej: Plano aprobado marzo 2026")
-                
-            with col_form2:
-                archivo_pdf = st.file_uploader("Seleccione el archivo escaneado (PDF, JPG)", type=["pdf", "jpg", "png"])
-            
-            if st.button("💾 Encriptar y Guardar en Bóveda", use_container_width=True, type="primary"):
-                if archivo_pdf:
-                    # Lógica futura para: supabase.storage.from_('boveda').upload(f"{codigo_exp}/{archivo_pdf.name}")
-                    st.toast(f"Archivo '{archivo_pdf.name}' procesado.", icon="✅")
-                    st.success(f"El documento se ha guardado exitosamente bajo la categoría '{categoria_doc}' en el expediente {codigo_exp}.")
+            c1, c2 = st.columns(2)
+            cat_doc = c1.selectbox("Categoría Legal/Técnica:", ["Plano de Mensura", "Sentencia Judicial", "Acto de Alguacil", "Contrato de Cuota Litis", "Certificación IPI", "Otro"])
+            url_doc = c2.text_input("Enlace del Archivo (URL):", placeholder="Pegue el link de Google Drive aquí")
+
+            if st.button("🚀 Registrar en Archivo Digital", type="primary", use_container_width=True):
+                if nombre_doc and url_doc and exp_vincular != "Sin expedientes":
+                    try:
+                        nuevo_registro = {
+                            "codigo_expediente": exp_vincular.split(" - ")[0],
+                            "nombre_documento": nombre_doc,
+                            "categoria": cat_doc,
+                            "url_enlace": url_doc
+                        }
+                        supabase.table("archivo_digital").insert(nuevo_registro).execute()
+                        st.success("✅ Documento vinculado exitosamente.")
+                        st.balloons()
+                    except Exception as e:
+                        st.error(f"Error al registrar: {e}")
                 else:
-                    st.warning("⚠️ Debe adjuntar un archivo antes de proceder a guardar.")
+                    st.warning("Por favor, complete todos los campos obligatorios.")
         
         
 def vista_plantillas_auto():
