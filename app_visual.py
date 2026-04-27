@@ -506,6 +506,10 @@ from fpdf import FPDF
 import io
 from datetime import datetime
 
+from fpdf import FPDF
+import io
+from datetime import datetime
+
 def vista_facturacion():
     st.title("💵 Facturación y Alertas de Cobro")
     st.subheader("Control Financiero | AboAgrim Pro")
@@ -514,7 +518,7 @@ def vista_facturacion():
     tab_nueva, tab_alertas = st.tabs(["📄 Emitir Factura", "🚨 Alertas de Cobro"])
 
     with tab_nueva:
-        # --- 1. DATOS DEL CLIENTE (RECUPERADO) ---
+        # --- 1. DATOS DEL CLIENTE Y EXPEDIENTE ---
         try:
             res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, cedula_propietario").execute()
             dict_exp = {f"{e['expediente']} - {e['nombre_propietario']}": e for e in res_exp.data} if res_exp.data else {}
@@ -542,7 +546,7 @@ def vista_facturacion():
 
         st.write("---")
 
-        # --- 2. DETALLE DE SERVICIOS (DINÁMICO) ---
+        # --- 2. DETALLE DE SERVICIOS ---
         st.markdown("### 📝 Detalle de Servicios")
         if "items_factura" not in st.session_state:
             st.session_state.items_factura = []
@@ -568,7 +572,7 @@ def vista_facturacion():
 
             st.write("---")
             
-            # --- ITBIS OPCIONAL (RECUPERADO) ---
+            # --- ITBIS OPCIONAL ---
             con_itbis = st.toggle("✅ Aplicar ITBIS (18%) a esta factura", value=True)
             itbis = (subtotal * 0.18) if con_itbis else 0.0
             total_final = subtotal + itbis
@@ -578,22 +582,37 @@ def vista_facturacion():
             cr2.metric("ITBIS", f"RD$ {itbis:,.2f}" if con_itbis else "EXENTO")
             cr3.metric("TOTAL A PAGAR", f"RD$ {total_final:,.2f}")
 
-            # --- MODALIDADES DE PAGO (RECUPERADO) ---
-            st.markdown("### 💳 Condiciones de Liquidación")
-            modalidad = st.radio("Forma de Pago:", ["Pago Único", "Avance y Saldo", "Por Etapas"], horizontal=True)
-            texto_condiciones = ""
-            if modalidad == "Pago Único":
-                texto_condiciones = f"Pago total de RD$ {total_final:,.2f} contra entrega."
-            elif modalidad == "Avance y Saldo":
-                avance = st.number_input("Monto de Avance (RD$):", min_value=0.0, max_value=float(total_final))
-                texto_condiciones = f"Avance: RD$ {avance:,.2f} | Balance Pendiente: RD$ {total_final - avance:,.2f}"
-            else:
-                texto_condiciones = st.text_area("Hitos:", "30% Inicio, 40% Mensura, 30% Título")
+            # --- 3. MODALIDADES Y MÉTODOS DE PAGO (SOLICITADO) ---
+            st.markdown("### 💳 Términos y Métodos de Pago")
+            col_m1, col_m2 = st.columns(2)
+            with col_m1:
+                modalidad = st.radio(
+                    "Modalidad de Pago:", 
+                    ["Pago Total", "Avance y Saldo", "Pago por Etapas"], 
+                    horizontal=True
+                )
+            with col_m2:
+                metodo_pago = st.selectbox(
+                    "Método de Pago:", 
+                    ["Efectivo", "Transferencia Bancaria", "Cheque"]
+                )
 
-            # --- GENERACIÓN DE PDF PROFESIONAL Y GUARDADO ---
+            texto_condiciones = ""
+            if modalidad == "Pago Total":
+                texto_condiciones = f"MODALIDAD: Pago Total al contado via {metodo_pago}."
+            elif modalidad == "Avance y Saldo":
+                avance = st.number_input("Monto del avance recibido (RD$):", min_value=0.0, max_value=float(total_final))
+                saldo = total_final - avance
+                st.info(f"Balance restante a cobrar: RD$ {saldo:,.2f}")
+                texto_condiciones = f"MODALIDAD: Avance y Saldo via {metodo_pago}.\nAvance recibido: RD$ {avance:,.2f} | Balance pendiente: RD$ {saldo:,.2f}."
+            elif modalidad == "Pago por Etapas":
+                etapas = st.text_area("Desglose de etapas acordadas:", "Ej: 30% al inicio, 40% al completar mensura, 30% a la entrega del título.")
+                texto_condiciones = f"MODALIDAD: Pago por Etapas via {metodo_pago}.\nCronograma: {etapas}"
+
+            # --- 4. GENERACIÓN DE PDF PROFESIONAL Y GUARDADO ---
             if st.button("📄 EMITIR, GUARDAR Y DESCARGAR PDF", type="primary", use_container_width=True):
                 try:
-                    # Guardar en BD (Corrección de columna incluida)
+                    # Guardar en base de datos
                     datos_f = {
                         "codigo_expediente": codigo_vincular, 
                         "monto_total": total_final,
@@ -602,7 +621,7 @@ def vista_facturacion():
                     }
                     supabase.table("facturas").insert(datos_f).execute()
 
-                    # --- MOTOR DE DISEÑO PREMIUM (RECUPERADO) ---
+                    # Diseño del PDF Premium
                     pdf = FPDF()
                     pdf.add_page()
                     pdf.set_font("Arial", 'B', 22)
@@ -627,11 +646,11 @@ def vista_facturacion():
                     
                     pdf.set_font("Arial", '', 11)
                     pdf.set_text_color(0, 0, 0)
-                    pdf.cell(0, 8, f"Cliente: {nombre_cli} | ID: {identidad}", ln=True)
-                    pdf.cell(0, 8, f"Expediente: {codigo_vincular} | Fecha: {fecha_factura}", ln=True)
+                    pdf.cell(0, 8, f"Cliente: {nombre_cli} | RNC/Cédula: {identidad} | Persona {tipo_p}", ln=True)
+                    pdf.cell(0, 8, f"Expediente: {codigo_vincular} | Fecha: {fecha_factura.strftime('%d/%m/%Y')}", ln=True)
                     pdf.ln(5)
                     
-                    # Tabla
+                    # Tabla de servicios
                     pdf.set_fill_color(0, 51, 102)
                     pdf.set_text_color(255, 255, 255)
                     pdf.cell(140, 10, "Descripción", 1, 0, 'C', True)
@@ -643,19 +662,31 @@ def vista_facturacion():
                         pdf.cell(50, 10, f"{item['monto']:,.2f}", 1, 1, 'R')
                     
                     pdf.set_font("Arial", 'B', 11)
-                    pdf.cell(140, 10, "TOTAL GENERAL (RD$)", 1)
-                    pdf.cell(50, 10, f"{total_final:,.2f}", 1, 1, 'R')
+                    pdf.cell(140, 10, "SUB-TOTAL (RD$)", 1)
+                    pdf.cell(50, 10, f"{subtotal:,.2f}", 1, 1, 'R')
+                    if con_itbis:
+                        pdf.cell(140, 10, "ITBIS (18%)", 1)
+                        pdf.cell(50, 10, f"{itbis:,.2f}", 1, 1, 'R')
+                    
+                    pdf.set_fill_color(184, 134, 11)
+                    pdf.set_text_color(255, 255, 255)
+                    pdf.cell(140, 10, "TOTAL GENERAL (RD$)", 1, 0, 'L', True)
+                    pdf.cell(50, 10, f"{total_final:,.2f}", 1, 1, 'R', True)
                     
                     pdf.ln(10)
-                    pdf.cell(0, 10, "CONDICIONES DE PAGO:", ln=True)
+                    pdf.set_text_color(0, 51, 102)
+                    pdf.set_font("Arial", 'B', 11)
+                    pdf.cell(0, 8, "DETALLES Y TÉRMINOS DE PAGO:", ln=True)
+                    pdf.set_text_color(0, 0, 0)
                     pdf.set_font("Arial", '', 10)
-                    pdf.multi_cell(0, 6, texto_condiciones)
+                    pdf.multi_cell(0, 6, texto_condiciones, border=1)
 
                     pdf_bytes = pdf.output(dest='S').encode('latin-1')
                     st.download_button("📥 Descargar Factura PDF", pdf_bytes, f"Factura_{codigo_vincular}.pdf", "application/pdf")
                     st.success("Factura emitida y registrada correctamente.")
+                    st.balloons()
                 except Exception as e:
-                    st.error(f"Error al procesar: {e}")
+                    st.error(f"Error al procesar la factura: {e}")
 
     with tab_alertas:
         st.markdown("### ⚠️ Facturas Pendientes de Cobro")
@@ -665,15 +696,15 @@ def vista_facturacion():
                 for f in res.data:
                     with st.container(border=True):
                         c1, c2, c3 = st.columns([2, 1, 1])
-                        c1.error(f"🔴 **Caso: {f.get('codigo_expediente', 'N/A')}**")
+                        c1.error(f"🔴 **Expediente: {f.get('codigo_expediente', 'N/A')}**")
                         c2.write(f"**RD$ {f.get('monto_total', 0):,.2f}**")
-                        if c3.button("💰 Cobrado", key=f"p_{f['id']}"):
+                        if c3.button("💰 Marcar Pagada", key=f"pay_{f['id']}"):
                             supabase.table("facturas").update({"estado": "Pagado"}).eq("id", f['id']).execute()
                             st.rerun()
             else:
-                st.success("✅ Todo cobrado.")
+                st.success("✅ No hay facturas pendientes.")
         except Exception as e:
-            st.error(f"Error en alertas: {e}")
+            st.error(f"Error al cargar las alertas: {e}")
             # Nota: Esto se complementa con CSS personalizado en el inicio del script
         # Aquí va la función de agregar/borrar usuarios...
 def login_sistema():
