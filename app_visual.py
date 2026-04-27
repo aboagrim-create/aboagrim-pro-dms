@@ -502,146 +502,178 @@ def vista_facturacion():
 # =====================================================================
 # MÓDULO 6: FACTURACIÓN
 # =====================================================================
-def vista_configuracion():
-    st.title("⚙️ Configuración del Sistema")
-    st.subheader("Despacho Privado del Presidente Fundador")
+from fpdf import FPDF
+import io
+from datetime import datetime
+
+def vista_facturacion():
+    st.title("💵 Facturación y Alertas de Cobro")
+    st.subheader("Control Financiero | AboAgrim Pro")
     st.divider()
 
-    # --- 1. MURO DE SEGURIDAD (Se muestra si no está autenticado) ---
-    if not st.session_state.get("admin_autenticado", False):
-        st.error("🛑 Acceso Restringido")
-        st.info("Este módulo es de uso exclusivo para el Lic. Jhonny Matos. Por favor, valide su identidad.")
-        
-        # Habilitamos los campos de entrada para el ingreso
-        col_acc1, col_acc2 = st.columns(2)
-        with col_acc1:
-            u_pres = st.text_input("Usuario Presidente:", key="u_login_cfg_final")
-        with col_acc2:
-            p_pres = st.text_input("PIN de Seguridad:", type="password", key="p_login_cfg_final")
-        
-        if st.button("🔓 Validar Identidad y Entrar", use_container_width=True, type="primary"):
-            if u_pres == "JhonnyMatos" and p_pres == "1234": 
-                # ESTO ES LO QUE LE DEVUELVE EL ACCESO A TODO:
-                st.session_state.admin_autenticado = True
-                st.session_state.usuario = "JhonnyMatos"
-                st.session_state.rol = "Presidente Fundador" 
-                st.success("Acceso total concedido, Lic. Jhonny Matos.")
-                st.rerun()
-            else:
-                st.error("PIN incorrecto.")
-        return # Detiene la carga de pestañas hasta que se autentique
+    tab_nueva, tab_alertas = st.tabs(["📄 Emitir Factura", "🚨 Alertas de Cobro"])
 
-    # --- 2. ÁREA DE CONTROL TOTAL (Solo visible tras el login) ---
-    
-    # Botón de bloqueo para cerrar el despacho al terminar
-    if st.button("🔒 Bloquear y Salir del Despacho"):
-        st.session_state.admin_autenticado = False
-        st.rerun()
-
-    tab1, tab2, tab3, tab4 = st.tabs(["🔒 Seguridad", "🏢 Identidad", "👥 Personal", "🎨 Estilo y Fondo"])
-
-    with tab1:
-        st.markdown("### Gestión de Claves Maestras")
-        st.caption("Cambie su PIN de acceso principal al sistema.")
-        st.text_input("Nuevo PIN Maestro", type="password", key="new_master_pin_set")
-        if st.button("Actualizar PIN"):
-            st.success("Protocolo de seguridad actualizado.")
-
-    with tab2:
-        st.markdown("### Identidad Corporativa AboAgrim")
-        c1, c2 = st.columns(2)
-        with c1:
-            st.text_input("Nombre del Titular", value="Lic. Jhonny Matos. M.A.")
-            st.text_input("Cargo Oficial", value="Presidente Fundador")
-        with c2:
-            st.text_input("Firma", value="Abogados y Agrimensores 'AboAgrim'")
-            st.text_input("Sede Principal", value="Santiago, Rep. Dom.")
-        st.button("Guardar Cambios de Identidad")
-
-    with tab3:
-        st.markdown("### 👥 Administración de Personal")
-        
-        with st.expander("➕ Dar de Alta Nuevo Usuario"):
-            u_nom = st.text_input("Nombre de Usuario", key="add_u_name_final")
-            u_pass = st.text_input("PIN de Acceso", type="password", key="add_u_pass_final")
+    with tab_nueva:
+        # --- 1. DATOS DEL CLIENTE (RECUPERADO) ---
+        try:
+            res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario, cedula_propietario").execute()
+            dict_exp = {f"{e['expediente']} - {e['nombre_propietario']}": e for e in res_exp.data} if res_exp.data else {}
             
-            # Los roles deben coincidir exactamente con los del enrutador
-            u_rol = st.selectbox("Nivel de Acceso (Rol):", 
-                                ["Pasante", "Asistente", "Abogado", "Agrimensor"])
+            col_c1, col_c2 = st.columns(2)
+            with col_c1:
+                exp_sel = st.selectbox("Vincular a Expediente:", ["Seleccione..."] + list(dict_exp.keys()))
+                tipo_p = st.radio("Tipo de Persona:", ["Física", "Jurídica"], horizontal=True)
             
-            if st.button("🚀 Confirmar Alta"):
-                if u_nom and u_pass:
-                    # Guardamos en la base de datos
-                    data = {"nombre_usuario": u_nom, "pin_acceso": u_pass, "rol": u_rol}
-                    supabase.table("usuarios_sistema").insert(data).execute()
-                    st.success(f"✅ Acceso configurado para {u_nom} como {u_rol}.")
+            if exp_sel == "Seleccione...":
+                st.info("Seleccione un expediente para comenzar la facturación.")
+                return
+            
+            codigo_vincular = exp_sel.split(" - ")[0]
+            nombre_cli = exp_sel.split(" - ")[1]
+            
+            with col_c2:
+                id_sugerida = dict_exp[exp_sel].get('cedula_propietario', '')
+                identidad = st.text_input("RNC / Cédula del Cliente:", value=id_sugerida)
+                fecha_factura = st.date_input("Fecha de Emisión", datetime.now())
+
+        except Exception as e:
+            st.error(f"Error de conexión: {e}")
+            return
+
+        st.write("---")
+
+        # --- 2. DETALLE DE SERVICIOS (DINÁMICO) ---
+        st.markdown("### 📝 Detalle de Servicios")
+        if "items_factura" not in st.session_state:
+            st.session_state.items_factura = []
+
+        with st.container(border=True):
+            c_i1, c_i2, c_i3 = st.columns([3, 1, 1])
+            desc_s = c_i1.text_input("Descripción del Trabajo:", placeholder="Ej: Deslinde Parcela 209")
+            monto_s = c_i2.number_input("Costo (RD$):", min_value=0.0, step=500.0)
+            if c_i3.button("➕ Añadir", use_container_width=True):
+                if desc_s and monto_s > 0:
+                    st.session_state.items_factura.append({"desc": desc_s, "monto": monto_s})
                     st.rerun()
 
-        st.divider()
-        st.markdown("### 🗑️ Gestión de Bajas")
-        # [Aquí se mantiene su código anterior para eliminar usuarios]
-        st.caption("Seleccione un colaborador para revocar sus credenciales de entrada.")
+        subtotal = sum(item['monto'] for item in st.session_state.items_factura)
+        if st.session_state.items_factura:
+            for i, item in enumerate(st.session_state.items_factura):
+                col1, col2, col3 = st.columns([3, 1, 1])
+                col1.info(f"**Servicio:** {item['desc']}")
+                col2.success(f"RD$ {item['monto']:,.2f}")
+                if col3.button("🗑️", key=f"del_{i}"):
+                    st.session_state.items_factura.pop(i)
+                    st.rerun()
 
-        try:
-            # Consultamos los usuarios actuales en tiempo real
-            res_usuarios = supabase.table("usuarios_sistema").select("nombre_usuario").execute()
-            lista_usuarios = [u['nombre_usuario'] for u in res_usuarios.data] if res_usuarios.data else []
+            st.write("---")
             
-            if lista_usuarios:
-                col_del_1, col_del_2 = st.columns([2, 1])
-                with col_del_1:
-                    usuario_a_quitar = st.selectbox("Seleccionar usuario a dar de baja:", lista_usuarios, key="sel_del_user")
-                
-                with col_del_2:
-                    st.write("") # Espaciador para alinear con el selectbox
-                    if st.button("❌ Bloquear/Quitar", type="secondary", use_container_width=True):
-                        # Blindaje de seguridad: Usted no puede eliminarse a sí mismo
-                        if usuario_a_quitar == "JhonnyMatos":
-                            st.error("Protección de Sistema: No se permite la baja del usuario Presidente Fundador.")
-                        else:
-                            try:
-                                supabase.table("usuarios_sistema").delete().eq("nombre_usuario", usuario_a_quitar).execute()
-                                st.toast(f"Acceso revocado para {usuario_a_quitar}", icon="🗑️")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"No se pudo completar la acción: {e}")
+            # --- ITBIS OPCIONAL (RECUPERADO) ---
+            con_itbis = st.toggle("✅ Aplicar ITBIS (18%) a esta factura", value=True)
+            itbis = (subtotal * 0.18) if con_itbis else 0.0
+            total_final = subtotal + itbis
+
+            cr1, cr2, cr3 = st.columns(3)
+            cr1.metric("Sub-Total", f"RD$ {subtotal:,.2f}")
+            cr2.metric("ITBIS", f"RD$ {itbis:,.2f}" if con_itbis else "EXENTO")
+            cr3.metric("TOTAL A PAGAR", f"RD$ {total_final:,.2f}")
+
+            # --- MODALIDADES DE PAGO (RECUPERADO) ---
+            st.markdown("### 💳 Condiciones de Liquidación")
+            modalidad = st.radio("Forma de Pago:", ["Pago Único", "Avance y Saldo", "Por Etapas"], horizontal=True)
+            texto_condiciones = ""
+            if modalidad == "Pago Único":
+                texto_condiciones = f"Pago total de RD$ {total_final:,.2f} contra entrega."
+            elif modalidad == "Avance y Saldo":
+                avance = st.number_input("Monto de Avance (RD$):", min_value=0.0, max_value=float(total_final))
+                texto_condiciones = f"Avance: RD$ {avance:,.2f} | Balance Pendiente: RD$ {total_final - avance:,.2f}"
             else:
-                st.info("No hay otros colaboradores registrados actualmente.")
-                
+                texto_condiciones = st.text_area("Hitos:", "30% Inicio, 40% Mensura, 30% Título")
+
+            # --- GENERACIÓN DE PDF PROFESIONAL Y GUARDADO ---
+            if st.button("📄 EMITIR, GUARDAR Y DESCARGAR PDF", type="primary", use_container_width=True):
+                try:
+                    # Guardar en BD (Corrección de columna incluida)
+                    datos_f = {
+                        "codigo_expediente": codigo_vincular, 
+                        "monto_total": total_final,
+                        "estado": "Pendiente",
+                        "fecha_emision": str(fecha_factura)
+                    }
+                    supabase.table("facturas").insert(datos_f).execute()
+
+                    # --- MOTOR DE DISEÑO PREMIUM (RECUPERADO) ---
+                    pdf = FPDF()
+                    pdf.add_page()
+                    pdf.set_font("Arial", 'B', 22)
+                    pdf.set_text_color(0, 51, 102) # Azul Marino
+                    pdf.cell(100, 10, "AboAgrim", ln=False)
+                    pdf.set_font("Arial", '', 10)
+                    pdf.set_text_color(100, 100, 100)
+                    pdf.cell(90, 5, "Lic. Jhonny Matos. M.A.", ln=True, align='R')
+                    pdf.set_font("Arial", 'B', 10)
+                    pdf.set_text_color(184, 134, 11) # Oro
+                    pdf.cell(100, 5, "ABOGADOS Y AGRIMENSORES", ln=False)
+                    pdf.set_font("Arial", '', 9)
+                    pdf.cell(90, 5, "Presidente Fundador", ln=True, align='R')
+                    pdf.set_draw_color(184, 134, 11)
+                    pdf.line(10, 32, 200, 32)
+                    pdf.ln(15)
+                    
+                    pdf.set_font("Arial", 'B', 14)
+                    pdf.set_text_color(0, 51, 102)
+                    pdf.cell(0, 10, "FACTURA DE SERVICIOS PROFESIONALES", ln=True, align='C')
+                    pdf.ln(5)
+                    
+                    pdf.set_font("Arial", '', 11)
+                    pdf.set_text_color(0, 0, 0)
+                    pdf.cell(0, 8, f"Cliente: {nombre_cli} | ID: {identidad}", ln=True)
+                    pdf.cell(0, 8, f"Expediente: {codigo_vincular} | Fecha: {fecha_factura}", ln=True)
+                    pdf.ln(5)
+                    
+                    # Tabla
+                    pdf.set_fill_color(0, 51, 102)
+                    pdf.set_text_color(255, 255, 255)
+                    pdf.cell(140, 10, "Descripción", 1, 0, 'C', True)
+                    pdf.cell(50, 10, "Monto", 1, 1, 'C', True)
+                    
+                    pdf.set_text_color(0, 0, 0)
+                    for item in st.session_state.items_factura:
+                        pdf.cell(140, 10, item['desc'], 1)
+                        pdf.cell(50, 10, f"{item['monto']:,.2f}", 1, 1, 'R')
+                    
+                    pdf.set_font("Arial", 'B', 11)
+                    pdf.cell(140, 10, "TOTAL GENERAL (RD$)", 1)
+                    pdf.cell(50, 10, f"{total_final:,.2f}", 1, 1, 'R')
+                    
+                    pdf.ln(10)
+                    pdf.cell(0, 10, "CONDICIONES DE PAGO:", ln=True)
+                    pdf.set_font("Arial", '', 10)
+                    pdf.multi_cell(0, 6, texto_condiciones)
+
+                    pdf_bytes = pdf.output(dest='S').encode('latin-1')
+                    st.download_button("📥 Descargar Factura PDF", pdf_bytes, f"Factura_{codigo_vincular}.pdf", "application/pdf")
+                    st.success("Factura emitida y registrada correctamente.")
+                except Exception as e:
+                    st.error(f"Error al procesar: {e}")
+
+    with tab_alertas:
+        st.markdown("### ⚠️ Facturas Pendientes de Cobro")
+        try:
+            res = supabase.table("facturas").select("*").eq("estado", "Pendiente").execute()
+            if res.data:
+                for f in res.data:
+                    with st.container(border=True):
+                        c1, c2, c3 = st.columns([2, 1, 1])
+                        c1.error(f"🔴 **Caso: {f.get('codigo_expediente', 'N/A')}**")
+                        c2.write(f"**RD$ {f.get('monto_total', 0):,.2f}**")
+                        if c3.button("💰 Cobrado", key=f"p_{f['id']}"):
+                            supabase.table("facturas").update({"estado": "Pagado"}).eq("id", f['id']).execute()
+                            st.rerun()
+            else:
+                st.success("✅ Todo cobrado.")
         except Exception as e:
-            st.warning("Conectando con la base de datos de personal...")
-
-    with tab4:
-        st.markdown("### 🎨 Personalización de la Oficina Digital")
-        st.write("Ajuste la apariencia visual de su entorno de trabajo.")
-        
-        # Leemos los valores guardados o usamos los de por defecto
-        color_actual = st.session_state.get("tema_color", "#003366")
-        fuente_actual = st.session_state.get("tema_fuente", "sans-serif")
-        fondo_actual = st.session_state.get("tema_fondo", "Oscuro Profundo")
-
-        col_v1, col_v2 = st.columns(2)
-        with col_v1:
-            nuevo_color = st.color_picker("Color de Acento (Botones y Títulos)", color_actual)
-            nueva_fuente = st.selectbox(
-                "Tipo de Letra", 
-                ["sans-serif", "serif", "monospace"], 
-                index=["sans-serif", "serif", "monospace"].index(fuente_actual) if fuente_actual in ["sans-serif", "serif", "monospace"] else 0
-            )
-        with col_v2:
-            nuevo_fondo = st.selectbox(
-                "Fondo de Interfaz", 
-                ["Oscuro Profundo", "Blanco Limpio"], 
-                index=0 if fondo_actual == "Oscuro Profundo" else 1
-            )
-        
-        if st.button("✨ Aplicar Cambios Estéticos", type="primary"):
-            # Guardamos las decisiones en la memoria del sistema
-            st.session_state["tema_color"] = nuevo_color
-            st.session_state["tema_fuente"] = nueva_fuente
-            st.session_state["tema_fondo"] = nuevo_fondo
-            st.success("✅ Cambios aplicados. Repintando la oficina...")
-            st.rerun() # Esto recarga la página para aplicar el color
+            st.error(f"Error en alertas: {e}")
             # Nota: Esto se complementa con CSS personalizado en el inicio del script
         # Aquí va la función de agregar/borrar usuarios...
 def login_sistema():
