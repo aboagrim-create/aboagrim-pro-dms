@@ -1176,15 +1176,16 @@ def vista_plantillas_auto():
                         # Guardamos la ruta completa (ej: 1_mensuras_catastrales/prueba.docx)
                         archivos_disponibles.append(f"{carpeta}/{f}")
         
-        # 2. Mostramos el menú desplegable
-        plantilla_elegida = st.selectbox("Elija el documento Word que desea rellenar:", ["Seleccione..."] + archivos_disponibles)
+        # 🌟 1. EL NUEVO SELECTOR MÚLTIPLE (REEMPLAZA LA LÍNEA 1178)
+        plantillas_elegidas = st.multiselect("Elija los documentos Word que desea rellenar (puede elegir varios):", archivos_disponibles)
         st.caption("💡 Los archivos que suba en el administrador de abajo aparecerán aquí automáticamente.")
-        st.write("") # Un pequeño espacio antes del botón rojo
-        if st.button("🚀 FABRICAR DOCUMENTO MAESTRO", type="primary", use_container_width=True):
-            if plantilla_elegida == "Seleccione...":
-                st.error("⚠️ Por favor, seleccione un archivo de plantilla arriba antes de fabricar.")
+        st.write("")
+        
+        if st.button("🚀 FABRICAR DOCUMENTOS MAESTROS", type="primary", use_container_width=True):
+            if not plantillas_elegidas:
+                st.error("⚠️ Por favor, seleccione al menos un archivo de plantilla arriba antes de fabricar.")
             else:
-                # 📦 1. CREAMOS EL PAQUETE DE DATOS
+                # 📦 2. CREAMOS EL PAQUETE DE DATOS
                 diccionario_datos = {
                     "expediente_ji": ji_exp_ji if 'ji_exp_ji' in locals() else "",
                     "ubicacion": ji_ubicacion if 'ji_ubicacion' in locals() else "Santiago",
@@ -1194,20 +1195,24 @@ def vista_plantillas_auto():
                     "demandado": ji_demandado if 'ji_demandado' in locals() else ""
                 }
                 
-                # 🚀 2. ENVIAMOS LA PLANTILLA AL MOTOR (¡AHORA CON LA RUTA COMPLETA!)
-                ruta_exacta = f"plantillas_maestras/{plantilla_elegida}"
-                buffer = generar_documento_word(ruta_exacta, diccionario_datos)
-                
-                # 📥 3. ENTREGAMOS EL ARCHIVO
-                if buffer:
-                    st.success("✅ ¡Documento forjado con éxito!")
-                    st.download_button(
-                        label="📥 Descargar Documento Listo",
-                        data=buffer,
-                        file_name=f"AboAgrim_{plantilla_elegida.split('/')[-1]}",
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        use_container_width=True
-                    )
+                st.write("---")
+                # 🚀 3. EL MOTOR EN MODO RÁFAGA (Procesa todos los elegidos)
+                for plantilla in plantillas_elegidas:
+                    ruta_exacta = f"plantillas_maestras/{plantilla}"
+                    buffer = generar_documento_word(ruta_exacta, diccionario_datos)
+                    
+                    # 📥 4. BOTONES DE DESCARGA INDIVIDUALES
+                    if buffer:
+                        nombre_limpio = plantilla.split('/')[-1]
+                        st.success(f"✅ ¡{nombre_limpio} forjado con éxito!")
+                        st.download_button(
+                            label=f"📥 Descargar {nombre_limpio}",
+                            data=buffer,
+                            file_name=f"AboAgrim_{nombre_limpio}",
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            use_container_width=True,
+                            key=f"btn_dl_{nombre_limpio}" # Clave única para evitar conflictos
+                        )
     # Note cómo el except se va hacia la izquierda, saliendo del bloque del botón
     except Exception as e:
         st.error(f"❌ Error al fabricar: {e}")
