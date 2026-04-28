@@ -1185,7 +1185,7 @@ def vista_plantillas_auto():
             if not plantillas_elegidas:
                 st.error("⚠️ Por favor, seleccione al menos un archivo de plantilla arriba antes de fabricar.")
             else:
-                # 📦 2. CREAMOS EL PAQUETE DE DATOS
+                # 1. Empaquetamos los datos
                 diccionario_datos = {
                     "expediente_ji": ji_exp_ji if 'ji_exp_ji' in locals() else "",
                     "ubicacion": ji_ubicacion if 'ji_ubicacion' in locals() else "Santiago",
@@ -1195,24 +1195,35 @@ def vista_plantillas_auto():
                     "demandado": ji_demandado if 'ji_demandado' in locals() else ""
                 }
                 
-                st.write("---")
-                # 🚀 3. EL MOTOR EN MODO RÁFAGA (Procesa todos los elegidos)
+                # 2. Creamos una "Bandeja de salida" en la memoria del sistema
+                st.session_state["bandeja_descargas"] = []
+                
+                # 3. Forjamos todos los documentos y los guardamos en la bandeja
                 for plantilla in plantillas_elegidas:
                     ruta_exacta = f"plantillas_maestras/{plantilla}"
                     buffer = generar_documento_word(ruta_exacta, diccionario_datos)
                     
-                    # 📥 4. BOTONES DE DESCARGA INDIVIDUALES
                     if buffer:
                         nombre_limpio = plantilla.split('/')[-1]
-                        st.success(f"✅ ¡{nombre_limpio} forjado con éxito!")
-                        st.download_button(
-                            label=f"📥 Descargar {nombre_limpio}",
-                            data=buffer,
-                            file_name=f"AboAgrim_{nombre_limpio}",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                            use_container_width=True,
-                            key=f"btn_dl_{nombre_limpio}" # Clave única para evitar conflictos
-                        )
+                        st.session_state["bandeja_descargas"].append({
+                            "nombre": nombre_limpio,
+                            "archivo": buffer
+                        })
+
+        # 4. MOSTRAR LOS BOTONES (Fuera del botón rojo para que no desaparezcan)
+        if "bandeja_descargas" in st.session_state and len(st.session_state["bandeja_descargas"]) > 0:
+            st.write("---")
+            st.success("✅ ¡Fábrica terminada! Sus documentos están listos en la bandeja:")
+            
+            for doc in st.session_state["bandeja_descargas"]:
+                st.download_button(
+                    label=f"📥 Descargar {doc['nombre']}",
+                    data=doc['archivo'],
+                    file_name=f"AboAgrim_{doc['nombre']}",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    use_container_width=True,
+                    key=f"dl_btn_{doc['nombre']}"
+                )
     # Note cómo el except se va hacia la izquierda, saliendo del bloque del botón
     except Exception as e:
         st.error(f"❌ Error al fabricar: {e}")
