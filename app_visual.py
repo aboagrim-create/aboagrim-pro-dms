@@ -1197,17 +1197,14 @@ def vista_plantillas_auto():
                         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                         use_container_width=True
                     )
-                    archivo_bin = generar_documento_word(ruta_final, contexto_word)
 
-                    if archivo_bin:
-                        st.success(f"✅ ¡Documento generado para {res_db.data['nombre_propietario']}!")
-                        st.download_button("📥 DESCARGAR DOCUMENTO", archivo_bin, f"{tramite}.docx", use_container_width=True)
-                except Exception as e:
-                    st.error(f"❌ Error al fabricar: {e}")
+    # Note cómo el except se va hacia la izquierda, saliendo del bloque del botón
+    except Exception as e:
+        st.error(f"❌ Error al fabricar: {e}")
 
-        # ==========================================
-        # 6. MANTENIMIENTO CON PIN
-        # ==========================================
+    # ==========================================
+    # # 6. MANTENIMIENTO CON PIN
+    # ==========================================
         st.write("---")
         with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS"):
             pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_p_auto")
