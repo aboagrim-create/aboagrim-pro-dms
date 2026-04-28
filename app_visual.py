@@ -1225,29 +1225,34 @@ def vista_plantillas_auto():
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
 # Aquí debajo empieza su def generar_documento_word...
 
-def generar_documento_word(nombre_plantilla, diccionario_datos):
+from docxtpl import DocxTemplate
+import io
+import streamlit as st
+
+def generar_documento_word(ruta_plantilla, diccionario_datos):
     """
     Toma una plantilla de la carpeta 'plantillas_maestras' y la llena con los datos.
     Devuelve un objeto de memoria (BytesIO) listo para descargar o subir a Drive.
     """
-    # 1. Ruta exacta de tu plantilla
-    ruta_plantilla = f"plantillas_maestras/{nombre_plantilla}"
-    
     try:
-        # 2. Cargar el documento con docxtpl
+        # Cargamos el archivo base usando la ruta exacta que le manda el sistema
         doc = DocxTemplate(ruta_plantilla)
         
-        # 3. Inyectar el diccionario de variables (El que viene de Supabase o session_state)
+        # Fusionamos el Word con el diccionario de datos (las llaves {{ }})
         doc.render(diccionario_datos)
         
-        # 4. Guardar en memoria (sin crear archivos basura en tu disco duro)
-        archivo_salida = io.BytesIO()
-        doc.save(archivo_salida)
-        archivo_salida.seek(0)
+        # Lo guardamos en memoria para que descargue rápido
+        buffer = io.BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
         
-        return archivo_salida
+        return buffer
+        
+    except FileNotFoundError:
+        st.error(f"❌ No se encontró la plantilla en la ruta: {ruta_plantilla}. Verifique en su Administrador de Archivos.")
+        return None
     except Exception as e:
-        st.error(f"Error al generar {nombre_plantilla}: {e}")
+        st.error(f"❌ Error en la forja del documento: {e}")
         return None
 def guardar_y_actualizar(tipo_perfil, datos, ventana_origen, menu_desplegable=None):
     """Guarda en la base de datos y refresca el menú desplegable."""
