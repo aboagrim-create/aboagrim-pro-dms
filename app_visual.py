@@ -1160,7 +1160,7 @@ def vista_plantillas_auto():
         archivo_nombre = tramite.lower().replace(" ", "_") + ".docx"
         carpeta = "1_mensuras_catastrales" if "Mensuras" in jurisdiccion else "3_registro_titulos" if "Registro" in jurisdiccion else "2_jurisdiccion_original"
         ruta_final = f"plantillas_maestras/{carpeta}/{archivo_nombre}"
-st.divider()
+        st.divider()
         st.markdown("### 📄 Selección de Plantilla Base")
         
         # 1. Escaneamos las carpetas buscando sus archivos Word
