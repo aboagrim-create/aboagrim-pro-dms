@@ -1184,16 +1184,27 @@ def vista_plantillas_auto():
             if plantilla_elegida == "Seleccione...":
                 st.error("⚠️ Por favor, seleccione un archivo de plantilla arriba antes de fabricar.")
             else:
-                # Aquí usted seguramente ya tiene un diccionario llamado diccionario_datos
-                # Solo asegúrese de llamarlo así:
+                # 📦 1. CREAMOS EL PAQUETE DE DATOS
+                # (Estas son las llaves {{ }} que buscará en el Word)
+                diccionario_datos = {
+                    "expediente_ji": ji_exp_ji if 'ji_exp_ji' in locals() else "",
+                    "ubicacion": ji_ubicacion if 'ji_ubicacion' in locals() else "Santiago",
+                    "area": ji_area if 'ji_area' in locals() else "",
+                    "coordenadas": ji_coordenadas if 'ji_coordenadas' in locals() else "",
+                    "demandante": ji_demandante if 'ji_demandante' in locals() else "",
+                    "demandado": ji_demandado if 'ji_demandado' in locals() else ""
+                }
+                
+                # 🚀 2. ENVIAMOS LA PLANTILLA Y LOS DATOS AL MOTOR
                 buffer = generar_documento_word(plantilla_elegida, diccionario_datos)
                 
+                # 📥 3. ENTREGAMOS EL ARCHIVO
                 if buffer:
                     st.success("✅ ¡Documento forjado con éxito!")
                     st.download_button(
                         label="📥 Descargar Documento Listo",
                         data=buffer,
-                        file_name=f"Generado_{plantilla_elegida.split('/')[1]}",
+                        file_name=f"AboAgrim_{plantilla_elegida.split('/')[-1]}",
                         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                         use_container_width=True
                     )
