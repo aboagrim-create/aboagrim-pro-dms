@@ -7,18 +7,7 @@ import zipfile
 import io
 from docxtpl import DocxTemplate
 # ... arriba están los import ...
-# --- NAVEGACIÓN LATERAL ---
-with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=100) # Un logo profesional
-    st.title("AboAgrim Pro")
-    st.write(f"**Lic. Jhonny Matos. M.A.**")
-    st.write("Presidente")
-    st.divider()
-    
-    opcion = st.radio(
-        "Ir a:",
-        ["🏠 Dashboard Principal", "🚀 Fábrica de Documentos", "💰 Gestión de Honorarios", "📂 Archivo de Expedientes"]
-    )
+
 # =========================================================
 # MOTOR DE ESTILOS VISUALES (Se ejecuta siempre al inicio)
 # =========================================================
@@ -55,46 +44,6 @@ if "tema_color" in st.session_state:
     """
     st.markdown(custom_css, unsafe_allow_html=True)
 
-# ==========================================
-# 🏠 LÓGICA DE NAVEGACIÓN (Dashboard vs Fábrica)
-# ==========================================
-if opcion == "🏠 Dashboard Principal":
-    st.title("📊 Mando Central")
-    st.subheader(f"Bienvenido de nuevo, Lic. Jhonny Matos. M.A.") # Su título oficial
-    
-    # --- FILA 1: MÉTRICAS ---
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Expedientes Activos", "24", "+2")
-    with col2:
-        st.metric("Citas Hoy", "3")
-    with col3:
-        st.metric("Pendiente BHD", "RD$ 45,500", "-15%")
-    with col4:
-        st.metric("Pendiente Reservas", "RD$ 12,200")
-
-    st.divider()
-
-    # --- FILA 2: ALERTAS ---
-    c1, c2 = st.columns(2)
-    with c1:
-        st.info("📅 **Próximos Plazos JI**")
-        st.write("- **Parcela 122**: Conclusiones el viernes")
-        st.write("- **Litis Juan Pérez**: Audiencia en 5 días")
-    
-    with c2:
-        st.success("✅ **Estado de la Bóveda**")
-        st.write("🟢 Servidor Supabase Conectado")
-        st.write(f"📁 **Carpeta:** {os.getcwd()}") # Muestra dónde está parado el sistema
-
-# ==========================================
-# 🚀 AQUÍ ENTRA SU FÁBRICA DE DOCUMENTOS
-# ==========================================
-elif opcion == "🚀 Fábrica de Documentos":
-    # IMPORTANTE: Todo el código que teníamos antes debe llevar 1 TABULACIÓN 
-    # a la derecha para que Python sepa que pertenece a este botón.
-    
-    st.title("📄 Fábrica de Documentos AboAgrim Pro")
 
 # ==========================================
 # 👔 ESTILO VISUAL PROFESIONAL (CSS)
