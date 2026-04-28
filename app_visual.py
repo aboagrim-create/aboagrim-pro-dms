@@ -1201,7 +1201,43 @@ def vista_plantillas_auto():
     # Note cómo el except se va hacia la izquierda, saliendo del bloque del botón
     except Exception as e:
         st.error(f"❌ Error al fabricar: {e}")
-
+    # ==========================================
+    # 6. MANTENIMIENTO CON PIN (RECUPERADO)
+    # ==========================================
+    st.write("---")
+    with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS"):
+        pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_p_auto")
+        PIN_SECRETO = "0681"
+        
+        if pin_ingresado == PIN_SECRETO:
+            maint_col1, maint_col2 = st.columns(2)
+            import os
+            
+            with maint_col1:
+                st.markdown("**📥 Subir Nuevo Modelo**")
+                destino = st.radio("Carpeta Destino:", ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"])
+                archivo_subido = st.file_uploader("Elija el archivo .docx", type=["docx"])
+                
+                if st.button("💾 Guardar Plantilla"):
+                    if archivo_subido:
+                        os.makedirs(f"plantillas_maestras/{destino}", exist_ok=True)
+                        with open(f"plantillas_maestras/{destino}/{archivo_subido.name}", "wb") as f:
+                            f.write(archivo_subido.getbuffer())
+                        st.success(f"✅ Documento guardado en {destino}. ¡Ya puede usarlo arriba!")
+                        
+            with maint_col2:
+                st.markdown("**🗑️ Borrar Modelo Existente**")
+                carpeta_borrar = st.selectbox("Buscar en Carpeta:", ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"], key="del_f")
+                ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
+                archivos = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
+                
+                archivo_a_borrar = st.selectbox("Archivo a eliminar:", ["Seleccione..."] + archivos)
+                
+                if st.button("🗑️ ELIMINAR PERMANENTE"):
+                    if archivo_a_borrar and archivo_a_borrar != "Seleccione...":
+                        os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
+                        st.warning("🗑️ Archivo eliminado.")
+                        st.rerun()
     # ==========================================
     # # 6. MANTENIMIENTO CON PIN
     # ==========================================
