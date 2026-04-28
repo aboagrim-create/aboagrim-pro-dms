@@ -1171,7 +1171,7 @@ def vista_plantillas_auto():
         for carpeta in carpetas_base:
             ruta_check = f"plantillas_maestras/{carpeta}"
             if os.path.exists(ruta_check):
-                for f in os.path.listdir(ruta_check):
+                for f in os.listdir(ruta_check):
                     if f.endswith(".docx"):
                         # Guardamos la ruta completa (ej: 1_mensuras_catastrales/prueba.docx)
                         archivos_disponibles.append(f"{carpeta}/{f}")
