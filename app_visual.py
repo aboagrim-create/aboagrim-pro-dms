@@ -1160,26 +1160,43 @@ def vista_plantillas_auto():
         archivo_nombre = tramite.lower().replace(" ", "_") + ".docx"
         carpeta = "1_mensuras_catastrales" if "Mensuras" in jurisdiccion else "3_registro_titulos" if "Registro" in jurisdiccion else "2_jurisdiccion_original"
         ruta_final = f"plantillas_maestras/{carpeta}/{archivo_nombre}"
-
-        if st.button(f"🚀 FABRICAR DOCUMENTO MAESTRO", type="primary", use_container_width=True) and id_cliente:
-            with st.status("🛠️ Ensamblando expediente...", expanded=False):
-                try:
-                    res_db = supabase.table("expedientes_maestros").select("*").eq("id", id_cliente).single().execute()
-                    
-                    contexto_word = {
-                        **res_db.data,
-                        "parcela": ji_parcela, "dc": ji_dc, "solar_manzana": ji_solar_manzana,
-                        "matricula": ji_matricula, "libro_folio": ji_libro, "fecha_emision": ji_fecha_emision,
-                        "expediente_ji": ji_exp_ji, "ubicacion_inmueble": ji_ubicacion, "area": ji_area, "coordenadas": ji_coordenadas,
-                        # Datos de Litigio
-                        "demandante": ji_demandante, "demandado": ji_demandado, "sala_camara": ji_sala,
-                        "juez_apoderado": ji_juez, "no_rol": ji_rol, "fecha_audiencia": ji_audiencia,
-                        # Firmas
-                        "firma_presidente": "Lic. Jhonny Matos. M.A.", "cargo_presidente": "Presidente Fundador",
-                        **datos_extras_dict,
-                        "profesionales": profesionales_lista, "apoderados": apoderados_lista
-                    }
-
+st.divider()
+        st.markdown("### 📄 Selección de Plantilla Base")
+        
+        # 1. Escaneamos las carpetas buscando sus archivos Word
+        import os
+        archivos_disponibles = []
+        carpetas_base = ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"]
+        
+        for carpeta in carpetas_base:
+            ruta_check = f"plantillas_maestras/{carpeta}"
+            if os.path.exists(ruta_check):
+                for f in os.path.listdir(ruta_check):
+                    if f.endswith(".docx"):
+                        # Guardamos la ruta completa (ej: 1_mensuras_catastrales/prueba.docx)
+                        archivos_disponibles.append(f"{carpeta}/{f}")
+        
+        # 2. Mostramos el menú desplegable
+        plantilla_elegida = st.selectbox("Elija el documento Word que desea rellenar:", ["Seleccione..."] + archivos_disponibles)
+        st.caption("💡 Los archivos que suba en el administrador de abajo aparecerán aquí automáticamente.")
+        st.write("") # Un pequeño espacio antes del botón rojo
+        if st.button("🚀 FABRICAR DOCUMENTO MAESTRO", type="primary", use_container_width=True):
+            if plantilla_elegida == "Seleccione...":
+                st.error("⚠️ Por favor, seleccione un archivo de plantilla arriba antes de fabricar.")
+            else:
+                # Aquí usted seguramente ya tiene un diccionario llamado diccionario_datos
+                # Solo asegúrese de llamarlo así:
+                buffer = generar_documento_word(plantilla_elegida, diccionario_datos)
+                
+                if buffer:
+                    st.success("✅ ¡Documento forjado con éxito!")
+                    st.download_button(
+                        label="📥 Descargar Documento Listo",
+                        data=buffer,
+                        file_name=f"Generado_{plantilla_elegida.split('/')[1]}",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        use_container_width=True
+                    )
                     archivo_bin = generar_documento_word(ruta_final, contexto_word)
 
                     if archivo_bin:
