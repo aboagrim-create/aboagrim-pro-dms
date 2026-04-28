@@ -1185,7 +1185,6 @@ def vista_plantillas_auto():
                 st.error("⚠️ Por favor, seleccione un archivo de plantilla arriba antes de fabricar.")
             else:
                 # 📦 1. CREAMOS EL PAQUETE DE DATOS
-                # (Estas son las llaves {{ }} que buscará en el Word)
                 diccionario_datos = {
                     "expediente_ji": ji_exp_ji if 'ji_exp_ji' in locals() else "",
                     "ubicacion": ji_ubicacion if 'ji_ubicacion' in locals() else "Santiago",
@@ -1195,8 +1194,9 @@ def vista_plantillas_auto():
                     "demandado": ji_demandado if 'ji_demandado' in locals() else ""
                 }
                 
-                # 🚀 2. ENVIAMOS LA PLANTILLA Y LOS DATOS AL MOTOR
-                buffer = generar_documento_word(plantilla_elegida, diccionario_datos)
+                # 🚀 2. ENVIAMOS LA PLANTILLA AL MOTOR (¡AHORA CON LA RUTA COMPLETA!)
+                ruta_exacta = f"plantillas_maestras/{plantilla_elegida}"
+                buffer = generar_documento_word(ruta_exacta, diccionario_datos)
                 
                 # 📥 3. ENTREGAMOS EL ARCHIVO
                 if buffer:
@@ -1208,7 +1208,6 @@ def vista_plantillas_auto():
                         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                         use_container_width=True
                     )
-
     # Note cómo el except se va hacia la izquierda, saliendo del bloque del botón
     except Exception as e:
         st.error(f"❌ Error al fabricar: {e}")
