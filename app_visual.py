@@ -1268,8 +1268,7 @@ def vista_plantillas_auto():
                             os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
                             st.rerun()
 
-    except Exception as e:
-        st.error(f"❌ Error crítico: {e}")
+
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
 
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
