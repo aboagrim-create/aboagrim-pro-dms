@@ -1594,7 +1594,58 @@ elif menu == "📅 Alertas y Plazos":
 elif menu == "💵 Facturación":
     vista_facturacion()
 elif menu == "⚙️ Configuración":
-    vista_configuracion()
+    st.title("⚙️ Configuración del Sistema")
+    
+    # Creamos sub-pestañas dentro de configuración
+    tab_perfil, tab_usuarios, tab_seguridad, tab_maestro = st.tabs([
+        "👤 Perfil", "👥 Usuarios", "🔐 Seguridad", "🎨 PANEL DE CONTROL MAESTRO"
+    ])
+
+    with tab_maestro:
+        st.subheader("🎨 Identidad Corporativa y Diseño Global")
+        st.info("Desde aquí controla la apariencia de AboAgrim Pro. Los cambios se aplican a todo el sistema.")
+
+        # --- SECCIÓN 1: COLORES Y FONDOS ---
+        with st.expander("🌈 Paleta de Colores y Fondos", expanded=True):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.session_state["tema_fondo"] = st.selectbox("Modo de Fondo:", ["Oscuro Profundo", "Claro Ejecutivo", "Azul Corporativo", "Crema Vintage"], index=0)
+                st.session_state["color_primario"] = st.color_picker("Color de Acentos (Botones y Títulos):", "#deff9a")
+            with col2:
+                st.session_state["color_texto"] = st.color_picker("Color de Fuente Principal:", "#f5f5f5")
+                st.session_state["radio_bordes"] = st.slider("Curvatura de Casillas y Botones:", 0, 30, 15)
+
+        # --- SECCIÓN 2: TIPOGRAFÍA Y TEXTOS ---
+        with st.expander("🔡 Tipografía y Estilo de Letra"):
+            col_f1, col_f2 = st.columns(2)
+            with col_f1:
+                fuentes = ["Urbanist", "Poppins", "Merriweather", "Roboto", "Lato"]
+                st.session_state["fuente_sistema"] = st.selectbox("Fuente Global:", fuentes)
+            with col_f2:
+                st.session_state["tamano_letra"] = st.slider("Tamaño de letra base:", 12, 20, 16)
+
+        # --- SECCIÓN 3: BRANDING Y LOGO ---
+        with st.expander("🖼️ Gestión de Branding (Logo)"):
+            c_logo1, c_logo2 = st.columns([1, 2])
+            with c_logo1:
+                st.image("logo_aboagrim.jpg", width=150, caption="Logo Actual")
+            with c_logo2:
+                nuevo_logo = st.file_uploader("Subir Nuevo Logo (PNG/JPG):", type=["png", "jpg", "jpeg"])
+                if nuevo_logo:
+                    st.success("Logo cargado temporalmente. (Para cambio permanente, reemplace el archivo logo_aboagrim.jpg)")
+
+        # --- SECCIÓN 4: DATOS DE OFICINA PRINCIPAL ---
+        with st.expander("📍 Información de Oficina y Contacto"):
+            st.session_state["direccion_master"] = st.text_input("Dirección Física:", "Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Centro Ciudad, Santiago.")
+            col_t1, col_t2 = st.columns(2)
+            with col_t1:
+                st.session_state["tel_master"] = st.text_input("Teléfonos de Oficina:", "829-826-5888 / 809-691-3333")
+            with col_t2:
+                st.session_state["correo_master"] = st.text_input("Correo Corporativo:", "aboagrim@gmail.com")
+            
+        if st.button("💾 Guardar Configuración Maestra", type="primary", use_container_width=True):
+            st.balloons()
+            st.success("¡Identidad del sistema actualizada correctamente!")
 # 👇 ESTE BLOQUE DEBE IR AL FINAL DE TODO SU CÓDIGO 👇
 elif menu == "💰 Gestión de Honorarios":
     st.title("💰 Gestión de Honorarios y Cobros")
