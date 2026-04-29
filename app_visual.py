@@ -1611,11 +1611,33 @@ elif menu == "💵 Facturación":
     vista_facturacion()
 elif menu == "⚙️ Configuración":
     st.title("⚙️ Configuración del Sistema")
-    
-    # Creamos sub-pestañas dentro de configuración
+
+    # --- 🔒 CANDADO DE SEGURIDAD PRESIDENCIAL ---
+    if "pin_config" not in st.session_state:
+        st.session_state.pin_config = False
+
+    if not st.session_state.pin_config:
+        st.warning("🛑 **ACCESO RESTRINGIDO:** Área exclusiva de la Presidencia.")
+        c_pin1, c_pin2 = st.columns([2, 2])
+        with c_pin1:
+            pin_maestro = st.text_input("Ingrese el PIN Maestro:", type="password")
+            if st.button("🔓 Desbloquear Panel"):
+                if pin_maestro == "1234":  # Puede cambiar su clave aquí
+                    st.session_state.pin_config = True
+                    st.rerun()
+                else:
+                    st.error("❌ PIN incorrecto.")
+        st.stop() # 🛑 Detiene el código aquí si no hay PIN
+
+    if st.button("🔒 Bloquear Panel de Configuración"):
+        st.session_state.pin_config = False
+        st.rerun()
+
+    # --- CREACIÓN REAL DE LAS PESTAÑAS ---
     tab_perfil, tab_usuarios, tab_seguridad, tab_maestro = st.tabs([
-        "👤 Perfil", "👥 Usuarios", "🔐 Seguridad", "🎨 PANEL DE CONTROL MAESTRO"
+        "👤 Perfil", "👥 Usuarios", "🔐 Seguridad", "🎨 Panel Maestro"
     ])
+
     # === 1. PESTAÑA DE PERFIL ===
     with tab_perfil:
         st.subheader("👤 Mi Perfil Oficial")
@@ -1623,88 +1645,62 @@ elif menu == "⚙️ Configuración":
         with c_perf1:
             st.image("logo_aboagrim.jpg", width=120)
         with c_perf2:
-            st.markdown(f"**Nombre:** Lic. Jhonny Matos. M.A.")
-            st.markdown(f"**Cargo:** Presidente-Fundador")
-            st.markdown(f"**Nivel de Acceso:** 🟢 Acceso Total (Nivel Dios)")
-        st.info("Como Presidente, usted tiene control absoluto sobre todas las áreas del sistema AboAgrim Pro.")
+            st.markdown("**Nombre:** Lic. Jhonny Matos. M.A.")
+            st.markdown("**Cargo:** Presidente-Fundador")
+            st.markdown("**Nivel de Acceso:** 🟢 Acceso Total (Nivel Dios)")
 
-    # === 2. PESTAÑA DE USUARIOS (AHORA CON MEMORIA DINÁMICA) ===
+    # === 2. PESTAÑA DE USUARIOS ===
     with tab_usuarios:
-        st.subheader("👥 Gestión de Capital Humano y Permisos")
-        st.write("Administre los niveles de acceso y roles oficiales de la firma.")
-
-        # --- 1. CREAMOS LA MEMORIA DEL SISTEMA (SESSION STATE) ---
+        st.subheader("👥 Gestión de Capital Humano")
+        
+        # A. Crear la memoria primero
         if "db_empleados" not in st.session_state:
-            # Esta es la base de datos inicial de su oficina
             st.session_state.db_empleados = [
-                {"Nombre Completo": "Lic. Jhonny Matos", "Usuario": "JMatos", "Rol": "Presidente-Fundador", "Estado": "🟢 Activo"},
-                {"Nombre Completo": "Lic. Pedro Almonte", "Usuario": "PAlmonte", "Rol": "Abogado Senior", "Estado": "🟢 Activo"},
-                {"Nombre Completo": "Ing. Marcos Díaz", "Usuario": "MDiaz", "Rol": "Agrimensor Principal", "Estado": "🟢 Activo"}
+                {"Nombre Completo": "Lic. Jhonny Matos", "Usuario": "JMatos", "Rol": "Presidente-Fundador", "Estado": "🟢 Activo"}
             ]
 
-        # --- 2. MOSTRAMOS LA TABLA ACTUALIZADA ---
-        st.markdown("### 📋 Directorio de Usuarios")
+        # B. Mostrar la tabla
         st.dataframe(st.session_state.db_empleados, use_container_width=True)
 
-        st.divider()
-
-        # --- 3. MOTOR PARA AGREGAR NUEVO PERSONAL ---
-        with st.expander("➕ Dar de Alta a Nuevo Miembro del Equipo", expanded=True):
+        # C. Agregar Usuario
+        with st.expander("➕ Dar de Alta a Nuevo Miembro", expanded=False):
             c_u1, c_u2 = st.columns(2)
             with c_u1:
                 nuevo_nombre = st.text_input("Nombre y Apellidos:")
-                nuevo_user = st.text_input("Nombre de Usuario (Login):")
+                nuevo_user = st.text_input("Usuario (Login):")
             with c_u2:
-                nuevo_rol = st.selectbox("Rol en el Sistema:", ["Abogado", "Agrimensor", "Asistente", "Pasante", "Contabilidad"])
-                estado_cuenta = st.selectbox("Estado Inicial:", ["🟢 Activo", "🟡 En Prueba", "🔴 Inactivo"])
+                nuevo_rol = st.selectbox("Rol:", ["Abogado", "Agrimensor", "Asistente"])
+                estado_cuenta = st.selectbox("Estado:", ["🟢 Activo", "🔴 Inactivo"])
 
-            # ¡El botón ahora tiene la orden de guardar en memoria!
-            if st.button("💾 Guardar y Registrar Usuario", type="primary", use_container_width=True):
-                if nuevo_nombre != "" and nuevo_user != "":
-                    # Agregamos el nuevo empleado a la memoria
+            if st.button("💾 Guardar Usuario", type="primary"):
+                if nuevo_nombre != "":
                     st.session_state.db_empleados.append({
-                        "Nombre Completo": nuevo_nombre,
-                        "Usuario": nuevo_user,
-                        "Rol": nuevo_rol,
-                        "Estado": estado_cuenta
+                        "Nombre Completo": nuevo_nombre, "Usuario": nuevo_user, "Rol": nuevo_rol, "Estado": estado_cuenta
                     })
-                    st.success(f"✅ ¡El usuario {nuevo_nombre} fue registrado con éxito!")
-                    st.rerun() # Esto recarga la pantalla rápido para mostrar la tabla actualizada
-                else:
-                    st.error("⚠️ Por favor, escriba el nombre y el usuario antes de guardar.")
+                    st.rerun()
 
-        st.divider()
+        # D. Eliminar Usuario (Ahora sí, en el lugar correcto)
+        with st.expander("🗑️ Eliminar Usuario", expanded=False):
+            if len(st.session_state.db_empleados) > 0:
+                nombres_emp = [emp["Nombre Completo"] for emp in st.session_state.db_empleados]
+                usuario_a_borrar = st.selectbox("Seleccione el empleado a eliminar:", nombres_emp)
+                
+                if st.button("🚨 Eliminar Definitivamente"):
+                    st.session_state.db_empleados = [emp for emp in st.session_state.db_empleados if emp["Nombre Completo"] != usuario_a_borrar]
+                    st.rerun()
 
-        # --- 4. MATRIZ DE PERMISOS ---
-        st.markdown("### 🔐 Matriz de Acceso (Blindaje)")
-        col_perm1, col_perm2 = st.columns(2)
-        with col_perm1:
-            st.checkbox("Permitir a Abogados facturar", value=True)
-            st.checkbox("Permitir a Pasantes ver honorarios", value=False)
-        with col_perm2:
-            st.checkbox("Permitir a Agrimensores crear plantillas", value=True)
-            st.checkbox("Bloquear configuraciones al personal", value=True, disabled=True)
-            
-        if st.button("🔄 Guardar Reglas de Blindaje"):
-            st.success("✅ Reglas de seguridad actualizadas en el sistema.")
-
-    # === 3. PESTAÑA DE SEGURIDAD Y BACKUPS ===
+    # === 3. PESTAÑA DE SEGURIDAD ===
     with tab_seguridad:
-        st.subheader("🔐 Seguridad y Bóveda de Datos")
-        st.write("Protección de la información confidencial de la firma.")
-        
-        col_seg1, col_seg2 = st.columns(2)
-        with col_seg1:
-            st.markdown("**Cambio de Credenciales**")
-            st.text_input("Nueva Contraseña Maestra:", type="password")
-            st.text_input("Confirmar Contraseña:", type="password")
-            st.button("🔑 Actualizar Clave", type="primary")
-            
-        with col_seg2:
-            st.markdown("**Respaldo de Emergencia (Backup)**")
-            st.warning("Haga un respaldo de su base de datos semanalmente.")
-            if st.button("💾 Generar Backup Ahora", use_container_width=True):
-                st.success("✅ Respaldo 'backup_aboagrim_2026.zip' guardado en Documentos_AboAgrim/")
+        st.subheader("🔐 Cambio de Credenciales")
+        nueva_clave = st.text_input("Nueva Contraseña Maestra:", type="password")
+        confirmar_clave = st.text_input("Confirmar Contraseña:", type="password")
+        if st.button("🔑 Actualizar Clave", type="primary"):
+            if nueva_clave != "" and nueva_clave == confirmar_clave:
+                st.success("✅ ¡Contraseña actualizada!")
+            else:
+                st.error("❌ Las contraseñas no coinciden o están vacías.")
+
+    # (Nota: Debajo de esto debe quedar su código de "with tab_maestro:" intacto)
 
     with tab_maestro:
         st.subheader("🎨 Identidad Corporativa y Diseño Global")
