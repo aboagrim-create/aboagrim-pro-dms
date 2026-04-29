@@ -7,7 +7,18 @@ import zipfile
 import io
 from docxtpl import DocxTemplate
 # ... arriba están los import ...
-
+# --- NAVEGACIÓN LATERAL ---
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=100)
+    st.title("AboAgrim Pro")
+    st.write("**Lic. Jhonny Matos. M.A.**")
+    st.write("Presidente")
+    st.divider()
+    
+    opcion = st.radio(
+        "Ir a:",
+        ["🏠 Dashboard Principal", "🚀 Fábrica de Documentos", "💰 Gestión de Honorarios", "📂 Archivo de Expedientes"]
+    )
 # =========================================================
 # MOTOR DE ESTILOS VISUALES (Se ejecuta siempre al inicio)
 # =========================================================
