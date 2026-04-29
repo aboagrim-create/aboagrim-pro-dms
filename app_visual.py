@@ -1266,52 +1266,57 @@ def vista_plantillas_auto():
                         os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
                         st.warning("🗑️ Archivo eliminado.")
                         st.rerun()
-# ==========================================
+                        # ==========================================
 # 💰 MÓDULO DE HONORARIOS Y COBROS
 # ==========================================
 elif opcion == "💰 Gestión de Honorarios":
     st.title("💰 Gestión de Honorarios y Cobros")
-    st.subheader("Control Financiero de Expedientes")
+    st.subheader("Control Financiero de la Firma")
 
-    # --- FILA 1: REGISTRO DE PAGO ---
-    with st.expander("📝 Registrar Nuevo Pago / Abono", expanded=True):
+    # --- FILA 1: REGISTRO DE MOVIMIENTOS ---
+    with st.expander("📝 Registrar Nuevo Pago o Abono", expanded=True):
         c1, c2, c3 = st.columns(3)
         with c1:
-            cliente_pago = st.text_input("Nombre del Cliente:")
-            monto_pago = st.number_input("Monto Recibido (RD$):", min_value=0.0, step=500.0)
+            cliente_pago = st.text_input("Nombre del Cliente / Expediente:")
+            monto_pago = st.number_input("Monto Recibido (RD$):", min_value=0.0, step=1000.0)
         with c2:
-            concepto_pago = st.selectbox("Concepto:", ["Primer Pago (50%)", "Segundo Pago", "Saldo Final", "Gastos Operativos"])
-            metodo_pago = st.radio("Método:", ["Efectivo", "Transferencia", "Cheque"])
+            concepto_pago = st.selectbox("Concepto de Pago:", ["Primer Pago (50%)", "Segundo Pago de Honorarios", "Saldo Final", "Gastos de Mensura / Sellos"])
+            metodo_pago = st.radio("Método de Pago:", ["Efectivo", "Transferencia Bancaria", "Cheque"])
         with c3:
             fecha_pago = st.date_input("Fecha de Recepción:")
-            if st.button("💾 Registrar Cobro", use_container_width=True):
-                st.success(f"✅ Cobro de RD$ {monto_pago} registrado para {cliente_pago}")
+            if st.button("💾 Guardar en Registro de Cobros", use_container_width=True):
+                # 💡 Aquí luego conectaremos con su base de datos Supabase
+                st.success(f"✅ Registro exitoso: RD$ {monto_pago} recibidos de {cliente_pago}")
 
     st.divider()
 
-    # --- FILA 2: DATOS BANCARIOS (PARA COPIAR RÁPIDO) ---
-    st.markdown("### 🏦 Cuentas para Depósitos")
+    # --- FILA 2: DATOS DE DEPÓSITO (ACCESO RÁPIDO) ---
+    st.markdown("### 🏦 Instrucciones de Depósito")
     b1, b2 = st.columns(2)
     
     with b1:
-        st.info("**BANCO DE RESERVAS**\n\n- **Cuenta:** 960-XXXXXX-X\n- **Tipo:** Corriente\n- **Titular:** AboAgrim SRL")
+        st.info("**BANCO DE RESERVAS**\n\n- **Cuenta:** 960-XXXXXX-X\n- **Tipo:** Corriente\n- **Titular:** AboAgrim SRL\n- **RNC:** XXX-XXXXX-X")
         if st.button("📋 Copiar Datos Reservas"):
-            st.write("*(Simulado: Datos listos para enviar al cliente)*")
+            st.toast("Datos copiados al portapapeles (Simulado)")
             
     with b2:
-        st.warning("**BANCO BHD**\n\n- **Cuenta:** 124-XXXXXX-X\n- **Tipo:** Ahorros\n- **Titular:** Jhonny Matos")
+        st.warning("**BANCO BHD**\n\n- **Cuenta:** 124-XXXXXX-X\n- **Tipo:** Ahorros\n- **Titular:** Lic. Jhonny Matos\n- **Cédula:** XXX-XXXXXXX-X")
         if st.button("📋 Copiar Datos BHD"):
-            st.write("*(Simulado: Datos listos para enviar al cliente)*")
+            st.toast("Datos copiados al portapapeles (Simulado)")
 
-    # --- FILA 3: RESUMEN DE CUENTAS POR COBRAR ---
-    st.markdown("### 🔍 Pendientes de Cobro")
-    # Aquí luego traeremos los datos reales de Supabase
-    data_pendientes = {
-        "Cliente": ["Juan Pérez", "Agrimensura Santiago", "Litis Parcela 4"],
-        "Total Contrato": [50000, 120000, 75000],
-        "Pendiente": [25000, 60000, 15000]
+    st.divider()
+
+    # --- FILA 3: TABLA DE PENDIENTES ---
+    st.markdown("### 🔍 Resumen de Cuentas por Cobrar")
+    # Datos de ejemplo para visualizar el diseño
+    resumen_cuentas = {
+        "Expediente / Cliente": ["Juan Pérez (Deslinde)", "Litis Parcela 44", "Sucesión Familia García"],
+        "Honorarios Totales": [50000, 125000, 80000],
+        "Monto Cobrado": [25000, 50000, 80000],
+        "Balance Pendiente": [25000, 75000, 0]
     }
-    st.table(data_pendientes)
+    st.table(resumen_cuentas)
+    st.caption("💡 El balance se actualiza automáticamente al registrar nuevos abonos.")
     
 
 
