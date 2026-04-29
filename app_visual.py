@@ -1266,10 +1266,54 @@ def vista_plantillas_auto():
                         os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
                         st.warning("🗑️ Archivo eliminado.")
                         st.rerun()
+# ==========================================
+# 💰 MÓDULO DE HONORARIOS Y COBROS
+# ==========================================
+elif opcion == "💰 Gestión de Honorarios":
+    st.title("💰 Gestión de Honorarios y Cobros")
+    st.subheader("Control Financiero de Expedientes")
+
+    # --- FILA 1: REGISTRO DE PAGO ---
+    with st.expander("📝 Registrar Nuevo Pago / Abono", expanded=True):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            cliente_pago = st.text_input("Nombre del Cliente:")
+            monto_pago = st.number_input("Monto Recibido (RD$):", min_value=0.0, step=500.0)
+        with c2:
+            concepto_pago = st.selectbox("Concepto:", ["Primer Pago (50%)", "Segundo Pago", "Saldo Final", "Gastos Operativos"])
+            metodo_pago = st.radio("Método:", ["Efectivo", "Transferencia", "Cheque"])
+        with c3:
+            fecha_pago = st.date_input("Fecha de Recepción:")
+            if st.button("💾 Registrar Cobro", use_container_width=True):
+                st.success(f"✅ Cobro de RD$ {monto_pago} registrado para {cliente_pago}")
+
+    st.divider()
+
+    # --- FILA 2: DATOS BANCARIOS (PARA COPIAR RÁPIDO) ---
+    st.markdown("### 🏦 Cuentas para Depósitos")
+    b1, b2 = st.columns(2)
+    
+    with b1:
+        st.info("**BANCO DE RESERVAS**\n\n- **Cuenta:** 960-XXXXXX-X\n- **Tipo:** Corriente\n- **Titular:** AboAgrim SRL")
+        if st.button("📋 Copiar Datos Reservas"):
+            st.write("*(Simulado: Datos listos para enviar al cliente)*")
+            
+    with b2:
+        st.warning("**BANCO BHD**\n\n- **Cuenta:** 124-XXXXXX-X\n- **Tipo:** Ahorros\n- **Titular:** Jhonny Matos")
+        if st.button("📋 Copiar Datos BHD"):
+            st.write("*(Simulado: Datos listos para enviar al cliente)*")
+
+    # --- FILA 3: RESUMEN DE CUENTAS POR COBRAR ---
+    st.markdown("### 🔍 Pendientes de Cobro")
+    # Aquí luego traeremos los datos reales de Supabase
+    data_pendientes = {
+        "Cliente": ["Juan Pérez", "Agrimensura Santiago", "Litis Parcela 4"],
+        "Total Contrato": [50000, 120000, 75000],
+        "Pendiente": [25000, 60000, 15000]
+    }
+    st.table(data_pendientes)
     
 
-
-# Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
 
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
 # Aquí debajo empieza su def generar_documento_word...
