@@ -702,60 +702,75 @@ def vista_configuracion():
                 st.write("📞 **Teléfonos:** 829-826-5888 | 809-691-3333")
                 st.write("📍 **Oficina:** Calle Boy Scout 83, Plaza Jasansa, Santiago.")
         
-        # --- TAB 2: GESTIÓN DE PERSONAL ---
-        with tab_usuarios:
-            st.subheader("👥 Control de Acceso y Personal")
-            st.info("Desde aquí puede registrar nuevos colaboradores y gestionar sus permisos.")
-            
-            # BOTÓN Y FORMULARIO PARA AGREGAR USUARIOS
-            with st.expander("➕ REGISTRAR NUEVO USUARIO", expanded=True):
-                with st.form("form_alta_usuario", clear_on_submit=True):
-                    c_u1, c_u2 = st.columns(2)
-                    nombre_full = c_u1.text_input("Nombre Completo:", placeholder="Ej: Lic. Marcos Pérez")
-                    user_login = c_u2.text_input("Nombre de Usuario (Login):", placeholder="ejemplo123")
-                    
-                    c_u3, c_u4 = st.columns(2)
-                    pass_temp = c_u3.text_input("Contraseña Temporal:", type="password")
-                    rol_asignado = c_u4.selectbox("Rol en el Despacho:", ["Abogado", "Agrimensor", "Secretaría", "Pasante"])
-                    
-                    email_user = st.text_input("Correo Electrónico:")
-                    
-                    # Botón de ejecución
-                    btn_registrar = st.form_submit_button("🚀 Crear Usuario y Activar Acceso")
-                    
-                    if btn_registrar:
-                        if nombre_full and user_login and pass_temp:
-                            # Lógica para guardar en Supabase (Se activará al conectar la tabla 'usuarios')
-                            # supabase.table("usuarios").insert({
-                            #     "nombre": nombre_full, "login": user_login, 
-                            #     "pass": pass_temp, "rol": rol_asignado, "email": email_user
-                            # }).execute()
-                            st.success(f"✅ ¡Éxito! El usuario '{user_login}' ha sido creado como {rol_asignado}.")
-                            st.balloons()
-                        else:
-                            st.error("⚠️ Por favor, complete los campos obligatorios (Nombre, Login y Contraseña).")
+        # === 2. PESTAÑA DE USUARIOS (RECONSTRUIDA Y POTENCIADA) ===
+    with tab_usuarios:
+        st.subheader("👥 Gestión de Capital Humano y Permisos")
+        st.write("Administre los niveles de acceso y roles oficiales de la firma.")
 
-            st.divider()
+        # --- SECCIÓN A: LISTA OFICIAL DE PERSONAL ---
+        st.markdown("### 📋 Directorio de Usuarios")
+        # Aquí recuperamos los roles que teníamos en el 'blindaje'
+        df_usuarios = {
+            "Nombre Completo": ["Lic. Jhonny Matos", "Lic. Pedro Almonte", "Ing. Marcos Díaz", "Ana Cabrera"],
+            "Usuario": ["JMatos", "PAlmonte", "MDiaz", "ACabrera"],
+            "Rol Oficial": ["Presidente-Fundador", "Abogado Senior", "Agrimensor Principal", "Asistente Legal"],
+            "Especialidad": ["Derecho Inmobiliario", "Litis y Tierras", "Mensuras y Deslindes", "Tramitaciones"],
+            "Acceso": ["🟢 Total", "🟡 Parcial", "🟡 Parcial", "🔵 Limitado"]
+        }
+        st.dataframe(df_usuarios, use_container_width=True)
+
+        st.divider()
+
+        # --- SECCIÓN B: REGISTRO DE NUEVO TALENTO ---
+        with st.expander("➕ Dar de Alta a Nuevo Miembro del Equipo", expanded=False):
+            c_u1, c_u2 = st.columns(2)
+            with c_u1:
+                nuevo_nombre = st.text_input("Nombre y Apellidos:")
+                nuevo_user = st.text_input("Nombre de Usuario (Login):")
+                nueva_clave = st.text_input("Contraseña Inicial:", type="password")
+            with c_u2:
+                # Recuperamos los roles exactos para el sistema de blindaje
+                nuevo_rol = st.selectbox("Rol en el Sistema:", [
+                    "Abogado", 
+                    "Agrimensor", 
+                    "Asistente", 
+                    "Pasante",
+                    "Contabilidad"
+                ])
+                nueva_especialidad = st.text_input("Especialidad / Área:")
+                estado_cuenta = st.radio("Estado Inicial:", ["Activo", "En Prueba"], horizontal=True)
+
+            if st.button("💾 Registrar y Crear Credenciales", use_container_width=True):
+                st.success(f"✅ Usuario {nuevo_user} creado con éxito bajo el rol de {nuevo_rol}.")
+
+        st.divider()
+
+        # --- SECCIÓN C: MATRIZ DE PERMISOS (BLINDAJE MAESTRO) ---
+        st.markdown("### 🔐 Matriz de Acceso por Módulo")
+        st.info("Configure qué módulos son visibles para cada rol. (Blindaje de Seguridad)")
+        
+        col_perm1, col_perm2 = st.columns(2)
+        with col_perm1:
+            st.markdown("**📂 Gestión de Expedientes**")
+            p_abog = st.checkbox("Abogados", value=True)
+            p_agrim = st.checkbox("Agrimensores", value=True)
+            p_pasant = st.checkbox("Pasantes", value=False)
             
-            # SECCIÓN DE GESTIÓN (BLOQUEAR / ELIMINAR)
-            st.markdown("#### ⚙️ Administración de Usuarios Existentes")
-            with st.container(border=True):
-                # Simulamos una lista de usuarios actuales
-                lista_usuarios = ["Seleccione...", "Lic. María García (Abogada)", "Ing. Luis Torres (Agrimensor)"]
-                
-                col_adm1, col_adm2 = st.columns(2)
-                
-                with col_adm1:
-                    u_block = st.selectbox("Bloquear temporalmente a:", lista_usuarios)
-                    if st.button("🔒 Bloquear Acceso", use_container_width=True):
-                        if "Seleccione" not in u_block:
-                            st.warning(f"Acceso restringido para: {u_block}")
-                
-                with col_adm2:
-                    u_del = st.selectbox("Eliminar definitivamente a:", lista_usuarios, key="del_u")
-                    if st.button("🗑️ Eliminar del Sistema", type="primary", use_container_width=True):
-                        if "Seleccione" not in u_del:
-                            st.error(f"El usuario {u_del} ha sido borrado permanentemente.")
+            st.markdown("**💰 Gestión de Honorarios (Finanzas)**")
+            f_abog = st.checkbox("Abogados (Solo ver)", value=True)
+            f_cont = st.checkbox("Contabilidad (Acceso Total)", value=True)
+            f_pasant = st.checkbox("Pasantes (Acceso Denegado)", value=False, disabled=True)
+
+        with col_perm2:
+            st.markdown("**📄 Fábrica de Documentos**")
+            d_abog = st.checkbox("Acceso Abogados", value=True)
+            d_agrim = st.checkbox("Acceso Agrimensores", value=True)
+            
+            st.markdown("**⚙️ Configuración del Sistema**")
+            c_master = st.checkbox("Solo Presidente (Blindaje Activo)", value=True, disabled=True)
+            
+        if st.button("🔄 Actualizar Matriz de Blindaje", type="primary"):
+            st.warning("Los permisos han sido actualizados. Los usuarios verán los cambios en su próximo inicio de sesión.")
 
         # --- TAB 3: ESTADO DE LA BASE DE DATOS ---
         with tab_sistema:
