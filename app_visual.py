@@ -14,6 +14,13 @@ with st.sidebar:
     st.write("**Lic. Jhonny Matos. M.A.**")
     st.write("Presidente")
     st.divider()
+
+# --- DATOS OFICIALES DE LA FIRMA ABOAGRIM ---
+NOMBRE_FIRMA = "AboAgrim - Servicios Legales y de Agrimensura"
+DIRECCION_FIRMA = "Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Centro Ciudad, Santiago, R.D."
+TELEFONOS_FIRMA = "829-826-5888 / 809-691-3333"
+CORREO_FIRMA = "aboagrim@gmail.com"
+PRESIDENTE_FIRMA = "Lic. Jhonny Matos, M.A."
     
 # =========================================================
 # MOTOR DE ESTILOS VISUALES (Se ejecuta siempre al inicio)
@@ -1585,6 +1592,19 @@ elif menu == "⚙️ Configuración":
 elif menu == "💰 Gestión de Honorarios":
     st.title("💰 Gestión de Honorarios y Cobros")
     st.subheader("Control Financiero de la Firma")
+    # Tarjeta de Contacto en la Barra Lateral
+    st.sidebar.divider()
+    with st.sidebar.container():
+        st.markdown(f"""
+        <div style='text-align: center; background-color: #f0f2f6; padding: 10px; border-radius: 10px; border: 1px solid #dcdcdc;'>
+            <p style='margin: 0; font-weight: bold; color: #0E1117;'>{PRESIDENTE_FIRMA}</p>
+            <p style='margin: 0; font-size: 0.8em; color: #555;'>Presidente-Fundador</p>
+            <hr style='margin: 8px 0;'>
+            <p style='margin: 0; font-size: 0.75em; color: #333;'>📍 {DIRECCION_FIRMA}</p>
+            <p style='margin: 0; font-size: 0.75em; color: #333;'>📞 {TELEFONOS_FIRMA}</p>
+            <p style='margin: 0; font-size: 0.75em; color: #333;'>✉️ {CORREO_FIRMA}</p>
+        </div>
+        """, unsafe_allow_html=True)
 
     # --- REGISTRO DE MOVIMIENTOS ---
     with st.expander("📝 Registrar Nuevo Pago o Abono", expanded=True):
@@ -1636,13 +1656,13 @@ elif menu == "💰 Gestión de Honorarios":
 
     st.divider()
 
-    # --- DATOS BANCARIOS ---
-    st.markdown("### 🏦 Cuentas para Depósitos")
+    # --- DATOS BANCARIOS Y CONTACTO ---
+    st.markdown("### 🏦 Cuentas para Depósitos y Contacto Oficial")
     b1, b2 = st.columns(2)
     with b1:
-        st.info("**BANCO DE RESERVAS**\n\n- **Cuenta:** 960-XXXXXX-X\n- **Titular:** AboAgrim SRL")
+        st.info(f"**DEPÓSITOS OFICIALES**\n\n- **Titular:** {PRESIDENTE_FIRMA}\n- **Correo:** {CORREO_FIRMA}\n- **Banco de Reservas:** 960-XXXXXX-X\n- **Banco BHD:** 124-XXXXXX-X")
     with b2:
-        st.warning("**BANCO BHD**\n\n- **Cuenta:** 124-XXXXXX-X\n- **Titular:** Lic. Jhonny Matos")
+        st.warning(f"**OFICINA PRINCIPAL**\n\n- **Dirección:** {DIRECCION_FIRMA}\n- **Teléfonos:** {TELEFONOS_FIRMA}")
 
     st.divider()
 
@@ -1669,3 +1689,4 @@ elif menu == "💰 Gestión de Honorarios":
             "Monto": ["RD$ 25,000", "RD$ 100,000"],
             "Método": ["Transferencia BHD", "Cheque"]
         }, use_container_width=True)
+
