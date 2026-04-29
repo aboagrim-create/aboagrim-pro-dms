@@ -804,19 +804,19 @@ def vista_configuracion():
             st.rerun()
 
 else:
-    # LOGIN (Para cuando no está autenticado)
-    st.markdown("### 🔑 Autenticación Requerida")
-    u = st.text_input("Usuario Master:")
-    p = st.text_input("PIN de Seguridad:", type="password")
-    
-    if st.button("Desbloquear Panel"):
-        if u == "JhonnyMatos" and p == "1234":
-            st.session_state.admin_autenticado = True
-            st.session_state.usuario = "Jhonny Matos"
-            st.session_state.rol = "Presidente Fundador"
-            st.rerun()
-        else:
-            st.error("Credenciales inválidas.")
+            # LOGIN (Para cuando no está autenticado)
+            st.markdown("### 🔑 Autenticación Requerida")
+            u = st.text_input("Usuario Master:")
+            p = st.text_input("PIN de Seguridad:", type="password")
+            
+            if st.button("Desbloquear Panel"):
+                if u == "JhonnyMatos" and p == "1234":
+                    st.session_state.admin_autenticado = True
+                    st.session_state.usuario = "Jhonny Matos"
+                    st.session_state.rol = "Presidente Fundador"
+                    st.rerun()
+                else:
+                    st.error("Credenciales inválidas.")
             # Nota: Esto se complementa con CSS personalizado en el inicio del script
         # Aquí va la función de agregar/borrar usuarios...
 def login_sistema():
