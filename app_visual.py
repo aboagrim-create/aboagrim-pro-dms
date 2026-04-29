@@ -1586,28 +1586,3 @@ def vista_registro_maestro():
 # ==========================================
 
 # 1. Asegurar el Rol de Presidente (Blindaje)
-usuario_actual = st.session_state.get("usuario", "Invitado")
-
-
-# 3. Interfaz de Barra Lateral
-with st.sidebar:
-    st.markdown(f"**Firmado como:** {usuario_actual}")
-    st.caption(f"**Cargo:** {rol_usuario}")
-    st.divider()
-    menu = st.radio("Navegación:", modulos, key="menu_final_v4")
-
-# 4. El Gatillo (Enrutamiento)
-if menu == "🏠 Mando Central":
-    vista_mando_central()
-elif menu == "👤 Registro Maestro":
-    vista_registro_maestro()
-elif menu == "📂 Archivo Digital":
-    vista_archivo_digital()
-elif menu == "📄 Plantillas Auto":
-    vista_plantillas_auto()
-elif menu == "📅 Alertas y Plazos":
-    vista_alertas_plazos()
-elif menu == "💵 Facturación":
-    vista_facturacion()
-elif menu == "⚙️ Configuración":
-    vista_configuracion()
