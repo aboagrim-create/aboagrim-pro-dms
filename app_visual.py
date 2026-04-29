@@ -15,10 +15,6 @@ with st.sidebar:
     st.write("Presidente")
     st.divider()
     
-    opcion = st.radio(
-        "Ir a:",
-        ["🏠 Dashboard Principal", "🚀 Fábrica de Documentos", "💰 Gestión de Honorarios", "📂 Archivo de Expedientes"]
-    )
 # =========================================================
 # MOTOR DE ESTILOS VISUALES (Se ejecuta siempre al inicio)
 # =========================================================
@@ -1597,11 +1593,12 @@ rol_usuario = st.session_state.get("rol", "Pasante")
 
 # 2. Definición Dinámica de Módulos
 modulos = [
-    "🏠 Mando Central", 
-    "👤 Registro Maestro", 
-    "📂 Archivo Digital", 
-    "📄 Plantillas Auto", 
-    "📅 Alertas y Plazos"
+    "🏠 Mando Central",
+    "👤 Registro Maestro",
+    "📁 Archivo Digital",
+    "📄 Plantillas Auto",
+    "📅 Alertas y Plazos",
+    "💰 Gestión de Honorarios" # <--- AGREGUE ESTA LÍNEA AQUÍ
 ]
 
 # 💳 VALIDACIÓN CRÍTICA PARA FACTURACIÓN
@@ -1617,8 +1614,6 @@ if rol_usuario == "Presidente Fundador" or not st.session_state.get("admin_auten
 
 # 3. Interfaz de Barra Lateral
 with st.sidebar:
-    st.markdown(f"**Firmado como:** {usuario_actual}")
-    st.caption(f"**Cargo:** {rol_usuario}")
     st.divider()
     menu = st.radio("Navegación:", modulos, key="menu_final_v4")
 
@@ -1637,3 +1632,7 @@ elif menu == "💵 Facturación":
     vista_facturacion()
 elif menu == "⚙️ Configuración":
     vista_configuracion()
+elif menu == "💰 Gestión de Honorarios":
+    st.title("💰 Gestión de Honorarios y Cobros")
+    st.subheader("Control Financiero de la Firma")
+    st.info("Módulo conectado exitosamente. Aquí construiremos su registro de pagos.")
