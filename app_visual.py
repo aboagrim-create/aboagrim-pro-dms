@@ -1268,43 +1268,43 @@ def vista_plantillas_auto():
 
         # 4. MOSTRAR LOS BOTONES (Fuera del botón rojo para que no desparezcan)
 
-    if "bandeja_descargas" in st.session_state and len(st.session_state["bandeja_descargas"]) > 0:
-        st.write("---")
-        st.success("✅ ¡Fábrica terminada! Sus documentos están listos en la bandeja:")
-
-        for doc in st.session_state["bandeja_descargas"]:
-            # --- TODO ESTO DEBE TENER MÁS SANGRÍA ---
-            st.download_button(
-                label=f"📥 Descargar {doc['nombre']}",
-                data=doc['archivo'],
-                file_name=f"AboAgrim_{doc['nombre']}",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                use_container_width=True,
-                key=f"dl_btn_{doc['nombre']}"
-            )
-            
-            # --- GATILLO DE DRIVE ---
-            try:
-                import os
-                ruta_ab = st.session_state.get("ruta_aboagrim", "")
-                ruta_per = st.session_state.get("ruta_personal", "")
-                datos_archivo = doc['archivo'].getvalue()
+        if "bandeja_descargas" in st.session_state and len(st.session_state["bandeja_descargas"]) > 0:
+            st.write("---")
+            st.success("✅ ¡Fábrica terminada! Sus documentos están listos en la bandeja:")
+    
+            for doc in st.session_state["bandeja_descargas"]:
+                # --- TODO ESTO DEBE TENER MÁS SANGRÍA ---
+                st.download_button(
+                    label=f"📥 Descargar {doc['nombre']}",
+                    data=doc['archivo'],
+                    file_name=f"AboAgrim_{doc['nombre']}",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    use_container_width=True,
+                    key=f"dl_btn_{doc['nombre']}"
+                )
                 
-                guardado = False
-                if ruta_ab and os.path.exists(ruta_ab):
-                    with open(os.path.join(ruta_ab, f"AboAgrim_{doc['nombre']}"), "wb") as f:
-                        f.write(datos_archivo)
-                    guardado = True
+                # --- GATILLO DE DRIVE ---
+                try:
+                    import os
+                    ruta_ab = st.session_state.get("ruta_aboagrim", "")
+                    ruta_per = st.session_state.get("ruta_personal", "")
+                    datos_archivo = doc['archivo'].getvalue()
                     
-                if ruta_per and os.path.exists(ruta_per):
-                    with open(os.path.join(ruta_per, f"AboAgrim_{doc['nombre']}"), "wb") as f:
-                        f.write(datos_archivo)
-                    guardado = True
-                    
-                if guardado:
-                    st.caption(f"☁️ ✅ Copia de seguridad de '{doc['nombre']}' sincronizada.")
-        except Exception as e:
-            st.caption("⚠️ Error al sincronizar con Drive.")
+                    guardado = False
+                    if ruta_ab and os.path.exists(ruta_ab):
+                        with open(os.path.join(ruta_ab, f"AboAgrim_{doc['nombre']}"), "wb") as f:
+                            f.write(datos_archivo)
+                        guardado = True
+                        
+                    if ruta_per and os.path.exists(ruta_per):
+                        with open(os.path.join(ruta_per, f"AboAgrim_{doc['nombre']}"), "wb") as f:
+                            f.write(datos_archivo)
+                        guardado = True
+                        
+                    if guardado:
+                        st.caption(f"☁️ ✅ Copia de seguridad de '{doc['nombre']}' sincronizada.")
+            except Exception as e:
+                st.caption("⚠️ Error al sincronizar con Drive.")
     # Note cómo el except se va hacia la izquierda, saliendo del bloque del botón
     except Exception as e:
         st.error(f"❌ Error al fabricar: {e}")
