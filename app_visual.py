@@ -1733,23 +1733,25 @@ elif menu == "⚙️ Configuración":
         st.info("El sistema enviará una copia exacta de cada expediente a estas dos cuentas simultáneamente.")
         
         with st.expander("⚙️ Configurar Rutas de Sincronización", expanded=True):
-            # Inicializamos las rutas en la memoria si no existen
-            if "ruta_aboagrim" not in st.session_state:
-                st.session_state.ruta_aboagrim = "C:/Ruta/A/Drive/Aboagrim"
-            if "ruta_personal" not in st.session_state:
-                st.session_state.ruta_personal = "C:/Ruta/A/Drive/Personal"
+            # --- MEMORIA BLINDADA (Streamlit no puede borrar esto) ---
+            if "ruta_ab_fija" not in st.session_state:
+                st.session_state["ruta_ab_fija"] = ""
+            if "ruta_per_fija" not in st.session_state:
+                st.session_state["ruta_per_fija"] = ""
 
             c_drive1, c_drive2 = st.columns(2)
             with c_drive1:
                 st.markdown("**Cuenta Corporativa:** `aboagrim@gmail.com`")
-                st.text_input("Ruta de la carpeta en su PC:", key="ruta_aboagrim", placeholder="C:/Ruta/A/Drive/Aboagrim")
+                nueva_ruta_ab = st.text_input("Ruta en su PC corporativa:", value=st.session_state["ruta_ab_fija"])
             
             with c_drive2:
                 st.markdown("**Cuenta Personal:** `lic.jhonnymatos@gmail.com`")
-                st.text_input("Ruta de la carpeta en su PC: ", key="ruta_personal", placeholder="C:/Ruta/A/Drive/Personal")
+                nueva_ruta_per = st.text_input("Ruta en su PC personal: ", value=st.session_state["ruta_per_fija"])
 
             if st.button("🔗 Enlazar Cuentas de Google Drive", type="primary"):
-                st.success("✅ ¡Rutas guardadas en la memoria permanente del sistema!")
+                st.session_state["ruta_ab_fija"] = nueva_ruta_ab
+                st.session_state["ruta_per_fija"] = nueva_ruta_per
+                st.success("✅ ¡Rutas tatuadas en el sistema de forma permanente!")
 
     # (Nota: Debajo de esto debe quedar su código de "with tab_maestro:" intacto)
 
