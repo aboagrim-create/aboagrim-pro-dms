@@ -803,7 +803,7 @@ def vista_configuracion():
             st.session_state.admin_autenticado = False
             st.rerun()
 
-    else:
+        else:
         # LOGIN (Para cuando no está autenticado)
         st.markdown("### 🔑 Autenticación Requerida")
         u = st.text_input("Usuario Master:")
