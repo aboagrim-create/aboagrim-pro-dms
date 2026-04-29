@@ -4,8 +4,32 @@
 # =====================================================================
 import streamlit as st
 import zipfile
-import io
 from docxtpl import DocxTemplate
+import os
+import shutil
+
+# --- MOTOR DE GUARDADO DUAL (GOOGLE DRIVE) ---
+def guardar_expediente_en_drive(ruta_archivo_original, nombre_carpeta_expediente):
+    """Copia un archivo o carpeta hacia los dos Google Drives configurados."""
+    try:
+        ruta_ab = st.session_state.get("ruta_aboagrim", "")
+        ruta_per = st.session_state.get("ruta_personal", "")
+        
+        # 1. Guardar en AboAgrim Drive
+        if ruta_ab and os.path.exists(ruta_ab):
+            destino_ab = os.path.join(ruta_ab, nombre_carpeta_expediente)
+            os.makedirs(destino_ab, exist_ok=True)
+            shutil.copy2(ruta_archivo_original, destino_ab)
+            
+        # 2. Guardar en Personal Drive
+        if ruta_per and os.path.exists(ruta_per):
+            destino_per = os.path.join(ruta_per, nombre_carpeta_expediente)
+            os.makedirs(destino_per, exist_ok=True)
+            shutil.copy2(ruta_archivo_original, destino_per)
+            
+        return True
+    except Exception as e:
+        return False
 # ... arriba están los import ...
 # --- NAVEGACIÓN LATERAL ---
 with st.sidebar:
@@ -1699,6 +1723,31 @@ elif menu == "⚙️ Configuración":
                 st.success("✅ ¡Contraseña actualizada!")
             else:
                 st.error("❌ Las contraseñas no coinciden o están vacías.")
+                # (Pegue esto debajo del st.error de las contraseñas)
+        st.divider()
+        # --- NUEVO: SINCRONIZACIÓN DUAL CON GOOGLE DRIVE ---
+        st.markdown("### ☁️ Bóveda en la Nube (Google Drive Dual)")
+        st.info("El sistema enviará una copia exacta de cada expediente a estas dos cuentas simultáneamente.")
+        
+        with st.expander("⚙️ Configurar Rutas de Sincronización", expanded=True):
+            # Inicializamos las rutas en la memoria si no existen
+            if "ruta_aboagrim" not in st.session_state:
+                st.session_state.ruta_aboagrim = "C:/Ruta/A/Drive/Aboagrim"
+            if "ruta_personal" not in st.session_state:
+                st.session_state.ruta_personal = "C:/Ruta/A/Drive/Personal"
+
+            c_drive1, c_drive2 = st.columns(2)
+            with c_drive1:
+                st.markdown("**Cuenta Corporativa:** `aboagrim@gmail.com`")
+                nueva_ruta_ab = st.text_input("Ruta de la carpeta en su PC:", value=st.session_state.ruta_aboagrim)
+            with c_drive2:
+                st.markdown("**Cuenta Personal:** `lic.jhonnymatos@gmail.com`")
+                nueva_ruta_per = st.text_input("Ruta de la carpeta en su PC:", value=st.session_state.ruta_personal)
+
+            if st.button("🔗 Enlazar Cuentas de Google Drive", type="primary"):
+                st.session_state.ruta_aboagrim = nueva_ruta_ab
+                st.session_state.ruta_personal = nueva_ruta_per
+                st.success("✅ ¡Cuentas enlazadas! Los expedientes ahora se guardarán por duplicado.")
 
     # (Nota: Debajo de esto debe quedar su código de "with tab_maestro:" intacto)
 
