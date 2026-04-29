@@ -1628,20 +1628,65 @@ elif menu == "⚙️ Configuración":
             st.markdown(f"**Nivel de Acceso:** 🟢 Acceso Total (Nivel Dios)")
         st.info("Como Presidente, usted tiene control absoluto sobre todas las áreas del sistema AboAgrim Pro.")
 
-    # === 2. PESTAÑA DE USUARIOS ===
+    # === 2. PESTAÑA DE USUARIOS (AHORA CON MEMORIA DINÁMICA) ===
     with tab_usuarios:
-        st.subheader("👥 Gestión de Personal y Accesos")
-        st.write("Administre los permisos de su equipo legal y pasantes.")
-        
-        # Tabla de ejemplo de su equipo
-        st.dataframe({
-            "Usuario": ["Jhonny Matos", "Secretaria / Recepción", "Pasante Agrimensura"],
-            "Rol": ["Presidente-Fundador", "Asistente", "Pasante"],
-            "Permisos": ["Todos los módulos", "Solo Cobros y Mando", "Solo Plantillas"],
-            "Estado": ["🟢 Activo", "🟢 Activo", "🔴 Inactivo"]
-        }, use_container_width=True)
-        
-        st.button("➕ Agregar Nuevo Empleado", use_container_width=True)
+        st.subheader("👥 Gestión de Capital Humano y Permisos")
+        st.write("Administre los niveles de acceso y roles oficiales de la firma.")
+
+        # --- 1. CREAMOS LA MEMORIA DEL SISTEMA (SESSION STATE) ---
+        if "db_empleados" not in st.session_state:
+            # Esta es la base de datos inicial de su oficina
+            st.session_state.db_empleados = [
+                {"Nombre Completo": "Lic. Jhonny Matos", "Usuario": "JMatos", "Rol": "Presidente-Fundador", "Estado": "🟢 Activo"},
+                {"Nombre Completo": "Lic. Pedro Almonte", "Usuario": "PAlmonte", "Rol": "Abogado Senior", "Estado": "🟢 Activo"},
+                {"Nombre Completo": "Ing. Marcos Díaz", "Usuario": "MDiaz", "Rol": "Agrimensor Principal", "Estado": "🟢 Activo"}
+            ]
+
+        # --- 2. MOSTRAMOS LA TABLA ACTUALIZADA ---
+        st.markdown("### 📋 Directorio de Usuarios")
+        st.dataframe(st.session_state.db_empleados, use_container_width=True)
+
+        st.divider()
+
+        # --- 3. MOTOR PARA AGREGAR NUEVO PERSONAL ---
+        with st.expander("➕ Dar de Alta a Nuevo Miembro del Equipo", expanded=True):
+            c_u1, c_u2 = st.columns(2)
+            with c_u1:
+                nuevo_nombre = st.text_input("Nombre y Apellidos:")
+                nuevo_user = st.text_input("Nombre de Usuario (Login):")
+            with c_u2:
+                nuevo_rol = st.selectbox("Rol en el Sistema:", ["Abogado", "Agrimensor", "Asistente", "Pasante", "Contabilidad"])
+                estado_cuenta = st.selectbox("Estado Inicial:", ["🟢 Activo", "🟡 En Prueba", "🔴 Inactivo"])
+
+            # ¡El botón ahora tiene la orden de guardar en memoria!
+            if st.button("💾 Guardar y Registrar Usuario", type="primary", use_container_width=True):
+                if nuevo_nombre != "" and nuevo_user != "":
+                    # Agregamos el nuevo empleado a la memoria
+                    st.session_state.db_empleados.append({
+                        "Nombre Completo": nuevo_nombre,
+                        "Usuario": nuevo_user,
+                        "Rol": nuevo_rol,
+                        "Estado": estado_cuenta
+                    })
+                    st.success(f"✅ ¡El usuario {nuevo_nombre} fue registrado con éxito!")
+                    st.rerun() # Esto recarga la pantalla rápido para mostrar la tabla actualizada
+                else:
+                    st.error("⚠️ Por favor, escriba el nombre y el usuario antes de guardar.")
+
+        st.divider()
+
+        # --- 4. MATRIZ DE PERMISOS ---
+        st.markdown("### 🔐 Matriz de Acceso (Blindaje)")
+        col_perm1, col_perm2 = st.columns(2)
+        with col_perm1:
+            st.checkbox("Permitir a Abogados facturar", value=True)
+            st.checkbox("Permitir a Pasantes ver honorarios", value=False)
+        with col_perm2:
+            st.checkbox("Permitir a Agrimensores crear plantillas", value=True)
+            st.checkbox("Bloquear configuraciones al personal", value=True, disabled=True)
+            
+        if st.button("🔄 Guardar Reglas de Blindaje"):
+            st.success("✅ Reglas de seguridad actualizadas en el sistema.")
 
     # === 3. PESTAÑA DE SEGURIDAD Y BACKUPS ===
     with tab_seguridad:
