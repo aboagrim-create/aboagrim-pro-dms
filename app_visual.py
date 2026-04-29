@@ -1303,8 +1303,8 @@ def vista_plantillas_auto():
                         
                     if guardado:
                         st.caption(f"☁️ ✅ Copia de seguridad de '{doc['nombre']}' sincronizada.")
-            except Exception as e:
-                st.caption("⚠️ Error al sincronizar con Drive.")
+                except Exception as e:
+                    st.caption("⚠️ Error al sincronizar con Drive.")
     # Note cómo el except se va hacia la izquierda, saliendo del bloque del botón
     except Exception as e:
         st.error(f"❌ Error al fabricar: {e}")
