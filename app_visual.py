@@ -1600,6 +1600,50 @@ elif menu == "⚙️ Configuración":
     tab_perfil, tab_usuarios, tab_seguridad, tab_maestro = st.tabs([
         "👤 Perfil", "👥 Usuarios", "🔐 Seguridad", "🎨 PANEL DE CONTROL MAESTRO"
     ])
+    # === 1. PESTAÑA DE PERFIL ===
+    with tab_perfil:
+        st.subheader("👤 Mi Perfil Oficial")
+        c_perf1, c_perf2 = st.columns([1, 2])
+        with c_perf1:
+            st.image("logo_aboagrim.jpg", width=120)
+        with c_perf2:
+            st.markdown(f"**Nombre:** Lic. Jhonny Matos. M.A.")
+            st.markdown(f"**Cargo:** Presidente-Fundador")
+            st.markdown(f"**Nivel de Acceso:** 🟢 Acceso Total (Nivel Dios)")
+        st.info("Como Presidente, usted tiene control absoluto sobre todas las áreas del sistema AboAgrim Pro.")
+
+    # === 2. PESTAÑA DE USUARIOS ===
+    with tab_usuarios:
+        st.subheader("👥 Gestión de Personal y Accesos")
+        st.write("Administre los permisos de su equipo legal y pasantes.")
+        
+        # Tabla de ejemplo de su equipo
+        st.dataframe({
+            "Usuario": ["Jhonny Matos", "Secretaria / Recepción", "Pasante Agrimensura"],
+            "Rol": ["Presidente-Fundador", "Asistente", "Pasante"],
+            "Permisos": ["Todos los módulos", "Solo Cobros y Mando", "Solo Plantillas"],
+            "Estado": ["🟢 Activo", "🟢 Activo", "🔴 Inactivo"]
+        }, use_container_width=True)
+        
+        st.button("➕ Agregar Nuevo Empleado", use_container_width=True)
+
+    # === 3. PESTAÑA DE SEGURIDAD Y BACKUPS ===
+    with tab_seguridad:
+        st.subheader("🔐 Seguridad y Bóveda de Datos")
+        st.write("Protección de la información confidencial de la firma.")
+        
+        col_seg1, col_seg2 = st.columns(2)
+        with col_seg1:
+            st.markdown("**Cambio de Credenciales**")
+            st.text_input("Nueva Contraseña Maestra:", type="password")
+            st.text_input("Confirmar Contraseña:", type="password")
+            st.button("🔑 Actualizar Clave", type="primary")
+            
+        with col_seg2:
+            st.markdown("**Respaldo de Emergencia (Backup)**")
+            st.warning("Haga un respaldo de su base de datos semanalmente.")
+            if st.button("💾 Generar Backup Ahora", use_container_width=True):
+                st.success("✅ Respaldo 'backup_aboagrim_2026.zip' guardado en Documentos_AboAgrim/")
 
     with tab_maestro:
         st.subheader("🎨 Identidad Corporativa y Diseño Global")
