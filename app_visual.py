@@ -1292,7 +1292,7 @@ def vista_plantillas_auto():
                 datos_archivo = doc['archivo'].getvalue()
                 
                 # --- MENSAJES DE RASTREO (Solo para nosotros ver qué pasa) ---
-                if not ruta_ab or not ruta_per:
+                if not ruta_ab and not ruta_per:
                     st.error("⚠️ Las rutas de Drive están vacías en Configuración.")
                 
                 guardado = False
