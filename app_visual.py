@@ -1284,27 +1284,44 @@ def vista_plantillas_auto():
                 )
                 
                 # --- GATILLO DE DRIVE ---
-                try:
-                    import os
-                    ruta_ab = st.session_state.get("ruta_aboagrim", "")
-                    ruta_per = st.session_state.get("ruta_personal", "")
-                    datos_archivo = doc['archivo'].getvalue()
-                    
-                    guardado = False
-                    if ruta_ab and os.path.exists(ruta_ab):
-                        with open(os.path.join(ruta_ab, f"AboAgrim_{doc['nombre']}"), "wb") as f:
+                # --- GATILLO DE DRIVE CON DIAGNÓSTICO ---
+            try:
+                import os
+                ruta_ab = st.session_state.get("ruta_aboagrim", "")
+                ruta_per = st.session_state.get("ruta_personal", "")
+                datos_archivo = doc['archivo'].getvalue()
+                
+                # --- MENSAJES DE RASTREO (Solo para nosotros ver qué pasa) ---
+                if not ruta_ab or not ruta_per:
+                    st.error("⚠️ Las rutas de Drive están vacías en Configuración.")
+                
+                guardado = False
+                # Intento en Drive AboAgrim
+                if ruta_ab:
+                    if os.path.exists(ruta_ab):
+                        nombre_final = os.path.join(ruta_ab, f"AboAgrim_{doc['nombre']}")
+                        with open(nombre_final, "wb") as f:
                             f.write(datos_archivo)
                         guardado = True
-                        
-                    if ruta_per and os.path.exists(ruta_per):
-                        with open(os.path.join(ruta_per, f"AboAgrim_{doc['nombre']}"), "wb") as f:
+                    else:
+                        st.error(f"❌ No encuentro la carpeta: {ruta_ab}")
+
+                # Intento en Drive Personal
+                if ruta_per:
+                    if os.path.exists(ruta_per):
+                        nombre_final_per = os.path.join(ruta_per, f"AboAgrim_{doc['nombre']}")
+                        with open(nombre_final_per, "wb") as f:
                             f.write(datos_archivo)
                         guardado = True
-                        
-                    if guardado:
-                        st.caption(f"☁️ ✅ Copia de seguridad de '{doc['nombre']}' sincronizada.")
-                except Exception as e:
-                    st.caption("⚠️ Error al sincronizar con Drive.")
+                    else:
+                        st.error(f"❌ No encuentro la carpeta: {ruta_per}")
+                
+                if guardado:
+                    st.success(f"☁️ ✅ ¡Confirmado! Copia guardada en Drive.")
+
+            except Exception as e:
+                # 👆 ESTE 'except' alineado perfectamente con el 'try' de arriba
+                st.error(f"💥 Error técnico al guardar: {e}")
     # Note cómo el except se va hacia la izquierda, saliendo del bloque del botón
     except Exception as e:
         st.error(f"❌ Error al fabricar: {e}")
