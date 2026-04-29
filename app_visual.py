@@ -9,7 +9,7 @@ from docxtpl import DocxTemplate
 # ... arriba están los import ...
 # --- NAVEGACIÓN LATERAL ---
 with st.sidebar:
-    st.image("logo_aboagrim.jpg", width=180)
+    st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=100)
     st.title("AboAgrim Pro")
     st.write("**Lic. Jhonny Matos. M.A.**")
     st.write("Presidente")
