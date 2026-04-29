@@ -1276,57 +1276,6 @@ def vista_plantillas_auto():
                         # ==========================================
 # ... aquí termina su código de la Fábrica (probablemente en st.rerun() o similar) ...
 
-# ESTE ELIF DEBE ESTAR PEGADO AL BORDE IZQUIERDO DE LA PANTALLA
-if opcion == "💰 Gestión de Honorarios":
-    st.title("💰 Gestión de Honorarios y Cobros")
-    st.subheader("Control Financiero de la Firma")
-    # ... el resto del código indentado hacia adentro ...
-
-    # --- FILA 1: REGISTRO DE MOVIMIENTOS ---
-    with st.expander("📝 Registrar Nuevo Pago o Abono", expanded=True):
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            cliente_pago = st.text_input("Nombre del Cliente / Expediente:")
-            monto_pago = st.number_input("Monto Recibido (RD$):", min_value=0.0, step=1000.0)
-        with c2:
-            concepto_pago = st.selectbox("Concepto de Pago:", ["Primer Pago (50%)", "Segundo Pago de Honorarios", "Saldo Final", "Gastos de Mensura / Sellos"])
-            metodo_pago = st.radio("Método de Pago:", ["Efectivo", "Transferencia Bancaria", "Cheque"])
-        with c3:
-            fecha_pago = st.date_input("Fecha de Recepción:")
-            if st.button("💾 Guardar en Registro de Cobros", use_container_width=True):
-                # 💡 Aquí luego conectaremos con su base de datos Supabase
-                st.success(f"✅ Registro exitoso: RD$ {monto_pago} recibidos de {cliente_pago}")
-
-    st.divider()
-
-    # --- FILA 2: DATOS DE DEPÓSITO (ACCESO RÁPIDO) ---
-    st.markdown("### 🏦 Instrucciones de Depósito")
-    b1, b2 = st.columns(2)
-    
-    with b1:
-        st.info("**BANCO DE RESERVAS**\n\n- **Cuenta:** 960-XXXXXX-X\n- **Tipo:** Corriente\n- **Titular:** AboAgrim SRL\n- **RNC:** XXX-XXXXX-X")
-        if st.button("📋 Copiar Datos Reservas"):
-            st.toast("Datos copiados al portapapeles (Simulado)")
-            
-    with b2:
-        st.warning("**BANCO BHD**\n\n- **Cuenta:** 124-XXXXXX-X\n- **Tipo:** Ahorros\n- **Titular:** Lic. Jhonny Matos\n- **Cédula:** XXX-XXXXXXX-X")
-        if st.button("📋 Copiar Datos BHD"):
-            st.toast("Datos copiados al portapapeles (Simulado)")
-
-    st.divider()
-
-    # --- FILA 3: TABLA DE PENDIENTES ---
-    st.markdown("### 🔍 Resumen de Cuentas por Cobrar")
-    # Datos de ejemplo para visualizar el diseño
-    resumen_cuentas = {
-        "Expediente / Cliente": ["Juan Pérez (Deslinde)", "Litis Parcela 44", "Sucesión Familia García"],
-        "Honorarios Totales": [50000, 125000, 80000],
-        "Monto Cobrado": [25000, 50000, 80000],
-        "Balance Pendiente": [25000, 75000, 0]
-    }
-    st.table(resumen_cuentas)
-    st.caption("💡 El balance se actualiza automáticamente al registrar nuevos abonos.")
-    
 
 
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
@@ -1632,7 +1581,31 @@ elif menu == "💵 Facturación":
     vista_facturacion()
 elif menu == "⚙️ Configuración":
     vista_configuracion()
+# 👇 ESTE BLOQUE DEBE IR AL FINAL DE TODO SU CÓDIGO 👇
 elif menu == "💰 Gestión de Honorarios":
     st.title("💰 Gestión de Honorarios y Cobros")
     st.subheader("Control Financiero de la Firma")
-    st.info("Módulo conectado exitosamente. Aquí construiremos su registro de pagos.")
+
+    # --- REGISTRO DE MOVIMIENTOS ---
+    with st.expander("📝 Registrar Nuevo Pago o Abono", expanded=True):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            cliente_pago = st.text_input("Nombre del Cliente / Expediente:")
+            monto_pago = st.number_input("Monto Recibido (RD$):", min_value=0.0, step=1000.0)
+        with c2:
+            concepto_pago = st.selectbox("Concepto:", ["Primer Pago (50%)", "Segundo Pago de Honorarios", "Saldo Final", "Gastos Operativos"])
+            metodo_pago = st.radio("Método:", ["Efectivo", "Transferencia", "Cheque"])
+        with c3:
+            fecha_pago = st.date_input("Fecha:")
+            if st.button("💾 Guardar en Registro", use_container_width=True):
+                st.success(f"✅ Registro exitoso: RD$ {monto_pago} de {cliente_pago}")
+
+    st.divider()
+
+    # --- DATOS BANCARIOS ---
+    st.markdown("### 🏦 Cuentas para Depósitos")
+    b1, b2 = st.columns(2)
+    with b1:
+        st.info("**BANCO DE RESERVAS**\n\n- **Cuenta:** 960-XXXXXX-X\n- **Titular:** AboAgrim SRL")
+    with b2:
+        st.warning("**BANCO BHD**\n\n- **Cuenta:** 124-XXXXXX-X\n- **Titular:** Lic. Jhonny Matos")
