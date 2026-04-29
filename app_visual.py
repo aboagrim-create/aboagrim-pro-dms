@@ -810,7 +810,7 @@ def vista_configuracion():
             p = st.text_input("PIN de Seguridad:", type="password")
             
             if st.button("Desbloquear Panel"):
-                if u == "JhonnyMatos" and p == "1234":
+                if u == "JhonnyMatos" and p == "0681":
                     st.session_state.admin_autenticado = True
                     st.session_state.usuario = "Jhonny Matos"
                     st.session_state.rol = "Presidente Fundador"
@@ -1622,7 +1622,7 @@ elif menu == "⚙️ Configuración":
         with c_pin1:
             pin_maestro = st.text_input("Ingrese el PIN Maestro:", type="password")
             if st.button("🔓 Desbloquear Panel"):
-                if pin_maestro == "1234":  # Puede cambiar su clave aquí
+                if pin_maestro == "0681":  # Puede cambiar su clave aquí
                     st.session_state.pin_config = True
                     st.rerun()
                 else:
