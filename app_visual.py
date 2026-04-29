@@ -1267,7 +1267,7 @@ def vista_plantillas_auto():
                         })
 
         # 4. MOSTRAR LOS BOTONES (Fuera del botón rojo para que no desparezcan)
-    try:
+
     if "bandeja_descargas" in st.session_state and len(st.session_state["bandeja_descargas"]) > 0:
         st.write("---")
         st.success("✅ ¡Fábrica terminada! Sus documentos están listos en la bandeja:")
