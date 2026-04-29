@@ -1733,25 +1733,38 @@ elif menu == "⚙️ Configuración":
         st.info("El sistema enviará una copia exacta de cada expediente a estas dos cuentas simultáneamente.")
         
         with st.expander("⚙️ Configurar Rutas de Sincronización", expanded=True):
-            # --- MEMORIA BLINDADA (Streamlit no puede borrar esto) ---
-            if "ruta_ab_fija" not in st.session_state:
-                st.session_state["ruta_ab_fija"] = ""
-            if "ruta_per_fija" not in st.session_state:
-                st.session_state["ruta_per_fija"] = ""
+            # --- MEMORIA DE DISCO DURO (Sobrevive a actualizaciones de pantalla) ---
+            import json
+            import os
+            
+            archivo_rutas = "config_rutas.json"
+            
+            # 1. Leer el archivo secreto si existe
+            ruta_ab_guardada = ""
+            ruta_per_guardada = ""
+            if os.path.exists(archivo_rutas):
+                try:
+                    with open(archivo_rutas, "r") as f:
+                        datos_rutas = json.load(f)
+                        ruta_ab_guardada = datos_rutas.get("corporativa", "")
+                        ruta_per_guardada = datos_rutas.get("personal", "")
+                except:
+                    pass
 
             c_drive1, c_drive2 = st.columns(2)
             with c_drive1:
                 st.markdown("**Cuenta Corporativa:** `aboagrim@gmail.com`")
-                nueva_ruta_ab = st.text_input("Ruta en su PC corporativa:", value=st.session_state["ruta_ab_fija"])
+                nueva_ruta_ab = st.text_input("Ruta en su PC corporativa:", value=ruta_ab_guardada)
             
             with c_drive2:
                 st.markdown("**Cuenta Personal:** `lic.jhonnymatos@gmail.com`")
-                nueva_ruta_per = st.text_input("Ruta en su PC personal: ", value=st.session_state["ruta_per_fija"])
+                nueva_ruta_per = st.text_input("Ruta en su PC personal: ", value=ruta_per_guardada)
 
             if st.button("🔗 Enlazar Cuentas de Google Drive", type="primary"):
-                st.session_state["ruta_ab_fija"] = nueva_ruta_ab
-                st.session_state["ruta_per_fija"] = nueva_ruta_per
-                st.success("✅ ¡Rutas tatuadas en el sistema de forma permanente!")
+                # 2. Guardar las rutas en el archivo físico
+                with open(archivo_rutas, "w") as f:
+                    json.dump({"corporativa": nueva_ruta_ab, "personal": nueva_ruta_per}, f)
+                st.success("✅ ¡Rutas tatuadas en el disco duro! Ya no se borrarán al actualizar la pantalla.")
 
     # (Nota: Debajo de esto debe quedar su código de "with tab_maestro:" intacto)
 
