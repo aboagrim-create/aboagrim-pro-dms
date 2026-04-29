@@ -1588,17 +1588,51 @@ elif menu == "💰 Gestión de Honorarios":
 
     # --- REGISTRO DE MOVIMIENTOS ---
     with st.expander("📝 Registrar Nuevo Pago o Abono", expanded=True):
+        # Simulamos los expedientes de su oficina (luego vendrán de Supabase)
+        lista_expedientes = [
+            "Seleccione un expediente...",
+            "Exp. 2026-001 - Deslinde Parcela 44 (Juan Pérez)",
+            "Exp. 2026-002 - Litis Derecho Registrado (Familia García)",
+            "Exp. 2026-003 - Determinación de Herederos (María López)",
+            "➕ Nuevo Cliente / Expediente"
+        ]
+        
+        # El buscador inteligente (permite escribir para buscar)
+        cliente_pago = st.selectbox("🔍 Buscar Cliente o Expediente:", lista_expedientes)
+        
+        # Si elige "Nuevo Cliente", le muestra una casilla para escribirlo
+        if cliente_pago == "➕ Nuevo Cliente / Expediente":
+            cliente_pago = st.text_input("Ingrese el nombre del nuevo cliente o proyecto:")
+
         c1, c2, c3 = st.columns(3)
         with c1:
-            cliente_pago = st.text_input("Nombre del Cliente / Expediente:")
-            monto_pago = st.number_input("Monto Recibido (RD$):", min_value=0.0, step=1000.0)
+            monto_pago = st.number_input("Monto Recibido:", min_value=0.0, step=1000.0)
+            moneda = st.radio("Moneda:", ["RD$", "US$"], horizontal=True)
+            
         with c2:
-            concepto_pago = st.selectbox("Concepto:", ["Primer Pago (50%)", "Segundo Pago de Honorarios", "Saldo Final", "Gastos Operativos"])
-            metodo_pago = st.radio("Método:", ["Efectivo", "Transferencia", "Cheque"])
+            concepto_pago = st.selectbox("Concepto del Pago:", [
+                "Primer Pago (Avance de Honorarios)", 
+                "Segundo Pago de Honorarios", 
+                "Pago de Sellos e Impuestos", 
+                "Gastos de Mensura / Operativos",
+                "Saldo Final del Contrato"
+            ])
+            metodo_pago = st.selectbox("Método:", ["Transferencia BHD", "Transferencia Reservas", "Efectivo", "Cheque"])
+            
         with c3:
-            fecha_pago = st.date_input("Fecha:")
-            if st.button("💾 Guardar en Registro", use_container_width=True):
-                st.success(f"✅ Registro exitoso: RD$ {monto_pago} de {cliente_pago}")
+            fecha_pago = st.date_input("Fecha de Recepción:")
+            estado_cobro = st.selectbox("Estado del Recibo:", ["Completado", "Pendiente de Confirmación Bancaria"])
+            
+        st.divider()
+        
+        # Botones de Acción
+        c_btn1, c_btn2 = st.columns(2)
+        with c_btn1:
+            if st.button("💾 Guardar en Registro Contable", use_container_width=True, type="primary"):
+                st.success(f"✅ Pago de {moneda} {monto_pago} registrado a nombre de {cliente_pago}")
+        with c_btn2:
+            if st.button("📄 Generar Recibo PDF", use_container_width=True):
+                st.info("Generando recibo oficial con el logo de AboAgrim... (Simulado)")
 
     st.divider()
 
@@ -1609,3 +1643,29 @@ elif menu == "💰 Gestión de Honorarios":
         st.info("**BANCO DE RESERVAS**\n\n- **Cuenta:** 960-XXXXXX-X\n- **Titular:** AboAgrim SRL")
     with b2:
         st.warning("**BANCO BHD**\n\n- **Cuenta:** 124-XXXXXX-X\n- **Titular:** Lic. Jhonny Matos")
+
+    st.divider()
+
+    # --- PANEL DE ESTADO DE CUENTAS (PESTAÑAS) ---
+    st.markdown("### 📊 Estado General de Cuentas")
+    
+    # Creamos pestañas para organizar mejor la información
+    tab_pendientes, tab_historial = st.tabs(["🔴 Pendientes de Cobro", "🟢 Historial de Pagos Recibidos"])
+    
+    with tab_pendientes:
+        st.dataframe({
+            "Expediente / Asunto": ["Deslinde Parcela 44", "Litis Familia García"],
+            "Cliente": ["Juan Pérez", "María López"],
+            "Total Contrato": ["RD$ 150,000", "RD$ 85,000"],
+            "Abonado": ["RD$ 75,000", "RD$ 40,000"],
+            "Pendiente": ["RD$ 75,000", "RD$ 45,000"]
+        }, use_container_width=True)
+        
+    with tab_historial:
+        st.dataframe({
+            "Fecha": ["28/04/2026", "25/04/2026"],
+            "Cliente": ["Pedro Rodríguez", "Constructora Cibao"],
+            "Concepto": ["Segundo Pago Honorarios", "Avance de Honorarios"],
+            "Monto": ["RD$ 25,000", "RD$ 100,000"],
+            "Método": ["Transferencia BHD", "Cheque"]
+        }, use_container_width=True)
