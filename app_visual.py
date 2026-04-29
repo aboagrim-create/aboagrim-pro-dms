@@ -8,20 +8,35 @@ from docxtpl import DocxTemplate
 import os
 import shutil
 
-# --- MOTOR DE GUARDADO DUAL (GOOGLE DRIVE) ---
+# --- MOTOR DE GUARDADO DUAL (NUEVO BLINDADO) ---
 def guardar_expediente_en_drive(ruta_archivo_original, nombre_carpeta_expediente):
-    """Copia un archivo o carpeta hacia los dos Google Drives configurados."""
+    """Copia un archivo o carpeta hacia los dos Google Drives configurados en el disco duro."""
+    import os
+    import shutil
+    import json
+
+    archivo_rutas = "config_rutas.json"
+    ruta_ab = ""
+    ruta_per = ""
+
+    # 1. Leer las rutas desde nuestro archivo blindado
+    if os.path.exists(archivo_rutas):
+        try:
+            with open(archivo_rutas, "r") as f:
+                datos = json.load(f)
+                ruta_ab = datos.get("corporativa", "")
+                ruta_per = datos.get("personal", "")
+        except:
+            pass
+
     try:
-        ruta_ab = st.session_state.get("ruta_aboagrim", "")
-        ruta_per = st.session_state.get("ruta_personal", "")
-        
-        # 1. Guardar en AboAgrim Drive
+        # 2. Guardar en la Cuenta Corporativa
         if ruta_ab and os.path.exists(ruta_ab):
             destino_ab = os.path.join(ruta_ab, nombre_carpeta_expediente)
             os.makedirs(destino_ab, exist_ok=True)
             shutil.copy2(ruta_archivo_original, destino_ab)
             
-        # 2. Guardar en Personal Drive
+        # 3. Guardar en la Cuenta Personal
         if ruta_per and os.path.exists(ruta_per):
             destino_per = os.path.join(ruta_per, nombre_carpeta_expediente)
             os.makedirs(destino_per, exist_ok=True)
@@ -1282,7 +1297,35 @@ def vista_plantillas_auto():
                     use_container_width=True,
                     key=f"dl_btn_{doc['nombre']}"
                 )
+            # --- GATILLO DE DRIVE BLINDADO ---
+            import json
+            import os
+            try:
+                ruta_ab, ruta_per = "", ""
+                if os.path.exists("config_rutas.json"):
+                    with open("config_rutas.json", "r") as f:
+                        datos = json.load(f)
+                        ruta_ab = datos.get("corporativa", "")
+                        ruta_per = datos.get("personal", "")
                 
+                # Si hay alguna ruta configurada, guardamos los documentos
+                if ruta_ab or ruta_per:
+                    for doc in st.session_state["bandeja_descargas"]:
+                        nombre_final = f"AboAgrim_{doc['nombre']}"
+                        contenido = doc['archivo'].getvalue() # Extrae el archivo de la memoria
+                        
+                        # Guardar en la PC Corporativa
+                        if ruta_ab and os.path.exists(ruta_ab):
+                            with open(os.path.join(ruta_ab, nombre_final), "wb") as f_out:
+                                f_out.write(contenido)
+                                
+                        # Guardar en la PC Personal
+                        if ruta_per and os.path.exists(ruta_per):
+                            with open(os.path.join(ruta_per, nombre_final), "wb") as f_out:
+                                f_out.write(contenido)
+            except Exception as e:
+                pass # Si hay un error de conexión, se queda en silencio para no asustar en pantalla
+            # ---------------------------------
                
     except Exception as e:
         st.error(f"❌ Error al fabricar: {e}")
