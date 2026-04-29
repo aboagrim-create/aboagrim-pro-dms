@@ -1588,32 +1588,6 @@ def vista_registro_maestro():
 # 1. Asegurar el Rol de Presidente (Blindaje)
 usuario_actual = st.session_state.get("usuario", "Invitado")
 
-# Si es usted, forzamos el rango máximo automáticamente
-if "Jhonny" in usuario_actual or usuario_actual == "JhonnyMatos":
-    st.session_state["rol"] = "Presidente Fundador"
-    st.session_state["admin_autenticado"] = True
-
-rol_usuario = st.session_state.get("rol", "Pasante")
-
-# 2. Definición Dinámica de Módulos
-modulos = [
-    "🏠 Mando Central", 
-    "👤 Registro Maestro", 
-    "📂 Archivo Digital", 
-    "📄 Plantillas Auto", 
-    "📅 Alertas y Plazos"
-]
-
-# 💳 VALIDACIÓN CRÍTICA PARA FACTURACIÓN
-# Si es usted o tiene rango alto, se agrega el módulo
-if rol_usuario in ["Presidente Fundador", "Abogado", "Agrimensor"]:
-    if "💵 Facturación" not in modulos:
-        modulos.append("💵 Facturación")
-
-# Siempre ver configuración si es el jefe o no está logueado
-if rol_usuario == "Presidente Fundador" or not st.session_state.get("admin_autenticado"):
-    if "⚙️ Configuración" not in modulos:
-        modulos.append("⚙️ Configuración")
 
 # 3. Interfaz de Barra Lateral
 with st.sidebar:
