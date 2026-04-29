@@ -1270,7 +1270,7 @@ def vista_plantillas_auto():
 # ... aquí termina su código de la Fábrica (probablemente en st.rerun() o similar) ...
 
 # ESTE ELIF DEBE ESTAR PEGADO AL BORDE IZQUIERDO DE LA PANTALLA
-elif opcion == "💰 Gestión de Honorarios":
+if opcion == "💰 Gestión de Honorarios":
     st.title("💰 Gestión de Honorarios y Cobros")
     st.subheader("Control Financiero de la Firma")
     # ... el resto del código indentado hacia adentro ...
