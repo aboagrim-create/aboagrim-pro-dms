@@ -1572,6 +1572,13 @@ if rol_usuario == "Presidente Fundador" or not st.session_state.get("admin_auten
 with st.sidebar:
     st.divider()
     menu = st.radio("Navegación:", modulos, key="menu_final_v4")
+    # === TARJETA DE CONTACTO OFICIAL ===
+    st.divider()
+    st.markdown("🏢 **OFICINA PRINCIPAL**")
+    st.caption("📍 Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Centro Ciudad, Santiago.")
+    st.caption("📞 829-826-5888 / 809-691-3333")
+    st.caption("✉️ aboagrim@gmail.com")
+    st.caption("👤 **Lic. Jhonny Matos, M.A.** (Presidente-Fundador)")
 
 # 4. El Gatillo (Enrutamiento)
 if menu == "🏠 Mando Central":
