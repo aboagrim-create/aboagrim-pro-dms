@@ -1740,17 +1740,16 @@ elif menu == "⚙️ Configuración":
                 st.session_state.ruta_personal = "C:/Ruta/A/Drive/Personal"
 
             c_drive1, c_drive2 = st.columns(2)
-    with c_drive1:
-        st.markdown("**Cuenta Corporativa:** `aboagrim@gmail.com`")
-        nueva_ruta_ab = st.text_input("Ruta de la carpeta en su PC:", value=st.session_state.get("ruta_aboagrim", ""))
-    with c_drive2:
-        st.markdown("**Cuenta Personal:** `lic.jhonnymatos@gmail.com`")
-        nueva_ruta_per = st.text_input("Ruta de la carpeta en su PC:", value=st.session_state.get("ruta_personal", ""))
+            with c_drive1:
+                st.markdown("**Cuenta Corporativa:** `aboagrim@gmail.com`")
+                st.text_input("Ruta de la carpeta en su PC:", key="ruta_aboagrim", placeholder="C:/Ruta/A/Drive/Aboagrim")
+            
+            with c_drive2:
+                st.markdown("**Cuenta Personal:** `lic.jhonnymatos@gmail.com`")
+                st.text_input("Ruta de la carpeta en su PC: ", key="ruta_personal", placeholder="C:/Ruta/A/Drive/Personal")
 
-    if st.button("🔗 Enlazar Cuentas de Google Drive", type="primary"):
-        st.session_state["ruta_aboagrim"] = nueva_ruta_ab
-        st.session_state["ruta_personal"] = nueva_ruta_per
-        st.success("✅ ¡Cuentas enlazadas en memoria permanente! Los expedientes ahora se guardarán por duplicado.")
+            if st.button("🔗 Enlazar Cuentas de Google Drive", type="primary"):
+                st.success("✅ ¡Rutas guardadas en la memoria permanente del sistema!")
 
     # (Nota: Debajo de esto debe quedar su código de "with tab_maestro:" intacto)
 
