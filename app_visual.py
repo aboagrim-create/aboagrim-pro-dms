@@ -1297,30 +1297,67 @@ def vista_plantillas_auto():
             st.write("---")
             st.success("✅ ¡Fábrica terminada! Sus documentos están listos en la bandeja:")
     
-            import io
-        import zipfile
+            # --- NUEVO SISTEMA DIRECTO Y MEMORIA DE EXPEDIENTES ---
+        import json
+        import os
 
-        # 1. Diseñamos la ruta exacta que usted ordenó
+        # 1. Diseñamos la ruta maestra de las carpetas
         nombre_carpeta_maestra = f"{organo_ji}/{expediente_num} - {cliente_nombre} - {tramite_nombre}"
 
-        # 2. Fabricamos el Maletín Digital (ZIP) en la memoria
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-            for doc in st.session_state["bandeja_descargas"]:
-                # Esto crea las carpetas por dentro y guarda el documento
-                ruta_interna = f"{nombre_carpeta_maestra}/{doc['nombre']}"
-                zip_file.writestr(ruta_interna, doc['archivo'].getvalue())
+        # 2. CEREBRO: Guardamos la memoria del expediente para el futuro
+        archivo_memoria = "memoria_expedientes.json"
+        memoria = {}
+        if os.path.exists(archivo_memoria):
+            try:
+                with open(archivo_memoria, "r") as f:
+                    memoria = json.load(f)
+            except:
+                pass
+        
+        # Inyectamos los datos del cliente al número de expediente
+        memoria[expediente_num] = {
+            "cliente": cliente_nombre,
+            "tramite": tramite_nombre,
+            "organo": organo_ji,
+            "carpeta_relativa": nombre_carpeta_maestra
+        }
+        with open(archivo_memoria, "w") as f:
+            json.dump(memoria, f)
 
-        # 3. Un solo Botón Maestro para descargarlo todo
+        # 3. GATILLO DIRECTO A DRIVE (Crea carpetas automáticamente)
+        ruta_ab, ruta_per = "", ""
+        if os.path.exists("config_rutas.json"):
+            try:
+                with open("config_rutas.json", "r") as f:
+                    datos = json.load(f)
+                    ruta_ab = datos.get("corporativa", "")
+                    ruta_per = datos.get("personal", "")
+            except:
+                pass
+
+        archivos_guardados = 0
+        for doc in st.session_state["bandeja_descargas"]:
+            # Guardar en la PC Corporativa (Crea las carpetas MC > 2026-0001...)
+            if ruta_ab and os.path.exists(ruta_ab):
+                destino_ab = os.path.join(ruta_ab, nombre_carpeta_maestra)
+                os.makedirs(destino_ab, exist_ok=True) 
+                with open(os.path.join(destino_ab, f"AboAgrim_{doc['nombre']}"), "wb") as f_out:
+                    f_out.write(doc['archivo'].getvalue())
+                archivos_guardados += 1
+                
+            # Guardar en la PC Personal
+            if ruta_per and os.path.exists(ruta_per):
+                destino_per = os.path.join(ruta_per, nombre_carpeta_maestra)
+                os.makedirs(destino_per, exist_ok=True)
+                with open(os.path.join(destino_per, f"AboAgrim_{doc['nombre']}"), "wb") as f_out:
+                    f_out.write(doc['archivo'].getvalue())
+        
+        # 4. Confirmación en pantalla
         st.write("---")
-        st.download_button(
-            label="📦 Descargar Expediente Completo (ZIP con Carpetas)",
-            data=zip_buffer.getvalue(),
-            file_name=f"Expediente_{expediente_num}.zip",
-            mime="application/zip",
-            type="primary",
-            use_container_width=True
-        )
+        if archivos_guardados > 0:
+            st.success(f"📂 ¡Expediente {expediente_num} creado y guardado con éxito directamente en sus carpetas de Drive!")
+        else:
+            st.warning("⚠️ Ojo: Los documentos se fabricaron, pero el sistema no pudo depositarlos en Drive. (Verifique que esté ejecutando el programa desde su Mini PC local y no desde la nube).")
                
     except Exception as e:
         st.error(f"❌ Error al fabricar: {e}")
