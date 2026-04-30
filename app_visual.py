@@ -1321,35 +1321,6 @@ def vista_plantillas_auto():
             type="primary",
             use_container_width=True
         )
-            # --- GATILLO DE DRIVE BLINDADO ---
-        import json
-            import os
-            try:
-                ruta_ab, ruta_per = "", ""
-                if os.path.exists("config_rutas.json"):
-                    with open("config_rutas.json", "r") as f:
-                        datos = json.load(f)
-                        ruta_ab = datos.get("corporativa", "")
-                        ruta_per = datos.get("personal", "")
-                
-                # Si hay alguna ruta configurada, guardamos los documentos
-                if ruta_ab or ruta_per:
-                    for doc in st.session_state["bandeja_descargas"]:
-                        nombre_final = f"AboAgrim_{doc['nombre']}"
-                        contenido = doc['archivo'].getvalue() # Extrae el archivo de la memoria
-                        
-                        # Guardar en la PC Corporativa
-                        if ruta_ab and os.path.exists(ruta_ab):
-                            with open(os.path.join(ruta_ab, nombre_final), "wb") as f_out:
-                                f_out.write(contenido)
-                                
-                        # Guardar en la PC Personal
-                        if ruta_per and os.path.exists(ruta_per):
-                            with open(os.path.join(ruta_per, nombre_final), "wb") as f_out:
-                                f_out.write(contenido)
-            except Exception as e:
-                pass # Si hay un error de conexión, se queda en silencio para no asustar en pantalla
-            # ---------------------------------
                
     except Exception as e:
         st.error(f"❌ Error al fabricar: {e}")
