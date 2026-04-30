@@ -1251,7 +1251,14 @@ def vista_plantillas_auto():
         plantillas_elegidas = st.multiselect("Elija los documentos Word que desea rellenar (puede elegir varios):", archivos_disponibles)
         st.caption("💡 Los archivos que suba en el administrador de abajo aparecerán aquí automáticamente.")
         st.write("")
-        
+        st.markdown("### 🗂️ Datos para la Estructura Maestra")
+col_e1, col_e2 = st.columns(2)
+with col_e1:
+    organo_ji = st.selectbox("Órgano de la Jurisdicción:", ["MC", "RT", "TT"])
+    expediente_num = st.text_input("Número de Expediente:", value="2026-0001")
+with col_e2:
+    cliente_nombre = st.text_input("Nombre del Cliente:", placeholder="Ej: Juan Pérez")
+    tramite_nombre = st.text_input("Nombre del Trámite:", placeholder="Ej: Deslinde")
         if st.button("🚀 FABRICAR DOCUMENTOS MAESTROS", type="primary", use_container_width=True):
             if not plantillas_elegidas:
                 st.error("⚠️ Por favor, seleccione al menos un archivo de plantilla arriba antes de fabricar.")
@@ -1287,16 +1294,30 @@ def vista_plantillas_auto():
             st.write("---")
             st.success("✅ ¡Fábrica terminada! Sus documentos están listos en la bandeja:")
     
+            import io
+        import zipfile
+
+        # 1. Diseñamos la ruta exacta que usted ordenó
+        nombre_carpeta_maestra = f"{organo_ji}/{expediente_num} - {cliente_nombre} - {tramite_nombre}"
+
+        # 2. Fabricamos el Maletín Digital (ZIP) en la memoria
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
             for doc in st.session_state["bandeja_descargas"]:
-                # --- TODO ESTO DEBE TENER MÁS SANGRÍA ---
-                st.download_button(
-                    label=f"📥 Descargar {doc['nombre']}",
-                    data=doc['archivo'],
-                    file_name=f"AboAgrim_{doc['nombre']}",
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    use_container_width=True,
-                    key=f"dl_btn_{doc['nombre']}"
-                )
+                # Esto crea las carpetas por dentro y guarda el documento
+                ruta_interna = f"{nombre_carpeta_maestra}/{doc['nombre']}"
+                zip_file.writestr(ruta_interna, doc['archivo'].getvalue())
+
+        # 3. Un solo Botón Maestro para descargarlo todo
+        st.write("---")
+        st.download_button(
+            label="📦 Descargar Expediente Completo (ZIP con Carpetas)",
+            data=zip_buffer.getvalue(),
+            file_name=f"Expediente_{expediente_num}.zip",
+            mime="application/zip",
+            type="primary",
+            use_container_width=True
+        )
             # --- GATILLO DE DRIVE BLINDADO ---
             import json
             import os
