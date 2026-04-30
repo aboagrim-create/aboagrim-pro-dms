@@ -1322,7 +1322,7 @@ def vista_plantillas_auto():
             use_container_width=True
         )
             # --- GATILLO DE DRIVE BLINDADO ---
-            import json
+        import json
             import os
             try:
                 ruta_ab, ruta_per = "", ""
