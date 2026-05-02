@@ -1264,8 +1264,8 @@ for plantilla in plantillas_elegidas:
         st.error("❌ Ocurrió un error al forjar los documentos. Verifique las plantillas.")
                                 
 
-                ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
-                archivos = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
+        ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
+        archivos = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
                 
                 if archivos:
                     archivo_a_borrar = st.selectbox("Seleccione el archivo a eliminar:", archivos)
