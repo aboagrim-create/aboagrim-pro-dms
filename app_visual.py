@@ -242,53 +242,6 @@ def vista_mando():
 
     st.write("") 
 
-    # 2. Formulario de Fabricación de Documentos
-    with st.container():
-        st.markdown("### 📝 Generar Documento Maestro")
-        col_f1, col_f2 = st.columns(2)
-        with col_f1:
-            jurisdiccion = st.selectbox("Órgano de la Jurisdicción:", ["MC", "JO", "TT"])
-            expediente = st.text_input("Número de Expediente:", placeholder="2026-0001")
-        with col_f2:
-            cliente = st.text_input("Nombre del Cliente:", placeholder="Ej: Juan Pérez")
-            tramite = st.text_input("Nombre del Trámite:", placeholder="Ej: Deslinde")
-
-        if st.button("🚀 FABRICAR DOCUMENTOS MAESTROS", use_container_width=True):
-            st.info("Generando documentos... Por favor, espere.")
-
-    st.write("---")
-
-    # 3. Administración Protegida
-    with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS"):
-        pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_p_auto")
-        if pin_ingresado == "0681":
-            import os
-            maint_col1, maint_col2 = st.columns(2)
-            ops = ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_tribunales_de_tierras"]
-            with maint_col1:
-                st.markdown("**📤 Subir Nuevo Modelo**")
-                dest = st.selectbox("Carpeta Destino:", ops)
-                arc = st.file_uploader("Elija archivo .docx", type=["docx"])
-                if st.button("💾 Guardar Plantilla"):
-                    if arc:
-                        os.makedirs(f"plantillas_maestras/{dest}", exist_ok=True)
-                        with open(f"plantillas_maestras/{dest}/{arc.name}", "wb") as f:
-                            f.write(arc.getbuffer())
-                        st.success(f"✅ Guardado.")
-            with maint_col2:
-                st.markdown("**🗑️ Borrar Modelo**")
-                c_borrar = st.selectbox("Buscar en:", ops, key="del_dir")
-                r_limp = f"plantillas_maestras/{c_borrar}"
-                arcs = os.listdir(r_limp) if os.path.exists(r_limp) else []
-                if arcs:
-                    a_borrar = st.selectbox("Seleccione archivo:", arcs)
-                    if st.button("🗑️ Eliminar Plantilla"):
-                        os.remove(f"{r_limp}/{a_borrar}")
-                        st.success("✅ Eliminado.")
-                        st.rerun()
-
-    st.write("---")
-
     # 4. Resumen de Operaciones (Conexión a la Nube)
     st.markdown("### 📈 Desempeño Operativo en la Nube")
     try:
