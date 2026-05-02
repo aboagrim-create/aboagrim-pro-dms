@@ -1363,14 +1363,12 @@ def vista_plantillas():
                 if plantillas_elegidas:
                     
                     # === GENERADORES DE PÁRRAFOS AUTOMÁTICOS ===
-                    # 1. Clientes y Apoderados
                     cl_nombres = " y ".join([c['nombre'] for c in lista_clientes]) if lista_clientes else "N/A"
                     cl_generales = "; y ".join([f"{c['nombre']}, dominicano(a), mayor de edad, portador(a) de la cédula No. {c['cedula']}, domiciliado(a) en {c['domicilio']}, Tel: {c['telefono']}, Email: {c['email']}" for c in lista_clientes]) if lista_clientes else "N/A"
                     
                     ap_nombres = " y ".join([a['nombre'] for a in lista_apoderados]) if lista_apoderados else "N/A"
                     ap_generales = "; y ".join([f"{a['nombre']}, dominicano(a), mayor de edad, portador(a) de la cédula No. {a['cedula']}, actuando en calidad de {a['calidad']}, con domicilio en {a['domicilio']}, Contacto: {a['contacto']}" for a in lista_apoderados]) if lista_apoderados else "N/A"
 
-                    # 2. Profesionales
                     ab_nombres = " y ".join([a['nombre'] for a in lista_abogados]) if lista_abogados else "N/A"
                     ab_generales = "; y ".join([f"{a['nombre']}, portador(a) de la cédula No. {a['cedula']}, CARD {a['matricula']}, estudio en {a['domicilio']}, Tel: {a['telefono']}, Email: {a['email']}" for a in lista_abogados]) if lista_abogados else "N/A"
                     
@@ -1383,10 +1381,8 @@ def vista_plantillas():
                     al_nombres = " y ".join([a['nombre'] for a in lista_alguaciles]) if lista_alguaciles else "N/A"
                     al_generales = "; y ".join([f"{a['nombre']}, cédula No. {a['cedula']}, Alguacil del {a['matricula']}, Tel: {a['telefono']}" for a in lista_alguaciles]) if lista_alguaciles else "N/A"
 
-                    # 3. Inmuebles
                     in_descripciones = "\n".join([f"Parcela {i['parcela']}, DC {i['dc']}, {i['provincia']}. Superficie: {i['superficie']}. Coordenadas: {i['coord']}. Sustentado en {i['tipo_doc']} No. {i['numero']}, Libro {i['libro']}, Folio {i['folio']}, inscrito en fecha {i['fecha_ins']}." for i in lista_inmuebles]) if lista_inmuebles else "N/A"
 
-                    # 4. Transacciones y Depositantes
                     pg_detalles = "\n".join([f"Monto de {p['monto']} pagadero mediante {p['forma']} ({p['banco']})." for p in lista_pagos]) if lista_pagos else "N/A"
                     
                     de_nombres = " y ".join([d['nombre'] for d in lista_depositantes]) if lista_depositantes else "N/A"
@@ -1394,21 +1390,16 @@ def vista_plantillas():
 
                     impuestos_str = ", ".join(impuestos_pagados) if impuestos_pagados else "N/A"
                     
-                    # MEGA DICCIONARIO
                     datos_para_word = {
                         "expediente": exp_seleccionado, "fecha_hoy": datetime.now().strftime("%d de %B del %Y"),
-                        
                         "clientes_nombres": cl_nombres, "clientes_generales": cl_generales,
                         "apoderados_nombres": ap_nombres, "apoderados_generales": ap_generales,
-                        
                         "abogados_nombres": ab_nombres, "abogados_generales": ab_generales,
                         "agrimensores_nombres": ag_nombres, "agrimensores_generales": ag_generales,
                         "notarios_nombres": no_nombres, "notarios_generales": no_generales,
                         "alguaciles_nombres": al_nombres, "alguaciles_generales": al_generales,
-                        
                         "inmuebles_detalle": in_descripciones,
                         "pagos_detalle": pg_detalles, "testigos": testigos,
-                        
                         "depositantes_nombres": de_nombres, "depositantes_generales": de_generales,
                         "impuestos_pagados": impuestos_str, "inventario_anexos": inventario_anexos
                     }
@@ -1421,35 +1412,41 @@ def vista_plantillas():
                             st.download_button(label=f"⬇️ Descargar: {p}", data=buffer, file_name=f"{prefijo}_{p}")
                             archivos_generados += 1
                     if archivos_generados > 0:
-                        st.success(f"⚖️ ¡Impecable! Se redactaron {archivos_generados} documentos con generales e inmuebles múltiples.")
+                        st.success(f"⚖️ ¡Impecable! Se redactaron {archivos_generados} documentos.")
 
     with tab_boveda:
         st.subheader("Gestión de Archivos Maestros (.docx)")
-        col_up1, col_up2 = st.columns([2, 3])
-        with col_up1:
-            destino = st.selectbox("Cargar en:", carpetas_base)
-        with col_up2:
-            archivos_subidos = st.file_uploader("Arrastrar Plantillas Nuevas", type=["docx"], accept_multiple_files=True)
+        
+        # 🛡️ VERIFICACIÓN DE SEGURIDAD (SOLO ADMIN PUEDE SUBIR)
+        if st.session_state.get("rol_actual") == "Administrador":
+            col_up1, col_up2 = st.columns([2, 3])
+            with col_up1:
+                destino = st.selectbox("Cargar en:", carpetas_base)
+            with col_up2:
+                archivos_subidos = st.file_uploader("Arrastrar Plantillas Nuevas", type=["docx"], accept_multiple_files=True)
 
-        if archivos_subidos:
-            for archivo in archivos_subidos:
-                with open(os.path.join("plantillas_maestras", destino, archivo.name), "wb") as f:
-                    f.write(archivo.getbuffer())
-            st.success("✅ Plantillas guardadas en la bóveda.")
-            st.rerun()
+            if archivos_subidos:
+                for archivo in archivos_subidos:
+                    with open(os.path.join("plantillas_maestras", destino, archivo.name), "wb") as f:
+                        f.write(archivo.getbuffer())
+                st.success("✅ Plantillas guardadas en la bóveda.")
+                st.rerun()
 
-        st.divider()
-        st.write("**Borrar Plantillas Existentes**")
-        cat_ver = st.selectbox("Revisar categoría:", carpetas_base)
-        ruta_ver = os.path.join("plantillas_maestras", cat_ver)
-        if os.path.exists(ruta_ver):
-            archivos_en_cat = [f for f in os.listdir(ruta_ver) if f.endswith(".docx")]
-            if archivos_en_cat:
-                c_del1, c_del2 = st.columns([3, 1])
-                archivo_borrar = c_del1.selectbox("Seleccione para eliminar:", archivos_en_cat)
-                if c_del2.button("🔥 Eliminar Modelo"):
-                    os.remove(os.path.join(ruta_ver, archivo_borrar))
-                    st.rerun()
+            st.divider()
+            st.write("**Borrar Plantillas Existentes**")
+            cat_ver = st.selectbox("Revisar categoría:", carpetas_base)
+            ruta_ver = os.path.join("plantillas_maestras", cat_ver)
+            if os.path.exists(ruta_ver):
+                archivos_en_cat = [f for f in os.listdir(ruta_ver) if f.endswith(".docx")]
+                if archivos_en_cat:
+                    c_del1, c_del2 = st.columns([3, 1])
+                    archivo_borrar = c_del1.selectbox("Seleccione para eliminar:", archivos_en_cat)
+                    if c_del2.button("🔥 Eliminar Modelo"):
+                        os.remove(os.path.join(ruta_ver, archivo_borrar))
+                        st.rerun()
+        else:
+            st.error("⛔ Acceso Denegado: Nivel de autorización insuficiente.")
+            st.warning("Solo el Administrador General (Lic. Jhonny Matos) tiene permisos para alterar las plantillas estratégicas.")
 
 def vista_honorarios():
     import streamlit as st
@@ -1644,13 +1641,64 @@ def vista_honorarios():
             type="primary"
         )
 
+def vista_configuracion():
+    import streamlit as st
+    
+    st.title("⚙️ Configuración del Sistema")
+    st.markdown("### 👥 Panel de Gestión de Usuarios")
+    
+    if st.session_state.get("rol_actual") != "Administrador":
+        st.error("⛔ Acceso Denegado. Área exclusiva de la Presidencia.")
+        return
+
+    db = st.session_state["db_usuarios"]
+
+    with st.container(border=True):
+        st.subheader("Usuarios Activos")
+        for usr, datos in db.items():
+            col1, col2, col3, col4 = st.columns([2, 3, 2, 2])
+            col1.write(f"**ID:** {usr}")
+            col2.write(f"**Nombre:** {datos['nombre']}")
+            col3.write(f"**Rol:** {datos['rol']}")
+            
+            with col4:
+                if usr.lower() == "jmatos":
+                    st.info("👑 Admin Principal")
+                else:
+                    if st.button("🗑️ Borrar", key=f"del_{usr}", use_container_width=True):
+                        del st.session_state["db_usuarios"][usr]
+                        st.rerun()
+
+    st.write("---")
+
+    with st.container(border=True):
+        st.subheader("➕ Agregar Nuevo Empleado / Usuario")
+        with st.form("form_nuevo_usuario", clear_on_submit=True):
+            c1, c2 = st.columns(2)
+            nuevo_usr = c1.text_input("ID de Usuario:")
+            nuevo_pass = c2.text_input("Contraseña:", type="password")
+            nuevo_nombre = c1.text_input("Nombre Completo:")
+            nuevo_rol = c2.selectbox("Nivel de Acceso:", ["Usuario", "Administrador"])
+            
+            if st.form_submit_button("💾 Crear Usuario", type="primary"):
+                if nuevo_usr and nuevo_pass and nuevo_nombre:
+                    if nuevo_usr in db:
+                        st.error("❌ Ese ID de usuario ya existe.")
+                    else:
+                        st.session_state["db_usuarios"][nuevo_usr] = {"pass": nuevo_pass, "rol": nuevo_rol, "nombre": nuevo_nombre}
+                        st.success(f"✅ Usuario creado con éxito.")
+                        st.rerun()
+                else:
+                    st.warning("⚠️ Complete todos los campos.")
+
 # ==========================================
-# 🔒 SISTEMA DE SEGURIDAD Y LOGIN (RBAC)
+# 🔒 SISTEMA DE SEGURIDAD Y LOGIN DINÁMICO
 # ==========================================
-USUARIOS_PERMITIDOS = {
-    "jmatos": {"pass": "admin2026", "rol": "Administrador", "nombre": "Lic. Jhonny Matos"},
-    "asistente": {"pass": "abo123", "rol": "Usuario", "nombre": "Asistente Legal / Agrimensor"}
-}
+if "db_usuarios" not in st.session_state:
+    st.session_state["db_usuarios"] = {
+        "Jmatos": {"pass": "0681", "rol": "Administrador", "nombre": "Lic. Jhonny Matos"},
+        "asistente": {"pass": "abo123", "rol": "Usuario", "nombre": "Asistente Legal"}
+    }
 
 if "usuario_actual" not in st.session_state:
     st.session_state["usuario_actual"] = None
@@ -1667,10 +1715,13 @@ if st.session_state["usuario_actual"] is None:
             pass_input = st.text_input("🔑 Contraseña:", type="password")
             
             if st.button("Iniciar Sesión", use_container_width=True, type="primary"):
-                if usuario_input in USUARIOS_PERMITIDOS and USUARIOS_PERMITIDOS[usuario_input]["pass"] == pass_input:
-                    st.session_state["usuario_actual"] = usuario_input
-                    st.session_state["rol_actual"] = USUARIOS_PERMITIDOS[usuario_input]["rol"]
-                    st.session_state["nombre_usuario"] = USUARIOS_PERMITIDOS[usuario_input]["nombre"]
+                db = st.session_state["db_usuarios"]
+                usuario_valido = next((u for u in db if u.lower() == usuario_input.lower()), None)
+                
+                if usuario_valido and db[usuario_valido]["pass"] == pass_input:
+                    st.session_state["usuario_actual"] = usuario_valido
+                    st.session_state["rol_actual"] = db[usuario_valido]["rol"]
+                    st.session_state["nombre_usuario"] = db[usuario_valido]["nombre"]
                     st.rerun()
                 else:
                     st.error("❌ Credenciales incorrectas. Sistema bloqueado.")
@@ -1713,37 +1764,4 @@ elif menu == "⏱️ Alertas y Plazos":
 elif menu == "💳 Gestión de Honorarios":
     vista_honorarios()
 elif menu == "⚙️ Configuración":
-    st.warning("Módulo de configuración en desarrollo.")
-with tab_boveda:
-        st.subheader("Gestión de Archivos Maestros (.docx)")
-        
-        # 🛡️ VERIFICACIÓN DE SEGURIDAD
-        if st.session_state.get("rol_actual") == "Administrador":
-            col_up1, col_up2 = st.columns([2, 3])
-            with col_up1:
-                destino = st.selectbox("Cargar en:", carpetas_base)
-            with col_up2:
-                archivos_subidos = st.file_uploader("Arrastrar Plantillas Nuevas", type=["docx"], accept_multiple_files=True)
-
-            if archivos_subidos:
-                for archivo in archivos_subidos:
-                    with open(os.path.join("plantillas_maestras", destino, archivo.name), "wb") as f:
-                        f.write(archivo.getbuffer())
-                st.success("✅ Plantillas guardadas en la bóveda.")
-                st.rerun()
-
-            st.divider()
-            st.write("**Borrar Plantillas Existentes**")
-            cat_ver = st.selectbox("Revisar categoría:", carpetas_base)
-            ruta_ver = os.path.join("plantillas_maestras", cat_ver)
-            if os.path.exists(ruta_ver):
-                archivos_en_cat = [f for f in os.listdir(ruta_ver) if f.endswith(".docx")]
-                if archivos_en_cat:
-                    c_del1, c_del2 = st.columns([3, 1])
-                    archivo_borrar = c_del1.selectbox("Seleccione para eliminar:", archivos_en_cat)
-                    if c_del2.button("🔥 Eliminar Modelo"):
-                        os.remove(os.path.join(ruta_ver, archivo_borrar))
-                        st.rerun()
-        else:
-            st.error("⛔ Acceso Denegado: Nivel de autorización insuficiente.")
-            st.warning("Solo el Administrador General tiene permisos para alterar las plantillas. Vaya a 'Taller de Redacción' para forjar documentos.")
+    vista_configuracion()
