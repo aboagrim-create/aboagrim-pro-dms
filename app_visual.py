@@ -239,19 +239,7 @@ def vista_mando():
     """, unsafe_allow_html=True)
 
     # 4. Resumen de Operaciones (Conexión a la Nube)
-    st.markdown("### 📈 Desempeño Operativo en la Nube")
-    try:
-        respuesta = supabase.table("expedientes_maestros").select("*").execute()
-        datos = respuesta.data
-        total_expedientes = len(datos)
-        
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Expedientes Totales", total_expedientes)
-        col2.metric("Mensuras Activas", "Próximamente")
-        col3.metric("Estado del Sistema", "En Línea")
-        
-    except Exception as e:
-        st.error(f"Error al conectar con la nube: {e}")
+
 # =====================================================================
 # MÓDULO 2: REGISTRO MAESTRO (CON PESTAÑAS Y 7 ROLES)
 # =====================================================================
