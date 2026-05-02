@@ -1350,12 +1350,12 @@ with st.form("formulario_fabricacion"):
                                 archivo_subido = st.file_uploader("Elija el archivo .docx", type=["docx"])
                         
                                 if st.button("💾 Guardar Plantilla"):
-                                if archivo_subido:
-                                os.makedirs(f"plantillas_maestras/{destino}", exist_ok=True)
-                                ruta_guardado = f"plantillas_maestras/{destino}/{archivo_subido.name}"
-                                with open(ruta_guardado, "wb") as f:
-                                f.write(archivo_subido.getbuffer())
-                                st.success(f"✅ Documento guardado en {destino}. ¡Ya puede usarlo arriba!")
+                                        if archivo_subido:
+                                                os.makedirs(f"plantillas_maestras/{destino}", exist_ok=True)
+                                                ruta_guardado = f"plantillas_maestras/{destino}/{archivo_subido.name}"
+                                                with open(ruta_guardado, "wb") as f:
+                                                f.write(archivo_subido.getbuffer())
+                                                st.success(f"✅ Documento guardado en {destino}. ¡Ya puede usarlo arriba!")
         
                         with maint_col2:
                         st.markdown("**🗑️ Borrar Modelo Existente**")
