@@ -1179,16 +1179,16 @@ def vista_plantillas_auto():
         st.markdown("### 🗂️ Datos para la Estructura Maestra")
 with st.form("formulario_fabricacion"):
         col_e1, col_e2 = st.columns(2)
-        
-        with col_e1:
-            organo_ji = st.selectbox("Órgano de la Jurisdicción:", ["MC", "RT", "TT"])
-            expediente_num = st.text_input("Número de Expediente:", value="2026-0001")
-            
-        with col_e2:
-            cliente_nombre = st.text_input("Nombre del Cliente:", placeholder="Ej: Juan Pérez")
-            tramite_nombre = st.text_input("Nombre del Trámite:", placeholder="Ej: Deslinde")
-            
-        boton_fabricar = st.form_submit_button("🚀 FABRICAR DOCUMENTOS MAESTROS", type="primary", use_container_width=True)
+        def motor_documentos():
+                with col_e1:
+                    organo_ji = st.selectbox("Órgano de la Jurisdicción:", ["MC", "RT", "TT"])
+                    expediente_num = st.text_input("Número de Expediente:", value="2026-0001")
+                    
+                with col_e2:
+                    cliente_nombre = st.text_input("Nombre del Cliente:", placeholder="Ej: Juan Pérez")
+                    tramite_nombre = st.text_input("Nombre del Trámite:", placeholder="Ej: Deslinde")
+                    
+                boton_fabricar = st.form_submit_button("🚀 FABRICAR DOCUMENTOS MAESTROS", type="primary", use_container_width=True)
 
         if boton_fabricar:
                 if not plantillas_elegidas:
@@ -1420,21 +1420,38 @@ def vista_mando_central():
     st.markdown("**Bienvenido al panel de control principal, Lic. Jhonny Matos, M.A.**")
     st.divider()
 
-    # 2. PANEL DE FABRICACIÓN (Líneas 1486 - 1497)
-    with st.container():
+   # 2. PANEL DE FABRICACIÓN (Motor Integrado)
+    with st.form(key="form_fabricacion_central"):
         st.markdown("### 📝 Generar Documento Maestro")
         col_f1, col_f2 = st.columns(2)
+        
         with col_f1:
-            jurisdiccion = st.selectbox("Órgano de la Jurisdicción:", ["MC", "JO", "TT"], key="jur_central")
-            expediente = st.text_input("Número de Expediente:", placeholder="2026-0001", key="exp_central")
+            organo_ji = st.selectbox("Órgano de la Jurisdicción:", ["MC", "RT", "TT"])
+            expediente_num = st.text_input("Número de Expediente:", value="2026-0001")
+            
         with col_f2:
-            cliente = st.text_input("Nombre del Cliente:", placeholder="Ej: Juan Pérez", key="cli_central")
-            tramite = st.text_input("Nombre del Trámite:", placeholder="Ej: Deslinde", key="tra_central")
+            cliente_nombre = st.text_input("Nombre del Cliente:", placeholder="Ej: Juan Pérez")
+            tramite_nombre = st.text_input("Nombre del Trámite:", placeholder="Ej: Deslinde")
 
-        if st.button("🚀 FABRICAR DOCUMENTOS MAESTROS", use_container_width=True):
-            st.info("Generando documentos... Por favor, espere.")
+        boton_fabricar = st.form_submit_button("🚀 FABRICAR DOCUMENTOS MAESTROS", type="primary", use_container_width=True)
 
-    st.write("---") # Final del Numeral 2
+        if boton_fabricar:
+            import os
+            # --- 1. PREPARACIÓN DE LA BÓVEDA FÍSICA ---
+            cli_limpio = cliente_nombre.replace("/", "-").strip() if cliente_nombre else "Sin_Cliente"
+            tram_limpio = tramite_nombre.replace("/", "-").strip() if tramite_nombre else "Sin_Tramite"
+            exp_limpio = expediente_num.replace("/", "-").strip()
+
+            nombre_carpeta = f"{organo_ji}_{exp_limpio} - {cli_limpio} - {tram_limpio}"
+            ruta_sede = "Carpeta_Temporal_Nube"
+            ruta_fisica = os.path.join(ruta_sede, nombre_carpeta)
+
+            os.makedirs(ruta_fisica, exist_ok=True)
+            st.success(f"✅ Expediente fabricado: Carpeta '{nombre_carpeta}' generada con éxito en la bóveda.")
+            
+            # ---> Nota: Si tiene más código de empaquetado (como el de su línea 1213), péguelo justo aquí debajo.
+
+    st.write("---") # Final del Numeral 2 
 
     # 3. MÉTRICAS PRINCIPALES (Ahora desde la 1498)
     st.subheader("📊 Resumen de Operaciones")
