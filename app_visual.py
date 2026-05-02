@@ -1484,7 +1484,7 @@ def vista_mando_central():
     st.markdown("**Bienvenido al panel de control principal, Lic. Jhonny Matos, M.A.**")
     st.divider()
 
-    # 2. PANEL DE FABRICACIÓN (Solo se verá aquí)
+    # 2. PANEL DE FABRICACIÓN (Líneas 1486 - 1497)
     with st.container():
         st.markdown("### 📝 Generar Documento Maestro")
         col_f1, col_f2 = st.columns(2)
@@ -1498,13 +1498,25 @@ def vista_mando_central():
         if st.button("🚀 FABRICAR DOCUMENTOS MAESTROS", use_container_width=True):
             st.info("Generando documentos... Por favor, espere.")
 
-    st.write("---")
+    st.write("---") # Final del Numeral 2
 
-    # 3. MÉTRICAS PRINCIPALES (KPIs)
+    # 3. MÉTRICAS PRINCIPALES (Ahora desde la 1498)
     st.subheader("📊 Resumen de Operaciones")
     m1, m2, m3, m4 = st.columns(4)
     
     total_expedientes = 0
+    try:
+        res = supabase.table("expedientes_maestros").select("id", count="exact").execute()
+        total_expedientes = res.count if res.count else 0
+    except Exception:
+        pass
+
+    m1.metric(label="Expedientes Totales", value=total_expedientes, delta="Registrados")
+    m2.metric(label="Mensuras Catastrales", value="Activas")
+    m3.metric(label="Registro de Títulos", value="Activos")
+    m4.metric(label="Tribunales de Tierras", value="En Litigio")
+
+    st.write("---")
     try:
         res = supabase.table("expedientes_maestros").select("id", count="exact").execute()
         total_expedientes = res.count if res.count else 0
