@@ -1536,7 +1536,8 @@ def vista_registro_maestro():
 
     # --- MOTOR DE NUMERACIÓN SECUENCIAL ---
     # Obtenemos el año actual
-    ano_actual = datetime.datetime.now().year
+    # Así debe quedar la línea 1539:
+    ano_actual = datetime.now().year
     
     # Memoria temporal para el número secuencial (luego lo conectaremos a la lectura real de Supabase)
     if "contador_expedientes" not in st.session_state:
