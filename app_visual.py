@@ -106,55 +106,6 @@ st.markdown("""
 from docxtpl import DocxTemplate
 import io
 
-def generar_documento_word(tipo_doc, datos):
-    """
-    Motor principal que une la plantilla .docx con los datos del expediente.
-    """
-    try:
-        # 1. Definimos la ruta de la plantilla según lo seleccionado
-        # Asegúrese de tener una carpeta llamada 'plantillas' con estos nombres
-        rutas = {
-            "Instancia de Mensura Catastral": "plantillas/mensura_base.docx",
-            "Acto de Alguacil (Notificación)": "plantillas/acto_alguacil.docx",
-            "Contrato de Cuota Litis": "plantillas/cuota_litis.docx",
-            "Oficio de Remisión de Planos": "plantillas/oficio_remision.docx"
-        }
-        
-        ruta_plantilla = rutas.get(tipo_doc, "plantillas/base_aboagrim.docx")
-        
-        # 2. Cargamos la plantilla
-        doc = DocxTemplate(ruta_plantilla)
-        
-        # 3. Mapeamos los datos (asegurándose de que coincidan con los {{ }} del Word)
-        contexto = {
-            'fecha': datos['fecha_acto'],
-            'propietario': datos['nombre_propietario'],
-            'cedula': datos['cedula_cliente'],
-            'parcela': datos['parcela_num'],
-            'dc': datos['distrito_catastral'],
-            'municipio': datos['municipio_prov'],
-            'monto': datos['monto_contrato'],
-            'firma': datos['firma_presidente']
-        }
-        
-        # 4. Realizamos la "Magia": Fusionar datos con el Word
-        doc.render(contexto)
-        
-        # 5. Lo guardamos en memoria para que Streamlit pueda descargarlo
-        buffer = io.BytesIO()
-        doc.save(buffer)
-        buffer.seek(0)
-        
-        return buffer
-    except Exception as e:
-        st.error(f"Error técnico en el motor: {e}")
-        return None
-
-
-if "usuario_actual" not in st.session_state:
-    st.session_state.usuario_actual = None
-
-from supabase import create_client, Client
 
 # --- CONEXIÓN A SUPABASE (CEREBRO DIGITAL) ---
 url_supabase = "https://wqcpbxrltttfnusdrawq.supabase.co"
