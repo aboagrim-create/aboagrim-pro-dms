@@ -1172,30 +1172,31 @@ def vista_plantillas_auto():
         st.markdown("### 🗂️ Datos para la Estructura Maestra")
                             
         # --- 1. PREPARACIÓN DE LA BÓVEDA FÍSICA ---
-cli_limpio = cliente_nombre.replace("/", "-").strip() if cliente_nombre else "Sin_Cliente"
-tram_limpio = tramite_nombre.replace("/", "-").strip() if tramite_nombre else "Sin_Tramite"
-exp_limpio = expediente_num.replace("/", "-").strip()
-
-nombre_carpeta = f"{organo_ji}_{exp_limpio} - {cli_limpio} - {tram_limpio}"
-
-ruta_sede = "Carpeta_Temporal_Nube"
-ruta_fisica = os.path.join(ruta_sede, nombre_carpeta)
-
-os.makedirs(ruta_fisica, exist_ok=True)
-
-# --- 2. EMPAQUETADO DE DATOS ---
-diccionario_datos = {
-    "expediente_ji": ji_exp_ji if 'ji_exp_ji' in locals() else "",
-    "ubicacion": ji_ubicacion if 'ji_ubicacion' in locals() else "Santiago",
-    "area": ji_area if 'ji_area' in locals() else "",
-    "coordenadas": ji_coordenadas if 'ji_coordenadas' in locals() else "",
-    "demandante": ji_demandante if 'ji_demandante' in locals() else "",
-    "demandado": ji_demandado if 'ji_demandado' in locals() else "",
-    "cliente_nombre": cli_limpio,
-    "tramite_nombre": tram_limpio,
-    "organo_ji": organo_ji,
-    "expediente_num": exp_limpio
-}
+def motor_de_fabricacion_final(cliente_nombre, tramite_nombre, expediente_num, organo_ji):
+        cli_limpio = cliente_nombre.replace("/", "-").strip() if cliente_nombre else "Sin_Cliente"
+        tram_limpio = tramite_nombre.replace("/", "-").strip() if tramite_nombre else "Sin_Tramite"
+        exp_limpio = expediente_num.replace("/", "-").strip()
+        
+        nombre_carpeta = f"{organo_ji}_{exp_limpio} - {cli_limpio} - {tram_limpio}"
+        
+        ruta_sede = "Carpeta_Temporal_Nube"
+        ruta_fisica = os.path.join(ruta_sede, nombre_carpeta)
+        
+        os.makedirs(ruta_fisica, exist_ok=True)
+        
+        # --- 2. EMPAQUETADO DE DATOS ---
+        diccionario_datos = {
+            "expediente_ji": ji_exp_ji if 'ji_exp_ji' in locals() else "",
+            "ubicacion": ji_ubicacion if 'ji_ubicacion' in locals() else "Santiago",
+            "area": ji_area if 'ji_area' in locals() else "",
+            "coordenadas": ji_coordenadas if 'ji_coordenadas' in locals() else "",
+            "demandante": ji_demandante if 'ji_demandante' in locals() else "",
+            "demandado": ji_demandado if 'ji_demandado' in locals() else "",
+            "cliente_nombre": cli_limpio,
+            "tramite_nombre": tram_limpio,
+            "organo_ji": organo_ji,
+            "expediente_num": exp_limpio
+        }
 
 # --- SINCRONIZACIÓN CON LA NUBE (SUPABASE) ---
 try:
