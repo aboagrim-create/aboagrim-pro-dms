@@ -5,9 +5,13 @@
 from database import db as supabase
 import streamlit as st
 import zipfile
-from docxtpl import DocxTemplate
 import os
 import shutil
+import io
+import json
+from datetime import datetime, timedelta
+from docxtpl import DocxTemplate
+# from fpdf import FPDF  <-- Agréguela aquí si usa la parte de facturación
 # --- OCULTAR ICONOS Y MENÚ DE STREAMLIT PARA UN DISEÑO LIMPIO ---
 ocultar_iconos = """
         <style>
@@ -324,8 +328,7 @@ def vista_archivo():
 def vista_plantillas():
     st.title("📄 Generador de Plantillas Automatizado")
     st.markdown("### *AboAgrim Pro: Documentación Dinámica*")
-    
-    import os
+
     # --- 1. SUBIDA DE PLANTILLAS ---
     st.subheader("📤 Cargar Nuevos Modelos (.docx)")
     archivos_subidos = st.file_uploader("Arrastre sus plantillas aquí", type=["docx"], accept_multiple_files=True, key="uploader_final_v3")
@@ -360,7 +363,6 @@ def vista_plantillas():
 # =====================================================================
 # MÓDULO 5: ALERTAS Y PLAZOS
 # =====================================================================
-from datetime import datetime, timedelta
 
 def vista_alertas_plazos():
     st.title("📅 Radar de Alertas y Plazos JI")
@@ -461,9 +463,6 @@ def vista_alertas_plazos():
         # Pantalla en espera si no se ha hecho clic en el botón
         st.info("👈 Presione el botón azul 'Escanear Plazos Activos' arriba para iniciar el rastreo normativo en su base de datos.")
             
-
-from fpdf import FPDF
-from datetime import datetime
 
 def vista_facturacion():
     st.title("💵 Facturación y Cobros Mágicos")
@@ -901,7 +900,6 @@ Por medio de la presente, AboAgrim, representada por el Lic. Jhonny Matos, M.A.,
                 """
                 st.components.v1.html(doc_html, height=600, scrolling=True)
 def vista_archivo_digital():
-    import json
     
     st.title("📁 Archivo Digital | AboAgrim Pro")
     st.subheader("Bóveda de Expedientes y Anexos Técnicos")
@@ -1231,7 +1229,6 @@ def motor_de_fabricacion_final(cliente_nombre, tramite_nombre, expediente_num, o
 
         # --- SINCRONIZACIÓN CON LA NUBE (SUPABASE) ---
         try:
-            import datetime
         
             # Datos listos para su tabla "Maestros de Expedientes"
             datos_nube = {
@@ -1315,7 +1312,6 @@ def motor_de_fabricacion_final(cliente_nombre, tramite_nombre, expediente_num, o
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
 # Aquí debajo empieza su def generar_documento_word...
 
-from docxtpl import DocxTemplate
 
 def generar_documento_word(ruta_plantilla, diccionario_datos):
     """
@@ -1533,7 +1529,6 @@ def vista_mando_central():
         st.write("")
         st.info("📌 Recuerde: Mantener su Archivo Digital actualizado garantiza la agilidad de los procesos en la Jurisdicción Inmobiliaria de Santiago y el resto del país.")
 def vista_registro_maestro():
-    import datetime
     
     st.title("👤 Registro Maestro de Expedientes")
     st.subheader("Control de Casos Legales y Técnicos | AboAgrim")
@@ -1829,8 +1824,6 @@ elif menu == "⚙️ Configuración":
         
         with st.expander("⚙️ Configurar Rutas de Sincronización", expanded=True):
             # --- MEMORIA DE DISCO DURO (Sobrevive a actualizaciones de pantalla) ---
-            import json
-            import os
             
             archivo_rutas = "config_rutas.json"
             
