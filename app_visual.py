@@ -255,7 +255,6 @@ def vista_mando():
 # =====================================================================
 # MÓDULO 2: REGISTRO MAESTRO (CON PESTAÑAS Y 7 ROLES)
 # =====================================================================
-import streamlit as st
 import datetime
 
 
