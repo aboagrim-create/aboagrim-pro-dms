@@ -1285,8 +1285,6 @@ for plantilla in plantillas_elegidas:
 # Aquí debajo empieza su def generar_documento_word...
 
 from docxtpl import DocxTemplate
-import io
-import streamlit as st
 
 def generar_documento_word(ruta_plantilla, diccionario_datos):
     """
