@@ -239,7 +239,40 @@ def vista_mando():
             <div style='font-size:1.1rem; color:#FBBF24; font-weight:600; text-transform:uppercase;'>Santiago | Lic. Jhonny Matos, M.A.</div>
         </div>
     """, unsafe_allow_html=True)
-
+                    # ==========================================
+                    # 6. MANTENIMIENTO CON PIN (RECUPERADO)
+                    # ==========================================
+                st.write("---")
+                with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS"):
+                        pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_p_auto")
+                        PIN_SECRETO = "0681"
+        
+                if pin_ingresado == PIN_SECRETO:
+                    maint_col1, maint_col2 = st.columns(2)
+                    import os
+                    
+                    # --- COLUMNA 1: SUBIR ---
+                    with maint_col1:
+                        st.markdown("**📤 Subir Nuevo Modelo**")
+                        opciones_destino = ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_tribunales_de_tierras"]
+                        destino = st.selectbox("Carpeta Destino:", opciones_destino)
+                        archivo_subido = st.file_uploader("Elija el archivo .docx", type=["docx"])
+                        
+                        if st.button("💾 Guardar Plantilla"):
+                            if archivo_subido:
+                                ruta_dir = f"plantillas_maestras/{destino}"
+                                os.makedirs(ruta_dir, exist_ok=True)
+                                ruta_final = f"{ruta_dir}/{archivo_subido.name}"
+                                with open(ruta_final, "wb") as f:
+                                    f.write(archivo_subido.getbuffer())
+                                st.success(f"✅ Documento guardado en {destino}.")
+                            else:
+                                st.warning("⚠️ Primero seleccione un archivo.")
+        
+                    # --- COLUMNA 2: BORRAR ---
+                    with maint_col2:
+                        st.markdown("**🗑️ Borrar Modelo Existente**")
+                        carpeta_borrar = st.selectbox("Buscar en Carpeta:", opciones_destino, key="del_dir")
     st.markdown("### 📈 Desempeño Operativo en la Nube")
 
     try:
@@ -1332,40 +1365,7 @@ with st.form("formulario_fabricacion"):
                                 
                         except Exception as e:
                                     st.error(f"❌ Error crítico al fabricar: {e}")
-            # ==========================================
-            # 6. MANTENIMIENTO CON PIN (RECUPERADO)
-            # ==========================================
-        st.write("---")
-        with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS"):
-                pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_p_auto")
-                PIN_SECRETO = "0681"
 
-        if pin_ingresado == PIN_SECRETO:
-            maint_col1, maint_col2 = st.columns(2)
-            import os
-            
-            # --- COLUMNA 1: SUBIR ---
-            with maint_col1:
-                st.markdown("**📤 Subir Nuevo Modelo**")
-                opciones_destino = ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_tribunales_de_tierras"]
-                destino = st.selectbox("Carpeta Destino:", opciones_destino)
-                archivo_subido = st.file_uploader("Elija el archivo .docx", type=["docx"])
-                
-                if st.button("💾 Guardar Plantilla"):
-                    if archivo_subido:
-                        ruta_dir = f"plantillas_maestras/{destino}"
-                        os.makedirs(ruta_dir, exist_ok=True)
-                        ruta_final = f"{ruta_dir}/{archivo_subido.name}"
-                        with open(ruta_final, "wb") as f:
-                            f.write(archivo_subido.getbuffer())
-                        st.success(f"✅ Documento guardado en {destino}.")
-                    else:
-                        st.warning("⚠️ Primero seleccione un archivo.")
-
-            # --- COLUMNA 2: BORRAR ---
-            with maint_col2:
-                st.markdown("**🗑️ Borrar Modelo Existente**")
-                carpeta_borrar = st.selectbox("Buscar en Carpeta:", opciones_destino, key="del_dir")
                 ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
                 archivos = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
                 
@@ -1380,7 +1380,7 @@ with st.form("formulario_fabricacion"):
                             st.error(f"❌ Error al eliminar: {e}")
                 else:
                     st.info("ℹ️ Carpeta vacía. No hay modelos para borrar.")
-                    st.info("ℹ️ Carpeta vacía. No hay modelos para borrar.")
+               
 
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
 # Aquí debajo empieza su def generar_documento_word...
