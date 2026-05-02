@@ -665,74 +665,7 @@ def login_sistema():
                 st.rerun()
             else:
                 st.error("Usuario o PIN incorrectos, o cuenta inactiva.")
-def vista_documentos():
-    st.header("📄 Generador de Documentos y Actas")
-    st.info("Seleccione un expediente y una plantilla para generar el documento automáticamente.")
 
-    # 1. Buscamos los expedientes activos para rellenar datos
-    try:
-        res_exp = supabase.table("agenda_mensuras").select("expediente, cliente, notas").execute()
-        expedientes = [e['expediente'] for e in res_exp.data] if res_exp.data else []
-    except:
-        expedientes = []
-
-    if not expedientes:
-        st.warning("No hay expedientes registrados para generar documentos.")
-        return
-
-    col1, col2 = st.columns(2)
-    with col1:
-        exp_sel = st.selectbox("Seleccione el Expediente:", expedientes)
-        tipo_doc = st.selectbox("Tipo de Documento:", [
-            "Acta de Hito y Colindancia", 
-            "Contrato de Cuota Litis", 
-            "Instancia de Solicitud de Mensura"
-        ])
-    
-    # 2. Buscamos los datos específicos del cliente seleccionado
-    datos_cliente = next((item for item in res_exp.data if item["expediente"] == exp_sel), None)
-
-    if datos_cliente:
-        st.subheader("📝 Editor de Documento")
-        
-        # Plantilla básica
-        cuerpo = f"""ACTA DE HITO Y COLINDANCIA
-            
-En el municipio de Santiago de los Caballeros, República Dominicana.
-En relación al expediente No. {datos_cliente['expediente']}, propiedad de {datos_cliente['cliente']}.
-
-Por medio de la presente, AboAgrim, representada por el Lic. Jhonny Matos, M.A., hace constar que..."""
-        
-        texto_final = st.text_area("Contenido del Documento:", cuerpo, height=350)
-
-# --- BLOQUE DE BOTONES FINAL (Péguelo aquí) ---
-        st.markdown("---")
-        col_btn1, col_btn2 = st.columns(2)
-        
-        with col_btn1:
-            # Este botón descarga el acta a su computadora
-            st.download_button(
-                label="💾 Descargar Acta (.txt)",
-                data=texto_final,
-                file_name=f"Acta_{exp_sel}.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
-            
-        with col_btn2:
-            # Este botón abre el panel de impresión profesional
-            if st.button("🖨️ IMPRIMIR DOCUMENTO", use_container_width=True):
-                doc_html = f"""
-                <div style="font-family: 'Times New Roman', serif; padding: 50px; line-height: 1.6; background-color: white; color: black;">
-                    <h2 style="text-align: center; color: #1E3A8A;">ABOAGRIM</h2>
-                    <p style="text-align: center; font-weight: bold;">SERVICIOS LEGALES Y CATASTRALES</p>
-                    <p style="text-align: center; font-size: 12px;">Lic. Jhonny Matos, M.A. | Santiago, R.D.</p>
-                    <hr style="border: 1px solid black;">
-                    <div style="white-space: pre-wrap; margin-top: 30px; font-size: 15px; text-align: justify;">{texto_final}</div>
-                </div>
-                <script>setTimeout(function(){{ window.print(); }}, 500);</script>
-                """
-                st.components.v1.html(doc_html, height=600, scrolling=True)
 def vista_archivo_digital():
     import streamlit as st
     import os
