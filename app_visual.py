@@ -1846,7 +1846,7 @@ elif menu == "⚙️ Configuración":
             c_drive1, c_drive2 = st.columns(2)
             with c_drive1:
                 st.markdown("**Cuenta Corporativa:** `aboagrim@gmail.com`")
-                nueva_ruta_ab = st.text_input("Ruta en su PC corporativa:", value=ruta_ab_guardada)
+                nueva_ruta_ab = st.text_input("ID de la Carpeta Google Drive:", value=ruta_ab_guardada)
             
             with c_drive2:
                 st.markdown("**Cuenta Personal:** `lic.jhonnymatos@gmail.com`")
