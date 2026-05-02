@@ -1218,10 +1218,23 @@ def vista_plantillas_auto():
         st.caption("💡 Los archivos que suba en el administrador de abajo aparecerán aquí automáticamente.")
         st.write("---")
         st.markdown("### 🗂️ Datos para la Estructura Maestra")
-
+with st.form("formulario_fabricacion"):
+        col_e1, col_e2 = st.columns(2)
         
-                        st.error("⚠️ Por favor, seleccione al menos un archivo de plantilla arriba antes de fabricar.")
-                    else:
+        with col_e1:
+            organo_ji = st.selectbox("Órgano de la Jurisdicción:", ["MC", "RT", "TT"])
+            expediente_num = st.text_input("Número de Expediente:", value="2026-0001")
+            
+        with col_e2:
+            cliente_nombre = st.text_input("Nombre del Cliente:", placeholder="Ej: Juan Pérez")
+            tramite_nombre = st.text_input("Nombre del Trámite:", placeholder="Ej: Deslinde")
+            
+        boton_fabricar = st.form_submit_button("🚀 FABRICAR DOCUMENTOS MAESTROS", type="primary", use_container_width=True)
+
+    if boton_fabricar:
+        if not plantillas_elegidas:
+            st.error("⚠️ Por favor, seleccione al menos un archivo de plantilla arriba antes de fabricar.")
+        else:
                         try:
                             import os
                             import json
