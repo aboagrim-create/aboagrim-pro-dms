@@ -1479,21 +1479,47 @@ def crear_carpeta_expediente(nombre_cliente, id_expediente):
     return link_drive
 import googleapiclient.discovery
 def vista_mando_central():
+    # 1. ENCABEZADO PROFESIONAL
     st.title("🏠 Mando Central | AboAgrim Pro")
-    st.markdown("**Bienvenido al panel de control principal, Lic. Jhonny Matos.**")
+    st.markdown("**Bienvenido al panel de control principal, Lic. Jhonny Matos, M.A.**")
     st.divider()
 
-    # --- 1. MÉTRICAS PRINCIPALES (KPIs) ---
+    # 2. PANEL DE FABRICACIÓN (Solo se verá aquí)
+    with st.container():
+        st.markdown("### 📝 Generar Documento Maestro")
+        col_f1, col_f2 = st.columns(2)
+        with col_f1:
+            jurisdiccion = st.selectbox("Órgano de la Jurisdicción:", ["MC", "JO", "TT"], key="jur_central")
+            expediente = st.text_input("Número de Expediente:", placeholder="2026-0001", key="exp_central")
+        with col_f2:
+            cliente = st.text_input("Nombre del Cliente:", placeholder="Ej: Juan Pérez", key="cli_central")
+            tramite = st.text_input("Nombre del Trámite:", placeholder="Ej: Deslinde", key="tra_central")
+
+        if st.button("🚀 FABRICAR DOCUMENTOS MAESTROS", use_container_width=True):
+            st.info("Generando documentos... Por favor, espere.")
+
+    st.write("---")
+
+    # 3. MÉTRICAS PRINCIPALES (KPIs)
     st.subheader("📊 Resumen de Operaciones")
     m1, m2, m3, m4 = st.columns(4)
     
-    # Intentamos obtener el total real de expedientes desde Supabase
     total_expedientes = 0
     try:
         res = supabase.table("expedientes_maestros").select("id", count="exact").execute()
         total_expedientes = res.count if res.count else 0
     except Exception:
         pass
+
+    m1.metric(label="Expedientes Totales", value=total_expedientes, delta="Registrados")
+    m2.metric(label="Mensuras Catastrales", value="Activas")
+    m3.metric(label="Registro de Títulos", value="Activos")
+    m4.metric(label="Tribunales de Tierras", value="En Litigio")
+
+    st.write("---")
+    
+    # 4. ÚLTIMOS EXPEDIENTES (Lo que ya tenía en la 1509)
+    # ... aquí sigue su código de st.columns([2, 1]) ...
 
     with m1:
         st.metric(label="Expedientes Totales", value=total_expedientes, delta="Registrados")
