@@ -189,10 +189,27 @@ def vista_mando():
     import json
     from datetime import datetime
 
-    st.title("🏠 Mando Central")
-    st.markdown("### 📊 Panel de Control y Estadísticas")
+    # --- ENCABEZADO CORPORATIVO DE ABOAGRIM ---
+    col_logo, col_titulo = st.columns([1, 4])
+    
+    with col_logo:
+        # Si hay un logo cargado en configuración, lo mostramos. Si no, un pilar jurídico.
+        if st.session_state.get("logo_firma"):
+            st.image(st.session_state["logo_firma"], use_container_width=True)
+        else:
+            st.markdown("<h1 style='text-align: center; font-size: 4rem; color: #1E3A8A;'>🏛️</h1>", unsafe_allow_html=True)
+            
+    with col_titulo:
+        st.title(st.session_state.get("nombre_oficina", "AboAgrim Pro"))
+        st.markdown("##### *Sistema Integrado de Gestión Legal y Topográfica*")
+        # Datos de contacto dinámicos basados en la configuración, con sus datos base por defecto
+        st.caption(f"📍 {st.session_state.get('dir_oficina', 'Santiago, Rep. Dom.')} | 📞 {st.session_state.get('tel_oficina', '829-826-5888')}")
+        st.caption("**Lic. Jhonny Matos. M.A.** - *Presidente Fundador*")
+
+    st.write("---")
     
     # --- 1. LECTURA DE DATOS PARA MÉTRICAS ---
+    st.markdown("### 📊 Panel de Control y Estadísticas")
     exps = st.session_state.get("db_expedientes", {})
     total_exps = len(exps)
     
@@ -201,7 +218,6 @@ def vista_mando():
     total_inmuebles = sum(len(e.get("inmuebles", [])) for e in exps.values())
 
     # --- 2. TARJETAS DE INDICADORES ---
-    st.write("---")
     col1, col2, col3 = st.columns(3)
     
     with col1:
