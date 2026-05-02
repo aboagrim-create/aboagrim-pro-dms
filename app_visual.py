@@ -240,8 +240,6 @@ def vista_mando():
         </div>
     """, unsafe_allow_html=True)
 
-    st.write("") 
-
     # 4. Resumen de Operaciones (Conexión a la Nube)
     st.markdown("### 📈 Desempeño Operativo en la Nube")
     try:
