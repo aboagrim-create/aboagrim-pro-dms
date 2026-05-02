@@ -242,7 +242,7 @@ def vista_mando():
 
     st.write("") 
 
-    # 2. Formulario de Fabricación
+    # 2. Formulario de Fabricación de Documentos
     with st.container():
         st.markdown("### 📝 Generar Documento Maestro")
         col_f1, col_f2 = st.columns(2)
@@ -274,7 +274,7 @@ def vista_mando():
                         os.makedirs(f"plantillas_maestras/{dest}", exist_ok=True)
                         with open(f"plantillas_maestras/{dest}/{arc.name}", "wb") as f:
                             f.write(arc.getbuffer())
-                        st.success(f"✅ Guardado en {dest}.")
+                        st.success(f"✅ Guardado.")
             with maint_col2:
                 st.markdown("**🗑️ Borrar Modelo**")
                 c_borrar = st.selectbox("Buscar en:", ops, key="del_dir")
@@ -286,22 +286,23 @@ def vista_mando():
                         os.remove(f"{r_limp}/{a_borrar}")
                         st.success("✅ Eliminado.")
                         st.rerun()
-            
-            # Ordenamos para mostrar los más recientes arriba
-            df_recientes = df.sort_values(by="fecha_creacion", ascending=False).head(5)
-            
-            # Limpiamos las columnas para la vista rápida
-            df_vista = df_recientes.rename(columns={
-                "expediente": "No. Exp",
-                "nombre_propietario": "Propietario",
-                "municipio": "Ubicación"
-            })
-            
-            st.table(df_vista[["No. Exp", "Propietario", "Ubicación"]])
-            st.caption("Mostrando los últimos 5 expedientes registrados en su archivo digital.")
 
+    st.write("---")
+
+    # 4. Resumen de Operaciones (Conexión a la Nube)
+    st.markdown("### 📈 Desempeño Operativo en la Nube")
+    try:
+        respuesta = supabase.table("expedientes_maestros").select("*").execute()
+        datos = respuesta.data
+        total_expedientes = len(datos)
+        
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Expedientes Totales", total_expedientes)
+        col2.metric("Mensuras Activas", "Próximamente")
+        col3.metric("Estado del Sistema", "En Línea")
+        
     except Exception as e:
-        st.error("⚠️ Error al conectar el Mando Central con la Bóveda Digital.")
+        st.error(f"Error al conectar con la nube: {e}")
 # =====================================================================
 # MÓDULO 2: REGISTRO MAESTRO (CON PESTAÑAS Y 7 ROLES)
 # =====================================================================
