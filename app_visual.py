@@ -810,42 +810,6 @@ def generar_documento_word(ruta_plantilla, diccionario_datos):
         st.error(f"❌ Error en la forja del documento: {e}")
         return None
 
-def ventana_registro_profesional(tipo, menu_a_refrescar=None):
-    ventana = ctk.CTkToplevel()
-    ventana.title(f"AboAgrim Pro - Registro de {tipo}")
-    ventana.geometry("450x650")
-    ventana.attributes('-topmost', True)
-
-    # Contenedor con scroll para que sea moderno si hay muchos campos
-    scroll_frame = ctk.CTkScrollableFrame(ventana, width=400, height=450)
-    scroll_frame.pack(pady=10, padx=20, fill="both", expand=True)
-
-    campos = ["Nombre Completo", "Cédula / RNC", "Dirección", "Teléfono", "Correo", "Profesión"]
-    entradas = {}
-
-    for campo in campos:
-        ctk.CTkLabel(scroll_frame, text=campo, font=("Roboto", 12, "bold")).pack(anchor="w", padx=10)
-        entry = ctk.CTkEntry(scroll_frame, placeholder_text=f"Escriba {campo.lower()}...", width=320)
-        entry.pack(pady=(0, 15), padx=10)
-        entradas[campo] = entry
-
-    # Botón dinámico
-    btn_guardar = ctk.CTkButton(
-        ventana, 
-        text=f"CONFIRMAR REGISTRO", 
-        fg_color="#1a5276", # Azul profesional
-        hover_color="#21618c",
-        height=45,
-        command=lambda: guardar_y_actualizar(
-            tipo, 
-            {k: v.get() for k, v in entradas.items()}, 
-            ventana, 
-            menu_a_refrescar
-        )
-    )
-    btn_guardar.pack(pady=20)
-
-
 # =======================================================
 # 1. DISEÑO DE LA PANTALLA DE PLANTILLAS
 # =======================================================
