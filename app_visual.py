@@ -235,119 +235,68 @@ def generar_paquete_documentos(datos_formulario, rutas_plantillas):
 # MÓDULO 1: MANDO CENTRAL
 # =====================================================================
 def vista_mando():
-    from datetime import datetime
     import os
-
-    # --- 1. ENCABEZADO DE LA FIRMA ---
-    st.markdown("""
-        <div style='background:linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%); padding:35px 30px; border-radius:12px; color:white; border-left:6px solid #FBBF24;'>
-            <h1 style='margin:0; font-size: 2.8rem; font-weight: 800;'>AboAgrim Pro DMS ⚖️📐</h1>
-            <p style='font-size:1.2rem; color:#94A3B8; margin-bottom: 1rem;'>Centro de Mando: Jurisdicción Inmobiliaria y Mensura</p>
-            <div style='font-size:1.1rem; color:#FBBF24; font-weight:600; text-transform:uppercase;'>Santiago, Rep. Dom. | Lic. Jhonny Matos, M.A.</div>
-            <div style='font-size:0.9rem; color:#CBD5E1;'>Contacto: 829-826-5888</div>
-        </div>
-    """, unsafe_allow_html=True)
-    st.write("")
     
-    # --- 2. GENERADOR AUTOMÁTICO DE EXPEDIENTES ---
-    ano_actual = datetime.now().year
-    if "contador_mando" not in st.session_state:
-        st.session_state["contador_mando"] = 1
+    # --- 1. PRESENTACIÓN DE LA OFICINA (LOGO Y DATOS) ---
+    col_logo, col_info = st.columns([1, 3])
     
-    # Formato oficial: Ej. 2026-0001
-    expediente_sugerido = f"{ano_actual}-{st.session_state['contador_mando']:04d}"
+    with col_logo:
+        # Busca el logo que usted tiene en su carpeta
+        if os.path.exists("logo_aboagrim.jpg"):
+            st.image("logo_aboagrim.jpg", use_container_width=True)
+        else:
+            st.markdown("🏢 **[LOGO ABOAGRIM]**") # Por si no lo encuentra
+            
+    with col_info:
+        st.markdown(f"<h1 style='margin-bottom: 0px; color: #1E3A8A;'>AboAgrim Pro DMS</h1>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='margin-top: 0px; color: #64748B;'>Servicios Legales y Catastrales</h3>", unsafe_allow_html=True)
+        st.write(f"**{PRESIDENTE_FIRMA}**")
+        st.caption(f"📍 {DIRECCION_FIRMA}")
+        st.caption(f"📞 {TELEFONOS_FIRMA} | ✉️ {CORREO_FIRMA}")
+        
+    st.divider()
 
-    # --- 3. FORMULARIO MAESTRO DIVIDIDO POR SECCIONES ---
-    st.markdown("### 📝 Formulario de Actuaciones y Forja de Documentos")
-    organo_ji = st.selectbox("⚖️ Órgano de la Jurisdicción:", ["Mensuras Catastrales", "Jurisdicción Original", "Registro de Títulos"])
+    # --- 2. GRÁFICOS E INDICADORES (MÉTRICAS RÁPIDAS) ---
+    st.subheader("📊 Estado General de Operaciones")
+    c1, c2, c3, c4 = st.columns(4)
     
-    mapping_carpetas = {
-        "Mensuras Catastrales": "1_mensuras_catastrales",
-        "Jurisdicción Original": "2_jurisdiccion_original",
-        "Registro de Títulos": "3_registro_titulos"
-    }
+    c1.metric(label="Expedientes Activos", value="24", delta="3 Nuevos")
+    c2.metric(label="Plazos en Riesgo", value="2", delta="-1 Resuelto", delta_color="inverse")
+    c3.metric(label="Mensuras en Proceso", value="8", delta="Estable", delta_color="off")
+    c4.metric(label="Títulos Listos", value="5", delta="Esta semana")
+    
+    st.write("---")
 
-    # Sección A: Roles y Cliente
-    with st.expander("👤 1. Datos Generales y Roles", expanded=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            numero_expediente = st.text_input("📁 Número de Expediente:", value=expediente_sugerido)
-            nombre_cliente = st.text_input("👤 Reclamante / Propietario:")
-            cedula_cliente = st.text_input("🪪 Cédula / RNC:")
-            nombre_tramite = st.text_input("📄 Tipo de Trámite (Ej. Deslinde):")
-        with col2:
-            nombre_agrimensor = st.text_input("📐 Agrimensor a Cargo:")
-            nombre_abogado = st.text_input("💼 Abogado Apoderado:")
-            nombre_notario = st.text_input("✒️ Notario Público:")
-
-    # Sección B: Inmueble (NUEVO)
-    with st.expander("📍 2. Designación Catastral (Inmueble)", expanded=True):
-        col3, col4, col5 = st.columns(3)
-        with col3:
-            parcela = st.text_input("Parcela No.:")
-        with col4:
-            solar = st.text_input("Solar No.:")
-        with col5:
-            dc = st.text_input("Distrito Catastral (DC):")
-        provincia = st.text_input("Ubicación (Provincia/Municipio):")
+    # --- 3. DESPLEGABLE DE EXPEDIENTES (VISOR RÁPIDO) ---
+    st.subheader("📂 Visor Rápido de Expedientes")
+    
+    # Aquí luego conectaremos su base de datos real (Supabase). Por ahora es una simulación visual.
+    lista_simulada = [
+        "2026-0001 | Juan Pérez | Deslinde | 🟢 A Tiempo",
+        "2026-0002 | Constructora El Norte | Saneamiento | 🟡 Revisión",
+        "2026-0003 | María Rodríguez | Litis de Derechos | 🔴 Urgente"
+    ]
+    
+    expediente_sel = st.selectbox("Seleccione un expediente para revisar su estado actual:", ["-- Seleccione --"] + lista_simulada)
+    
+    if expediente_sel != "-- Seleccione --":
+        st.info(f"🔎 **Inspeccionando:** {expediente_sel}")
+        # Aquí se puede agregar un resumen rápido de lo que pasa con ese cliente
+        st.write("Última actualización: *Hoy a las 09:30 AM* - Fase de revisión técnica aprobada.")
 
     st.write("---")
 
-    # --- 4. MOTOR DE FABRICACIÓN ---
-    ruta_carpeta = os.path.join("plantillas_maestras", mapping_carpetas[organo_ji])
+    # --- 4. PANEL DE ALERTAS Y PLAZOS ---
+    st.subheader("🚨 Radar de Alertas Inminentes")
     
-    if os.path.exists(ruta_carpeta):
-        opciones = [f for f in os.listdir(ruta_carpeta) if f.endswith(".docx")]
-        plantillas_elegidas = st.multiselect("📑 Seleccione los documentos a forjar:", opciones)
+    alerta1, alerta2 = st.columns(2)
+    with alerta1:
+        st.warning("⏳ **Exp. 2026-0003 (María R.):** Vence plazo para depósito de réplica en Tribunal de Tierras en 3 días.")
+        st.error("❗ **Exp. 2026-0002 (Const. Norte):** Falta firma de contrato de cuota litis.")
         
-        if st.button("🚀 FABRICAR DOCUMENTOS MAESTROS", type="primary", use_container_width=True):
-            if not plantillas_elegidas:
-                st.warning("⚠️ Seleccione al menos una plantilla.")
-            else:
-                # El Mega-Diccionario ahora tiene TODO para sus plantillas Word
-                datos_para_word = {
-                    "expediente": numero_expediente,
-                    "cliente": nombre_cliente,
-                    "cedula": cedula_cliente,
-                    "tramite": nombre_tramite,
-                    "organo": organo_ji,
-                    "agrimensor": nombre_agrimensor,
-                    "abogado": nombre_abogado,
-                    "notario": nombre_notario,
-                    "parcela": parcela,
-                    "solar": solar,
-                    "dc": dc,
-                    "provincia": provincia,
-                    "fecha_hoy": datetime.now().strftime("%d/%m/%Y")
-                }
-                
-                # 1. Registro en Supabase (Silencioso para no interrumpir)
-                try:
-                    # Descomente cuando supabase esté activo
-                    # supabase.table("expedientes_maestros").insert({"expediente_ji": numero_expediente, "nombre_propietario": nombre_cliente, "jurisdiccion": organo_ji}).execute()
-                    pass
-                except Exception:
-                    pass
-
-                # 2. Generación de Archivos
-                archivos_generados = 0
-                for p in plantillas_elegidas:
-                    buffer = generar_documento_word(os.path.join(ruta_carpeta, p), datos_para_word)
-                    if buffer:
-                        st.download_button(
-                            label=f"⬇️ Descargar: {p}",
-                            data=buffer,
-                            file_name=f"{numero_expediente}_{p}",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                        )
-                        archivos_generados += 1
-                
-                if archivos_generados > 0:
-                    st.success(f"✅ ¡Éxito Total! Se forjaron {archivos_generados} documentos listos para imprimir.")
-                    # Aumentamos el contador para el próximo expediente automáticamente
-                    st.session_state["contador_mando"] += 1
-    else:
-        st.info("ℹ️ La bóveda está vacía. Cargue sus modelos en 'Plantillas Auto'.")
+    with alerta2:
+        st.success("✅ **Exp. 2025-0089 (José Reyes):** Certificado de Título recibido de Jurisdicción Original.")
+        st.info("💡 **Aviso del Sistema:** Recuerde hacer respaldo de la Bóveda Digital este viernes.")
 
 # =====================================================================
 # MÓDULO 2: REGISTRO MAESTRO (CON PESTAÑAS Y 7 ROLES)
