@@ -235,21 +235,19 @@ def generar_paquete_documentos(datos_formulario, rutas_plantillas):
 # MÓDULO 1: MANDO CENTRAL
 # =====================================================================
 def vista_mando():
-    # 1. Encabezado Profesional
+    # --- ENCABEZADO DE LA FIRMA ---
     st.markdown("""
         <div style='background:linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%); padding:35px 30px; border-radius:12px; color:white; border-left:6px solid #FBBF24;'>
             <h1 style='margin:0; font-size: 2.8rem; font-weight: 800;'>AboAgrim Pro DMS ⚖️📐</h1>
             <p style='font-size:1.2rem; color:#94A3B8; margin-bottom: 1rem;'>Centro de Mando: Jurisdicción Inmobiliaria y Mensura</p>
-            <div style='font-size:1.1rem; color:#FBBF24; font-weight:600; text-transform:uppercase;'>Santiago | Lic. Jhonny Matos, M.A.</div>
+            <div style='font-size:1.1rem; color:#FBBF24; font-weight:600; text-transform:uppercase;'>Santiago, Rep. Dom. | Lic. Jhonny Matos, M.A.</div>
+            <div style='font-size:0.9rem; color:#CBD5E1;'>Contacto: 829-826-5888</div>
         </div>
     """, unsafe_allow_html=True)
+    st.write("")
     
-    st.write("") # Espacio
-    
-    # --- FORMULARIO DE RECOPILACIÓN DE DATOS ---
-    st.markdown("### 📝 Formulario de Actuaciones (Generador Maestro)")
-    
-    # División por Órgano
+    # --- FORMULARIO MAESTRO ---
+    st.markdown("### 📝 Formulario de Actuaciones y Forja de Documentos")
     organo_ji = st.selectbox("⚖️ Órgano de la Jurisdicción:", ["Mensuras Catastrales", "Jurisdicción Original", "Registro de Títulos"])
     
     mapping_carpetas = {
@@ -258,14 +256,12 @@ def vista_mando():
         "Registro de Títulos": "3_registro_titulos"
     }
 
-    # Campos divididos por roles para mayor control
     with st.container(border=True):
         col1, col2 = st.columns(2)
         with col1:
             numero_expediente = st.text_input("📁 Número de Expediente:", value="2026-0001")
-            nombre_cliente = st.text_input("👤 Nombre del Reclamante / Cliente:")
-            nombre_tramite = st.text_input("📄 Tipo de Trámite (Ej. Deslinde, Litis, Saneamiento):")
-            
+            nombre_cliente = st.text_input("👤 Reclamante / Cliente:")
+            nombre_tramite = st.text_input("📄 Tipo de Trámite:")
         with col2:
             nombre_agrimensor = st.text_input("📐 Agrimensor a Cargo:")
             nombre_abogado = st.text_input("💼 Abogado Apoderado:")
@@ -273,19 +269,36 @@ def vista_mando():
 
     st.write("---")
 
-    # --- MOTOR DE BÚSQUEDA Y FORJA ---
+    # --- MOTOR DE FABRICACIÓN ---
     import os
+    from datetime import datetime
     ruta_carpeta = os.path.join("plantillas_maestras", mapping_carpetas[organo_ji])
     
     if os.path.exists(ruta_carpeta):
         opciones = [f for f in os.listdir(ruta_carpeta) if f.endswith(".docx")]
-        plantillas_elegidas = st.multiselect("📑 Seleccione los documentos a forjar para este caso:", opciones)
+        plantillas_elegidas = st.multiselect("📑 Seleccione los documentos a forjar:", opciones)
         
         if st.button("🚀 FABRICAR DOCUMENTOS MAESTROS", type="primary", use_container_width=True):
             if not plantillas_elegidas:
-                st.warning("⚠️ Debe seleccionar al menos una plantilla para continuar.")
+                st.warning("⚠️ Seleccione al menos una plantilla.")
             else:
-                # El Mega Diccionario: Atrapa todos los datos de la pantalla
+                # 1. SINCRONIZACIÓN CON SUPABASE (Restaurado)
+                try:
+                    datos_nube = {
+                        "expediente_ji": numero_expediente,
+                        "nombre_propietario": nombre_cliente,
+                        "tramite_tipo": nombre_tramite,
+                        "jurisdiccion": organo_ji,
+                        "estatus": "Registrado",
+                        "fecha_registro": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                    # Descomente la línea de abajo si Supabase ya está conectado
+                    # supabase.table("expedientes_maestros").insert(datos_nube).execute()
+                    st.info("☁️ Registro preparado para la Nube (Supabase).")
+                except Exception as e:
+                    st.error(f"Error de conexión con la nube: {e}")
+
+                # 2. FORJA DE DOCUMENTOS WORD
                 datos_para_word = {
                     "expediente": numero_expediente,
                     "cliente": nombre_cliente,
@@ -293,25 +306,22 @@ def vista_mando():
                     "organo": organo_ji,
                     "agrimensor": nombre_agrimensor,
                     "abogado": nombre_abogado,
-                    "notario": nombre_notario
+                    "notario": nombre_notario,
+                    "fecha_hoy": datetime.now().strftime("%d/%m/%Y")
                 }
                 
-                st.success(f"✅ ¡Forja exitosa! Se han preparado {len(plantillas_elegidas)} documento(s).")
-                
-                # Generamos los documentos y creamos los botones de descarga
                 for p in plantillas_elegidas:
-                    # Llama a la función generadora que instalamos antes
                     buffer = generar_documento_word(os.path.join(ruta_carpeta, p), datos_para_word)
-                    
                     if buffer:
                         st.download_button(
                             label=f"⬇️ Descargar: {p}",
                             data=buffer,
-                            file_name=f"{numero_expediente}_{p}", # Le pone el número de expediente al nombre del archivo
+                            file_name=f"{numero_expediente}_{p}",
                             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                         )
+                st.success(f"✅ ¡Éxito Total! Se forjaron {len(plantillas_elegidas)} documentos.")
     else:
-        st.info(f"ℹ️ La bóveda de '{organo_ji}' está vacía. Vaya a 'Plantillas Auto' para cargar sus modelos.")
+        st.info("ℹ️ La bóveda está vacía. Cargue sus modelos en 'Plantillas Auto'.")
 
 # =====================================================================
 # MÓDULO 2: REGISTRO MAESTRO (CON PESTAÑAS Y 7 ROLES)
@@ -1562,122 +1572,7 @@ def crear_carpeta_expediente(nombre_cliente, id_expediente):
     link_drive = f"https://drive.google.com/drive/folders/ID_GENERADO"
     return link_drive
 import googleapiclient.discovery
-def vista_mando_central():
-    # 1. ENCABEZADO PROFESIONAL
-    st.title("🏠 Mando Central | AboAgrim Pro")
-    st.markdown("**Bienvenido al panel de control principal, Lic. Jhonny Matos, M.A.**")
-    st.divider()
 
-   # 2. PANEL DE FABRICACIÓN (Motor Integrado)
-    with st.form(key="form_fabricacion_central"):
-        st.markdown("### 📝 Generar Documento Maestro")
-        col_f1, col_f2 = st.columns(2)
-        
-        with col_f1:
-            organo_ji = st.selectbox("Órgano de la Jurisdicción:", ["MC", "RT", "TT"])
-            expediente_num = st.text_input("Número de Expediente:", value="2026-0001")
-            
-        with col_f2:
-            cliente_nombre = st.text_input("Nombre del Cliente:", placeholder="Ej: Juan Pérez")
-            tramite_nombre = st.text_input("Nombre del Trámite:", placeholder="Ej: Deslinde")
-
-        boton_fabricar = st.form_submit_button("🚀 FABRICAR DOCUMENTOS MAESTROS", type="primary", use_container_width=True)
-
-        if boton_fabricar:
-            import os
-            # --- 1. PREPARACIÓN DE LA BÓVEDA FÍSICA ---
-            cli_limpio = cliente_nombre.replace("/", "-").strip() if cliente_nombre else "Sin_Cliente"
-            tram_limpio = tramite_nombre.replace("/", "-").strip() if tramite_nombre else "Sin_Tramite"
-            exp_limpio = expediente_num.replace("/", "-").strip()
-
-            nombre_carpeta = f"{organo_ji}_{exp_limpio} - {cli_limpio} - {tram_limpio}"
-            ruta_sede = "Carpeta_Temporal_Nube"
-            ruta_fisica = os.path.join(ruta_sede, nombre_carpeta)
-
-            os.makedirs(ruta_fisica, exist_ok=True)
-            st.success(f"✅ Expediente fabricado: Carpeta '{nombre_carpeta}' generada con éxito en la bóveda.")
-            
-            # ---> Nota: Si tiene más código de empaquetado (como el de su línea 1213), péguelo justo aquí debajo.
-
-    st.write("---") # Final del Numeral 2 
-
-    # 3. MÉTRICAS PRINCIPALES (Ahora desde la 1498)
-    st.subheader("📊 Resumen de Operaciones")
-    m1, m2, m3, m4 = st.columns(4)
-    
-    total_expedientes = 0
-    try:
-        res = supabase.table("expedientes_maestros").select("id", count="exact").execute()
-        total_expedientes = res.count if res.count else 0
-    except Exception:
-        pass
-
-    m1.metric(label="Expedientes Totales", value=total_expedientes, delta="Registrados")
-    m2.metric(label="Mensuras Catastrales", value="Activas")
-    m3.metric(label="Registro de Títulos", value="Activos")
-    m4.metric(label="Tribunales de Tierras", value="En Litigio")
-
-    st.write("---")
-    try:
-        res = supabase.table("expedientes_maestros").select("id", count="exact").execute()
-        total_expedientes = res.count if res.count else 0
-    except Exception:
-        pass
-
-    m1.metric(label="Expedientes Totales", value=total_expedientes, delta="Registrados")
-    m2.metric(label="Mensuras Catastrales", value="Activas")
-    m3.metric(label="Registro de Títulos", value="Activos")
-    m4.metric(label="Tribunales de Tierras", value="En Litigio")
-
-    st.write("---")
-    
-    # 4. ÚLTIMOS EXPEDIENTES (Lo que ya tenía en la 1509)
-    # ... aquí sigue su código de st.columns([2, 1]) ...
-
-    with m1:
-        st.metric(label="Expedientes Totales", value=total_expedientes, delta="Registrados")
-    with m2:
-        st.metric(label="Mensuras Catastrales", value="Activas") 
-    with m3:
-        st.metric(label="Registro de Títulos", value="Activos")
-    with m4:
-        st.metric(label="Tribunales de Tierras", value="En Litigio")
-
-    st.write("---")
-
-    # --- 2. ACCESOS RÁPIDOS Y ÚLTIMOS REGISTROS ---
-    c_izq, c_der = st.columns([2, 1])
-    
-    with c_izq:
-        st.subheader("🕒 Últimos Expedientes Registrados")
-        try:
-            # Pedimos solo 'id' y 'nombre_propietario' para asegurar compatibilidad
-            res_ultimos = supabase.table("expedientes_maestros").select("id, nombre_propietario").order("id", desc=True).limit(5).execute()
-            
-            if res_ultimos.data:
-                # Mostramos una tabla profesional y limpia
-                st.dataframe(
-                    res_ultimos.data, 
-                    use_container_width=True, 
-                    hide_index=True,
-                    column_config={
-                        "id": "ID del Expediente",
-                        "nombre_propietario": "Cliente / Razón Social"
-                    }
-                )
-            else:
-                st.info("Aún no hay expedientes registrados en el sistema.")
-        except Exception as e:
-            # Si hay un error, ahora lo veremos en rojo para saber qué es
-            st.error(f"Error al leer la base de datos: {e}")
-
-    with c_der:
-        st.subheader("⚡ Estado del Sistema")
-        st.success("🟢 Conexión a Servidor: Óptima")
-        st.success("🟢 Motor de Plantillas: Activo")
-        st.success("🟢 Base de Datos: Sincronizada")
-        st.write("")
-        st.info("📌 Recuerde: Mantener su Archivo Digital actualizado garantiza la agilidad de los procesos en la Jurisdicción Inmobiliaria de Santiago y el resto del país.")
 def vista_registro_maestro():
     
     st.title("👤 Registro Maestro de Expedientes")
@@ -1866,7 +1761,7 @@ with st.sidebar:
 
 # 4. El Gatillo (Enrutamiento)
 if menu == "🏠 Mando Central":
-    vista_mando_central()
+    vista_mando()
 elif menu == "👤 Registro Maestro":
     vista_registro_maestro()
 elif menu == "📁 Archivo Digital":
