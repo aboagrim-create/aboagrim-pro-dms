@@ -1200,46 +1200,47 @@ diccionario_datos = {
 # --- SINCRONIZACIÓN CON LA NUBE (SUPABASE) ---
 try:
     import datetime
-                                
+
     # Datos listos para su tabla "Maestros de Expedientes"
     datos_nube = {
-            "expediente_ji": expediente_num,
-            "nombre_propietario": cliente_nombre,
-            "tramite_tipo": tramite_nombre,
-            "jurisdiccion": organo_ji,
-            "estatus": "Registrado",
-            "fecha_registro": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }
-                                
-                                # Subida automática a Supabase
-                                res = supabase.table("expedientes_maestros").insert(datos_nube).execute()
-                                
-                                if res.data:
-                                    st.info("☁️ Expediente sincronizado con la nube exitosamente.")
-                                
-                            except Exception as e:
-                                st.error(f"❌ Error de conexión con la nube: {e}")
-                            # --- 3. FORJA Y GUARDADO ---
-                            st.session_state["bandeja_descargas"] = []
-                            archivos_creados = 0
-                            
-                            for plantilla in plantillas_elegidas:
-                                ruta_exacta = f"plantillas_maestras/{plantilla}"
-                                buffer = generar_documento_word(ruta_exacta, diccionario_datos)
-                                
-                                if buffer:
-                                    nombre_limpio = plantilla.split('/')[-1]
-                                    nombre_final_word = f"{organo_ji}_{nombre_limpio}"
-                                    ruta_guardado_word = os.path.join(ruta_fisica, nombre_final_word)
-                                    
-                                    with open(ruta_guardado_word, "wb") as f:
-                                        f.write(buffer.getvalue())
-                                        
-                                    st.session_state["bandeja_descargas"].append({
-                                        "nombre": nombre_final_word,
-                                        "buffer": buffer
-                                    })
-                                    archivos_creados += 1
+        "expediente_ji": expediente_num,
+        "nombre_propietario": cliente_nombre,
+        "tramite_tipo": tramite_nombre,
+        "jurisdiccion": organo_ji,
+        "estatus": "Registrado",
+        "fecha_registro": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    # Subida automática a Supabase
+    res = supabase.table("expedientes_maestros").insert(datos_nube).execute()
+    
+    if res.data:
+        st.info("☁️ Expediente sincronizado con la nube exitosamente.")
+
+except Exception as e:
+    st.error(f"❌ Error de conexión con la nube: {e}")
+
+# --- 3. FORJA Y GUARDADO ---
+st.session_state["bandeja_descargas"] = []
+archivos_creados = 0
+
+for plantilla in plantillas_elegidas:
+    ruta_exacta = f"plantillas_maestras/{plantilla}"
+    buffer = generar_documento_word(ruta_exacta, diccionario_datos)
+    
+    if buffer:
+        nombre_limpio = plantilla.split('/')[-1]
+        nombre_final_word = f"{organo_ji}_{nombre_limpio}"
+        ruta_guardado_word = os.path.join(ruta_fisica, nombre_final_word)
+        
+        with open(ruta_guardado_word, "wb") as f:
+            f.write(buffer.getvalue())
+            
+        st.session_state["bandeja_descargas"].append({
+            "nombre": nombre_final_word,
+            "buffer": buffer
+        })
+        archivos_creados += 1
                             
                             # --- 4. CONEXIÓN CON EL ARCHIVO DIGITAL ---
                             if archivos_creados > 0:
