@@ -261,137 +261,194 @@ def vista_mando():
 # MÓDULO 4: PLANTILLAS Y LEY 108-05
 # =====================================================================
 def vista_registro_maestro():
-    from datetime import datetime
     import streamlit as st
-
+    from datetime import datetime
+    
     st.title("👤 Registro Maestro de Expedientes")
-    st.markdown("### Control Integral de Actuaciones y Generales")
+    st.markdown("### 🗃️ Creación y Actualización de Casos")
 
-    # --- MEMORIA TEMPORAL ---
+    # --- 0. INICIALIZACIÓN DE MEMORIA DINÁMICA ---
+    # Variables únicas para que no choquen con las plantillas
+    roles_rm = ["cant_cl_rm", "cant_ap_rm", "cant_ab_rm", "cant_ag_rm", "cant_no_rm", "cant_al_rm", "cant_in_rm"]
+    for rol in roles_rm:
+        if rol not in st.session_state:
+            st.session_state[rol] = 1
+
+    def mod_cant_rm(rol, operacion):
+        if operacion == "add":
+            st.session_state[rol] += 1
+        elif operacion == "del" and st.session_state[rol] > 0:
+            st.session_state[rol] -= 1
+
+    # Base de datos global del sistema
     if "db_expedientes" not in st.session_state:
         st.session_state["db_expedientes"] = {}
-    if "contador_registro" not in st.session_state:
-        st.session_state["contador_registro"] = 1
 
-    ano_actual = datetime.now().year
-    expediente_nuevo_sugerido = f"{ano_actual}-{st.session_state['contador_registro']:04d}"
-
-    modo_accion = st.radio("Acción a realizar:", ["✨ Nuevo Expediente", "✏️ Modificar Existente", "🗑️ Borrar Expediente"], horizontal=True)
-
-    exp_seleccionado = None
-    if modo_accion != "✨ Nuevo Expediente":
-        lista_exps = list(st.session_state["db_expedientes"].keys())
-        if not lista_exps:
-            st.warning("No hay expedientes registrados aún.")
-        else:
-            exp_seleccionado = st.selectbox("Seleccione el Expediente:", lista_exps)
-            if modo_accion == "🗑️ Borrar Expediente" and exp_seleccionado:
-                if st.button("🚨 Confirmar Borrado", type="primary"):
-                    del st.session_state["db_expedientes"][exp_seleccionado]
-                    st.success(f"Expediente {exp_seleccionado} eliminado.")
-                    st.rerun()
-                st.stop()
-
+    with st.container(border=True):
+        col_e1, col_e2 = st.columns([1, 2])
+        st.info("💡 Formato oficial de la firma: **YYYY-0000** (Ej. 2026-0001)")
+        num_expediente = col_e1.text_input("📁 Número de Expediente:", placeholder="2026-0001")
+        asunto = col_e2.text_input("📌 Asunto o Referencia del Caso:", placeholder="Saneamiento Familia García...")
+    
     st.write("---")
-    exp_actual = exp_seleccionado if modo_accion == "✏️ Modificar Existente" else expediente_nuevo_sugerido
-    st.markdown(f"#### 📂 Trabajando en Expediente: **{exp_actual}**")
 
-    tab_base, tab_partes, tab_prof, tab_inmueble = st.tabs([
-        "📄 Datos Base", "👥 Partes Involucradas", "⚖️ Profesionales", "📍 Inmueble y Título"
-    ])
-
-    with tab_base:
-        st.subheader("Información del Trámite")
-        c1, c2 = st.columns(2)
-        with c1:
-            lista_tramites = [
-                "--- MENSURAS CATASTRALES ---", "Saneamiento", "Deslinde", "Subdivisión", "Refundición", "Urbanización", "Constitución de Condominio", "Modificación de Condominio", "Actualización de Mensura",
-                "--- JURISDICCIÓN Y REGISTRO ---", "Transferencia (Venta / Donación)", "Determinación de Herederos", "Litis sobre Derechos Registrados", "Inscripción de Hipoteca / Privilegio", "Cancelación de Hipoteca", "Corrección de Error Material", "Pérdida o Deterioro de Título", "Inscripción de Litis / Oposición", "Certificación de Estado Jurídico",
-                "--- OTROS ---", "✍️ Otro (Especificar Nuevo)"
-            ]
-            tramite_sel = st.selectbox("Tipo de Trámite:", lista_tramites)
-            if tramite_sel.startswith("---"):
-                st.warning("☝️ Seleccione un trámite válido de la lista o elija 'Otro'.")
-                tramite_final = ""
-            elif tramite_sel == "✍️ Otro (Especificar Nuevo)":
-                tramite_final = st.text_input("Escriba el nombre exacto del trámite:")
-            else:
-                tramite_final = tramite_sel
-
-        with c2:
-            jurisdiccion = st.selectbox("Órgano Jurisdiccional:", ["Tribunal de Tierras (Original)", "Tribunal Superior de Tierras", "Mensuras Catastrales", "Registro de Títulos"])
-            estado_exp = st.selectbox("Estado Actual:", ["Recepción", "En Proceso", "Observado", "Aprobado", "En Litigio", "Cerrado"])
-
-    with tab_partes:
-        with st.expander("🟢 Parte Activa (Solicitantes / Demandantes / Compradores / Propietarios)"):
-            tipo_activa = st.multiselect("Rol(es):", ["Solicitante", "Demandante", "Reclamante", "Comprador", "Acreedor", "Dueño/Propietario"])
-            nombre_activa = st.text_input("Nombre / Razón Social (Parte Activa):")
-            c_act1, c_act2 = st.columns(2)
-            c_act1.text_input("Cédula / Pasaporte / RNC (Parte Activa):")
-            c_act2.text_input("Nacionalidad y Estado Civil:")
-            st.text_input("Profesión / Oficio (Parte Activa):")
-            st.text_area("Domicilio Exacto (Parte Activa):", height=68)
-
-        with st.expander("🔴 Parte Pasiva (Demandados / Vendedores / Deudores / Inquilinos)"):
-            tipo_pasiva = st.multiselect("Rol(es) Pasivos:", ["Demandado", "Vendedor", "Deudor", "Inquilino", "Arrendatario"])
-            nombre_pasiva = st.text_input("Nombre / Razón Social (Parte Pasiva):")
-            c_pas1, c_pas2 = st.columns(2)
-            c_pas1.text_input("Cédula / Pasaporte / RNC (Parte Pasiva):")
-            c_pas2.text_input("Nacionalidad y Estado Civil (Pasiva):")
-            st.text_area("Domicilio Exacto (Parte Pasiva):", height=68)
-
-    with tab_prof:
-        with st.expander("📐 Técnica (Agrimensores)"):
-            st.text_input("Nombre del Agrimensor:")
-            c_ag1, c_ag2 = st.columns(2)
-            c_ag1.text_input("Cédula (Agrimensor):")
-            c_ag2.text_input("Codiatur (CODIA):")
-        with st.expander("⚖️ Legal (Abogados / Notarios)"):
-            st.text_input("Nombre del Abogado / Notario:")
-            c_ab1, c_ab2 = st.columns(2)
-            c_ab1.text_input("Cédula (Legal):")
-            c_ab2.text_input("Colegiatura (CARD / Matrícula Notarial):")
-        with st.expander("🤝 Mandatarios (Apoderados / Gestores / Autorizados)"):
-            st.text_input("Nombre del Apoderado o Gestor:")
-            c_ap1, c_ap2 = st.columns(2)
-            c_ap1.text_input("Calidad (Ej. Apoderado Especial):")
-            c_ap2.text_input("Cédula del Apoderado:")
-
-    with tab_inmueble:
-        c_inm1, c_inm2, c_inm3 = st.columns(3)
-        with c_inm1:
-            st.text_input("Provincia:")
-            st.text_input("Parcela / Solar:")
-            st.text_input("Matrícula No.:")
-        with c_inm2:
-            st.text_input("Municipio:")
-            st.text_input("Distrito Catastral (DC):")
-            st.text_input("Libro:")
-        with c_inm3:
-            st.text_input("Sector / Paraje:")
-            st.text_input("Manzana:")
-            st.text_input("Folio:")
-            
-        c_sup1, c_sup2 = st.columns(2)
-        c_sup1.text_input("Superficie Total (Metros Cuadrados):")
-        c_sup2.text_input("Designación Posicional:")
+    # --- 1. PARTES Y REPRESENTANTES ---
+    with st.expander("👥 1. Partes, Clientes y Representantes", expanded=True):
+        t_cli, t_apo = st.tabs(["👤 Clientes / Propietarios", "🤝 Apoderados / Representantes"])
         
-        c_lin1, c_lin2, c_lin3, c_lin4 = st.columns(4)
-        c_lin1.text_input("Norte:")
-        c_lin2.text_input("Sur:")
-        c_lin3.text_input("Este:")
-        c_lin4.text_input("Oeste:")
+        with t_cli:
+            c_btn1, c_btn2 = st.columns([1, 4])
+            c_btn1.button("➕ Agregar Cliente", on_click=mod_cant_rm, args=("cant_cl_rm", "add"), key="rm_add_cl")
+            c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_cl_rm", "del"), key="rm_del_cl")
+            
+            lista_clientes = []
+            for i in range(st.session_state["cant_cl_rm"]):
+                st.markdown(f"**Cliente {i+1}**")
+                c1, c2, c3 = st.columns(3)
+                n = c1.text_input("Nombre / Razón Social:", key=f"rm_cl_n_{i}")
+                c = c2.text_input("Cédula / RNC:", key=f"rm_cl_c_{i}")
+                t = c3.text_input("Teléfono(s):", key=f"rm_cl_t_{i}")
+                c4, c5 = st.columns([2, 1])
+                d = c4.text_input("Domicilio Exacto:", key=f"rm_cl_d_{i}")
+                e = c5.text_input("Correo Electrónico:", key=f"rm_cl_e_{i}")
+                if n: lista_clientes.append({"nombre": n, "cedula": c, "telefono": t, "domicilio": d, "email": e})
+
+        with t_apo:
+            c_btn1, c_btn2 = st.columns([1, 4])
+            c_btn1.button("➕ Agregar Apoderado", on_click=mod_cant_rm, args=("cant_ap_rm", "add"), key="rm_add_ap")
+            c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_ap_rm", "del"), key="rm_del_ap")
+            
+            lista_apoderados = []
+            for i in range(st.session_state["cant_ap_rm"]):
+                st.markdown(f"**Apoderado {i+1}**")
+                c1, c2, c3 = st.columns(3)
+                n = c1.text_input("Nombre Completo:", key=f"rm_ap_n_{i}")
+                c = c2.text_input("Cédula:", key=f"rm_ap_c_{i}")
+                q = c3.text_input("Calidad (Ej. Poder Especial):", key=f"rm_ap_q_{i}")
+                c4, c5 = st.columns([2, 1])
+                d = c4.text_input("Domicilio:", key=f"rm_ap_d_{i}")
+                te = c5.text_input("Teléfono / Email:", key=f"rm_ap_te_{i}")
+                if n: lista_apoderados.append({"nombre": n, "cedula": c, "calidad": q, "domicilio": d, "contacto": te})
+
+    # --- 2. PROFESIONALES ---
+    with st.expander("⚖️ 2. Profesionales Actuantes", expanded=False):
+        t_abo, t_agr, t_not, t_alg = st.tabs(["💼 Abogados", "📐 Agrimensores", "✒️ Notarios", "⚖️ Alguaciles"])
+
+        with t_abo:
+            c_btn1, c_btn2 = st.columns([1, 4])
+            c_btn1.button("➕ Agregar Abogado", on_click=mod_cant_rm, args=("cant_ab_rm", "add"), key="rm_add_ab")
+            c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_ab_rm", "del"), key="rm_del_ab")
+            lista_abogados = []
+            for i in range(st.session_state["cant_ab_rm"]):
+                c1, c2, c3 = st.columns(3)
+                n = c1.text_input("Nombre:", key=f"rm_ab_n_{i}")
+                c = c2.text_input("Cédula:", key=f"rm_ab_c_{i}")
+                m = c3.text_input("CARD:", key=f"rm_ab_m_{i}")
+                c4, c5, c6 = st.columns(3)
+                d = c4.text_input("Estudio/Domicilio:", key=f"rm_ab_d_{i}")
+                t = c5.text_input("Teléfono:", key=f"rm_ab_t_{i}")
+                e = c6.text_input("Email:", key=f"rm_ab_e_{i}")
+                if n: lista_abogados.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d, "telefono": t, "email": e})
+
+        with t_agr:
+            c_btn1, c_btn2 = st.columns([1, 4])
+            c_btn1.button("➕ Agregar Agrimensor", on_click=mod_cant_rm, args=("cant_ag_rm", "add"), key="rm_add_ag")
+            c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_ag_rm", "del"), key="rm_del_ag")
+            lista_agrimensores = []
+            for i in range(st.session_state["cant_ag_rm"]):
+                c1, c2, c3 = st.columns(3)
+                n = c1.text_input("Nombre:", key=f"rm_ag_n_{i}")
+                c = c2.text_input("Cédula:", key=f"rm_ag_c_{i}")
+                m = c3.text_input("CODIA:", key=f"rm_ag_m_{i}")
+                c4, c5, c6 = st.columns(3)
+                d = c4.text_input("Oficina:", key=f"rm_ag_d_{i}")
+                t = c5.text_input("Teléfono:", key=f"rm_ag_t_{i}")
+                e = c6.text_input("Email:", key=f"rm_ag_e_{i}")
+                if n: lista_agrimensores.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d, "telefono": t, "email": e})
+        
+        with t_not:
+            c_btn1, c_btn2 = st.columns([1, 4])
+            c_btn1.button("➕ Agregar Notario", on_click=mod_cant_rm, args=("cant_no_rm", "add"), key="rm_add_no")
+            c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_no_rm", "del"), key="rm_del_no")
+            lista_notarios = []
+            for i in range(st.session_state["cant_no_rm"]):
+                c1, c2, c3 = st.columns(3)
+                n = c1.text_input("Nombre:", key=f"rm_no_n_{i}")
+                c = c2.text_input("Cédula:", key=f"rm_no_c_{i}")
+                m = c3.text_input("Matrícula Notarial:", key=f"rm_no_m_{i}")
+                if n: lista_notarios.append({"nombre": n, "cedula": c, "matricula": m})
+
+        with t_alg:
+            c_btn1, c_btn2 = st.columns([1, 4])
+            c_btn1.button("➕ Agregar Alguacil", on_click=mod_cant_rm, args=("cant_al_rm", "add"), key="rm_add_al")
+            c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_al_rm", "del"), key="rm_del_al")
+            lista_alguaciles = []
+            for i in range(st.session_state["cant_al_rm"]):
+                c1, c2, c3 = st.columns(3)
+                n = c1.text_input("Nombre:", key=f"rm_al_n_{i}")
+                c = c2.text_input("Cédula:", key=f"rm_al_c_{i}")
+                m = c3.text_input("Tribunal:", key=f"rm_al_m_{i}")
+                if n: lista_alguaciles.append({"nombre": n, "cedula": c, "matricula": m})
+
+    # --- 3. INMUEBLES Y TÍTULOS ---
+    with st.expander("📍 3. Inmuebles, Parcelas y Títulos", expanded=False):
+        c_btn1, c_btn2 = st.columns([1, 4])
+        c_btn1.button("➕ Agregar Inmueble", on_click=mod_cant_rm, args=("cant_in_rm", "add"), key="rm_add_in")
+        c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_in_rm", "del"), key="rm_del_in")
+        
+        lista_inmuebles = []
+        for i in range(st.session_state["cant_in_rm"]):
+            st.markdown(f"**Inmueble / Parcela {i+1}**")
+            c1, c2, c3 = st.columns(3)
+            p = c1.text_input("Parcela/Solar:", key=f"rm_in_p_{i}")
+            dc = c2.text_input("DC / Municipio:", key=f"rm_in_dc_{i}")
+            prov = c3.text_input("Provincia:", key=f"rm_in_prov_{i}")
+            
+            c4, c5, c6 = st.columns(3)
+            num = c4.text_input("Matrícula/No. Título:", key=f"rm_in_n_{i}")
+            sup = c5.text_input("Superficie:", key=f"rm_in_sup_{i}")
+            tdoc = c6.selectbox("Tipo de Documento:", ["Certificado de Título", "Constancia Anotada", "Acto de Venta", "Otro"], key=f"rm_in_td_{i}")
+            
+            if p: lista_inmuebles.append({"parcela": p, "dc": dc, "provincia": prov, "numero": num, "superficie": sup, "tipo_doc": tdoc})
 
     st.write("---")
-    if st.button("💾 GUARDAR / ACTUALIZAR EXPEDIENTE", type="primary", use_container_width=True):
-        if not tramite_final:
-            st.error("Debe especificar el tipo de trámite.")
+    
+    # --- BOTÓN DE GUARDADO MAESTRO ---
+    if st.button("💾 Guardar / Actualizar Expediente en Bóveda", type="primary", use_container_width=True):
+        if num_expediente and asunto:
+            st.session_state["db_expedientes"][num_expediente] = {
+                "asunto": asunto,
+                "fecha_creacion": datetime.now().strftime("%Y-%m-%d"),
+                "clientes": lista_clientes,
+                "apoderados": lista_apoderados,
+                "abogados": lista_abogados,
+                "agrimensores": lista_agrimensores,
+                "notarios": lista_notarios,
+                "alguaciles": lista_alguaciles,
+                "inmuebles": lista_inmuebles
+            }
+            st.success(f"✅ ¡Expediente {num_expediente} guardado exitosamente en el Registro Maestro de la Firma!")
+            st.balloons() # Pequeña animación de celebración al guardar
         else:
-            st.session_state["db_expedientes"][exp_actual] = {"tramite": tramite_final, "jurisdiccion": jurisdiccion, "estado": estado_exp}
-            if modo_accion == "✨ Nuevo Expediente":
-                st.session_state["contador_registro"] += 1
-            st.success(f"✅ ¡Expediente {exp_actual} guardado exitosamente!")
-            st.rerun()
+            st.error("⚠️ Debe indicar al menos el Número de Expediente y el Asunto para poder guardar.")
+
+    # --- LISTADO DE EXPEDIENTES ---
+    st.divider()
+    st.subheader("🗂️ Archivo de Expedientes Registrados")
+    if st.session_state["db_expedientes"]:
+        for exp_num, exp_data in st.session_state["db_expedientes"].items():
+            with st.expander(f"📁 Expediente: {exp_num} - {exp_data['asunto']}"):
+                col_d1, col_d2 = st.columns(2)
+                col_d1.write(f"**Fecha de Registro:** {exp_data['fecha_creacion']}")
+                col_d1.write(f"**Clientes involucrados:** {len(exp_data['clientes'])}")
+                col_d2.write(f"**Profesionales:** {len(exp_data['abogados']) + len(exp_data['agrimensores'])}")
+                col_d2.write(f"**Inmuebles:** {len(exp_data['inmuebles'])}")
+                
+                if st.button("🗑️ Eliminar Expediente", key=f"del_exp_{exp_num}"):
+                    del st.session_state["db_expedientes"][exp_num]
+                    st.rerun()
+    else:
+        st.info("No hay expedientes registrados aún. Llene los datos arriba y presione Guardar.")
 # =====================================================================
 # MÓDULO 5: ALERTAS Y PLAZOS
 # =====================================================================
