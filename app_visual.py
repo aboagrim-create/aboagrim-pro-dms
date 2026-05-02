@@ -1503,197 +1503,142 @@ def vista_plantillas():
 
 def vista_honorarios():
     import streamlit as st
-    import streamlit.components.v1 as components
     from datetime import datetime
 
     st.title("💳 Gestión de Honorarios y Facturación")
-    st.markdown("### *Cotizaciones y Facturas Proforma de AboAgrim*")
+    st.markdown("### 💰 Cotizaciones, Acuerdos y Estado de Cuentas")
 
-    # --- 1. MEMORIA PARA ITEMS DINÁMICOS ---
-    if "cant_items_fac" not in st.session_state:
-        st.session_state["cant_items_fac"] = 1
-    if "contador_factura" not in st.session_state:
-        st.session_state["contador_factura"] = 1
+    # 🛡️ Seguridad: Solo Administradores ven el dinero
+    if st.session_state.get("rol_actual") != "Administrador":
+        st.error("⛔ Acceso Denegado. Área exclusiva de la Presidencia.")
+        return
 
-    def mod_items(operacion):
-        if operacion == "add":
-            st.session_state["cant_items_fac"] += 1
-        elif operacion == "del" and st.session_state["cant_items_fac"] > 1:
-            st.session_state["cant_items_fac"] -= 1
+    # --- 1. VINCULACIÓN AL CASO ---
+    lista_exps = ["-- Cliente Independiente --"] + list(st.session_state.get("db_expedientes", {}).keys())
+    exp_seleccionado = st.selectbox("Vincular Facturación a Expediente:", lista_exps)
 
-    # --- 2. VINCULACIÓN CON EXPEDIENTES ---
-    lista_exps = ["-- Factura Independiente --"] + list(st.session_state.get("db_expedientes", {}).keys())
+    st.write("---")
+
+    # --- 2. ACUERDOS Y FORMAS DE PAGO ---
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("📝 Acuerdos y Condiciones")
+        tipo_acuerdo = st.selectbox("Tipo de Acuerdo de Honorarios:", [
+            "Monto Fijo (Suma Alzada)",
+            "Cuota Litis (Porcentaje de los resultados)",
+            "Iguala Mensual (Servicios recurrentes)",
+            "Tarifa por Hora",
+            "Pago por Etapa / Hito Catastral"
+        ])
+        
+        plan_pago = st.selectbox("Plan de Pago Estipulado:", [
+            "50% Avance Inicial / 50% Contra Entrega",
+            "100% Por Adelantado",
+            "30% Inicio / 30% Proceso / 40% Final",
+            "Pagos Mensuales Fijos",
+            "Al Finalizar el Caso (Cuota Litis)"
+        ])
+
+    with col2:
+        st.subheader("💵 Métodos de Pago")
+        forma_pago = st.selectbox("Forma de Pago Esperada:", [
+            "Transferencia Bancaria",
+            "Depósito en Cuenta",
+            "Cheque Certificado",
+            "Cheque de Administración",
+            "Efectivo"
+        ])
+        moneda = st.selectbox("Moneda de Facturación:", ["RD$ (Pesos Dominicanos)", "US$ (Dólares Estadounidenses)"])
+
+    # --- 3. CONCEPTOS A FACTURAR (DINÁMICO) ---
+    st.write("---")
+    st.subheader("🛒 Conceptos y Servicios")
     
-    col_sel1, col_sel2 = st.columns([1, 2])
-    with col_sel1:
-        exp_seleccionado = st.selectbox("Vincular a Expediente:", lista_exps)
-    with col_sel2:
-        tipo_documento = st.radio("Tipo de Documento:", ["Cotización", "Factura Proforma", "Factura de Honorarios"], horizontal=True)
+    if "cant_conceptos" not in st.session_state:
+        st.session_state["cant_conceptos"] = 1
 
+    c_btn1, c_btn2 = st.columns([1, 4])
+    if c_btn1.button("➕ Agregar Concepto"): st.session_state["cant_conceptos"] += 1
+    if c_btn2.button("➖ Quitar") and st.session_state["cant_conceptos"] > 1: st.session_state["cant_conceptos"] -= 1
+
+    subtotal = 0.0
+    conceptos_factura = []
+    
+    for i in range(st.session_state["cant_conceptos"]):
+        c1, c2, c3 = st.columns([3, 1, 1])
+        desc = c1.text_input(f"Descripción del Servicio {i+1}:", placeholder="Ej. Saneamiento Parcela 44...", key=f"fac_desc_{i}")
+        cant = c2.number_input("Cantidad:", min_value=1, value=1, key=f"fac_cant_{i}")
+        precio = c3.number_input("Precio Unitario:", min_value=0.0, value=0.0, step=1000.0, key=f"fac_prec_{i}")
+        
+        total_linea = cant * precio
+        subtotal += total_linea
+        if desc: conceptos_factura.append({"desc": desc, "cant": cant, "precio": precio, "total": total_linea})
+
+    # --- 4. IMPUESTOS Y RETENCIONES ---
     st.write("---")
+    st.subheader("📊 Impuestos y Retenciones")
+    col_imp1, col_imp2, col_imp3 = st.columns(3)
+    aplicar_itbis = col_imp1.checkbox("➕ Sumar ITBIS (18%)", value=False) # Falso por defecto para honorarios legales
+    retencion_isr = col_imp2.checkbox("➖ Retención ISR (10% - Empresas)")
+    retencion_itbis = col_imp3.checkbox("➖ Retención ITBIS (100% o 30%)")
 
-    # --- 3. DATOS DEL CLIENTE Y FACTURA ---
-    with st.expander("👤 Datos del Cliente y Comprobante", expanded=True):
-        c1, c2 = st.columns(2)
-        with c1:
-            cliente_nombre = st.text_input("A nombre de (Cliente / Empresa):")
-            cliente_rnc = st.text_input("RNC / Cédula:")
-            cliente_dir = st.text_input("Dirección del Cliente:")
-        with c2:
-            fecha_fac = st.date_input("Fecha de Emisión:")
-            num_factura = st.text_input("Número de Documento:", value=f"FAC-{datetime.now().year}-{st.session_state['contador_factura']:04d}")
-            ncf = st.text_input("NCF (Opcional, si aplica):", placeholder="Ej. B0200000001")
+    itbis = subtotal * 0.18 if aplicar_itbis else 0.0
+    isr = subtotal * 0.10 if retencion_isr else 0.0
+    ret_itbis = itbis if retencion_itbis else 0.0
+    
+    total_pagar = subtotal + itbis - isr - ret_itbis
 
-    # --- 4. ITEMS DE FACTURACIÓN (DINÁMICO) ---
-    with st.expander("🛒 Conceptos y Servicios (Agregar/Quitar)", expanded=True):
-        c_btn1, c_btn2 = st.columns([1, 4])
-        c_btn1.button("➕ Agregar Concepto", on_click=mod_items, args=("add",), key="add_item")
-        c_btn2.button("➖ Quitar", on_click=mod_items, args=("del",), key="del_item")
-        
-        lista_conceptos = []
-        subtotal = 0.0
-        
-        for i in range(st.session_state["cant_items_fac"]):
-            c1, c2, c3 = st.columns([3, 1, 1])
-            desc = c1.text_input(f"Descripción del Servicio {i+1}:", key=f"item_d_{i}", placeholder="Ej. Honorarios por Saneamiento, Tasa DGII...")
-            cant = c2.number_input(f"Cantidad:", min_value=1, value=1, key=f"item_c_{i}")
-            precio = c3.number_input(f"Precio Unitario (RD$):", min_value=0.0, value=0.0, format="%.2f", key=f"item_p_{i}")
-            
-            if desc and precio > 0:
-                total_linea = cant * precio
-                subtotal += total_linea
-                lista_conceptos.append({"desc": desc, "cant": cant, "precio": precio, "total": total_linea})
-
-    # --- 5. IMPUESTOS Y TOTALES ---
-    with st.expander("📊 Impuestos y Retenciones", expanded=True):
-        c_tax1, c_tax2, c_tax3 = st.columns(3)
-        aplicar_itbis = c_tax1.checkbox("Sumar ITBIS (18%)", value=False)
-        aplicar_isr = c_tax2.checkbox("Retención ISR (10% Profesionales)", value=False)
-        aplicar_ret_itbis = c_tax3.checkbox("Retención ITBIS (100% o 30%)", value=False)
-        
-        notas_factura = st.text_area("Notas / Términos de Pago:", value="El pago del 50% es requerido para iniciar los trabajos. Los gastos de impuestos y tasas registrales no incluyen ITBIS.")
-
-        # Cálculos Matemáticos
-        itbis = subtotal * 0.18 if aplicar_itbis else 0.0
-        isr = subtotal * 0.10 if aplicar_isr else 0.0
-        # Simplificación: Si retienen ITBIS, asumimos el 100% del ITBIS generado si es entre empresas, o ajustable. 
-        # Para honorarios jurídicos a empresas suele ser el 100% del ITBIS.
-        ret_itbis = itbis if aplicar_ret_itbis else 0.0
-        
-        total_neto = subtotal + itbis - isr - ret_itbis
-
+    # --- 5. CUENTAS BANCARIAS OFICIALES ---
     st.write("---")
+    st.subheader("🏦 Cuentas Bancarias para Depósitos")
+    st.info("Estas cuentas oficiales de la firma se incluirán en el recibo/proforma del cliente.")
+    
+    c_banco1, c_banco2 = st.columns(2)
+    with c_banco1:
+        st.success("**🏦 Banco BHD**\n\nTipo: **Cuenta de Ahorros**\n\nNo. Cuenta: **08010850011**")
+    with c_banco2:
+        st.info("**🏦 Banco de Reservas**\n\nTipo: **Cuenta de Ahorros**\n\nNo. Cuenta: **9601369253**")
 
-    # --- 6. GENERADOR DEL DISEÑO WEB PREMIUM (HTML) ---
-    if st.button("👁️ Generar Vista Previa de la Factura", type="primary", use_container_width=True):
-        
-        # Construcción de las filas de la tabla HTML
-        filas_html = ""
-        for item in lista_conceptos:
-            filas_html += f"""
-            <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 12px; text-align: left;">{item['desc']}</td>
-                <td style="padding: 12px; text-align: center;">{item['cant']}</td>
-                <td style="padding: 12px; text-align: right;">RD$ {item['precio']:,.2f}</td>
-                <td style="padding: 12px; text-align: right; color: #1E3A8A; font-weight: bold;">RD$ {item['total']:,.2f}</td>
-            </tr>
-            """
+    # --- 6. RESUMEN Y EMISIÓN ---
+    st.write("---")
+    st.markdown(f"### 🧾 Resumen Total a Pagar: {moneda} {total_pagar:,.2f}")
+    
+    if st.button("🚀 Registrar Acuerdo y Generar Proforma", type="primary", use_container_width=True):
+        if conceptos_factura:
+            st.success("✅ Acuerdo de honorarios estructurado correctamente.")
             
-        # Bloque de Impuestos Condicional en HTML
-        impuestos_html = ""
-        if aplicar_itbis: impuestos_html += f"<tr><td colspan='3' style='text-align: right; padding: 5px 12px;'><strong>ITBIS (18%):</strong></td><td style='text-align: right; padding: 5px 12px;'>RD$ {itbis:,.2f}</td></tr>"
-        if aplicar_isr: impuestos_html += f"<tr><td colspan='3' style='text-align: right; padding: 5px 12px; color: #dc3545;'><strong>Retención ISR (10%):</strong></td><td style='text-align: right; padding: 5px 12px; color: #dc3545;'>- RD$ {isr:,.2f}</td></tr>"
-        if aplicar_ret_itbis: impuestos_html += f"<tr><td colspan='3' style='text-align: right; padding: 5px 12px; color: #dc3545;'><strong>Retención ITBIS:</strong></td><td style='text-align: right; padding: 5px 12px; color: #dc3545;'>- RD$ {ret_itbis:,.2f}</td></tr>"
-
-        # PLANTILLA MAESTRA HTML / CSS
-        html_factura = f"""
-        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 800px; margin: auto; padding: 40px; border: 1px solid #ddd; box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.1); background-color: white; border-top: 8px solid #1E3A8A;">
-            
-            <!-- ENCABEZADO CORPORATIVO -->
-            <table style="width: 100%; margin-bottom: 30px;">
-                <tr>
-                    <td style="width: 50%;">
-                        <h1 style="color: #1E3A8A; margin: 0; font-size: 32px; font-weight: 900; letter-spacing: 1px;">ABOAGRIM</h1>
-                        <p style="color: #FBBF24; margin: 0; font-size: 14px; font-weight: bold; text-transform: uppercase;">Servicios Legales y Catastrales</p>
-                        <p style="color: #666; margin: 5px 0 0 0; font-size: 12px;">Lic. Jhonny Matos, M.A.<br>Santiago, Rep. Dom.<br>Tel: 829-826-5888</p>
-                    </td>
-                    <td style="width: 50%; text-align: right; vertical-align: top;">
-                        <h2 style="color: #333; margin: 0; font-size: 24px; text-transform: uppercase;">{tipo_documento}</h2>
-                        <p style="color: #555; font-size: 14px; margin: 5px 0;"><strong>No:</strong> {num_factura}</p>
-                        <p style="color: #555; font-size: 14px; margin: 0;"><strong>Fecha:</strong> {fecha_fac.strftime('%d/%m/%Y')}</p>
-                        <p style="color: #555; font-size: 14px; margin: 5px 0;"><strong>NCF:</strong> {ncf if ncf else 'N/A'}</p>
-                    </td>
-                </tr>
-            </table>
-            
-            <!-- DATOS DEL CLIENTE -->
-            <div style="background-color: #f8fafc; padding: 15px; border-left: 4px solid #FBBF24; margin-bottom: 30px;">
-                <p style="margin: 0 0 5px 0; font-size: 14px; color: #1E3A8A;"><strong>FACTURADO A:</strong></p>
-                <h3 style="margin: 0 0 5px 0; color: #333; font-size: 18px;">{cliente_nombre if cliente_nombre else '_______________________'}</h3>
-                <p style="margin: 0 0 5px 0; font-size: 14px; color: #555;"><strong>RNC/Cédula:</strong> {cliente_rnc}</p>
-                <p style="margin: 0; font-size: 14px; color: #555;"><strong>Dirección:</strong> {cliente_dir}</p>
-            </div>
-            
-            <!-- TABLA DE CONCEPTOS -->
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-                <thead>
-                    <tr style="background-color: #1E3A8A; color: white;">
-                        <th style="padding: 12px; text-align: left; font-size: 14px;">DESCRIPCIÓN DEL SERVICIO</th>
-                        <th style="padding: 12px; text-align: center; font-size: 14px;">CANT.</th>
-                        <th style="padding: 12px; text-align: right; font-size: 14px;">PRECIO UNIT.</th>
-                        <th style="padding: 12px; text-align: right; font-size: 14px;">TOTAL</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filas_html}
-                </tbody>
-            </table>
-            
-            <!-- TOTALES -->
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-                <tr>
-                    <td style="width: 50%; vertical-align: top; padding-right: 20px;">
-                        <p style="font-size: 12px; color: #666; background-color: #f1f5f9; padding: 10px; border-radius: 4px;"><strong>Términos y Condiciones:</strong><br>{notas_factura}</p>
-                    </td>
-                    <td style="width: 50%;">
-                        <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #333;">
-                            <tr>
-                                <td style="text-align: right; padding: 5px 12px;"><strong>Subtotal:</strong></td>
-                                <td style="text-align: right; padding: 5px 12px;">RD$ {subtotal:,.2f}</td>
-                            </tr>
-                            {impuestos_html}
-                            <tr style="background-color: #FBBF24; color: #1E3A8A; font-size: 18px;">
-                                <td style="text-align: right; padding: 12px;"><strong>TOTAL NETO A PAGAR:</strong></td>
-                                <td style="text-align: right; padding: 12px;"><strong>RD$ {total_neto:,.2f}</strong></td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-            
-            <!-- PIE DE PÁGINA -->
-            <div style="text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #888;">
-                <p style="margin: 0;">Gracias por confiar en AboAgrim Pro.</p>
-                <p style="margin: 0;">Firma de Abogados y Oficina de Agrimensura | Santiago, República Dominicana</p>
-            </div>
-        </div>
-        """
-
-        # Mostrar en pantalla la vista previa exacta
-        st.markdown("### 📄 Vista Previa del Documento:")
-        components.html(html_factura, height=900, scrolling=True)
-
-        # Botón para descargar el HTML y guardarlo o imprimirlo
-        st.success("✅ Diseño generado con éxito. Haga clic en el botón de abajo para descargar la factura. Una vez abierta en su navegador, presione `Ctrl + P` para guardarla como PDF o imprimirla.")
-        
-        st.download_button(
-            label="⬇️ Descargar Factura (Lista para Imprimir/PDF)",
-            data=html_factura,
-            file_name=f"{num_factura}_{cliente_nombre.replace(' ', '_')}.html",
-            mime="text/html",
-            type="primary"
-        )
-
+            # --- VISTA PREVIA DEL RECIBO ---
+            st.markdown("<br>", unsafe_allow_html=True)
+            with st.container(border=True):
+                st.markdown(f"<h3 style='text-align: center;'>📄 Proforma de Honorarios y Servicios</h3>", unsafe_allow_html=True)
+                st.markdown(f"**Fecha:** {datetime.now().strftime('%d/%m/%Y')}")
+                st.markdown(f"**Referencia / Expediente:** {exp_seleccionado}")
+                st.divider()
+                st.markdown(f"**Términos del Acuerdo:** {tipo_acuerdo}")
+                st.markdown(f"**Plan de Pago:** {plan_pago}")
+                st.markdown(f"**Método de Pago:** {forma_pago}")
+                st.divider()
+                
+                # Detalle de servicios
+                for c in conceptos_factura:
+                    st.write(f"🔹 **{c['cant']}x** {c['desc']}  .................  **{moneda} {c['total']:,.2f}**")
+                
+                st.divider()
+                st.write(f"Subtotal: {moneda} {subtotal:,.2f}")
+                if aplicar_itbis: st.write(f"ITBIS (18%): {moneda} {itbis:,.2f}")
+                if retencion_isr: st.write(f"Retención ISR (10%): -{moneda} {isr:,.2f}")
+                if retencion_itbis: st.write(f"Retención ITBIS: -{moneda} {ret_itbis:,.2f}")
+                
+                st.markdown(f"#### **MONTO TOTAL: {moneda} {total_pagar:,.2f}**")
+                st.divider()
+                
+                # Cuentas bancarias impresas en la proforma
+                st.markdown("**Realizar pagos exclusivamente a las siguientes cuentas a nombre de la firma:**")
+                st.markdown("✅ **Banco BHD:** Cuenta de Ahorros # **08010850011**")
+                st.markdown("✅ **Banco de Reservas:** Cuenta de Ahorros # **9601369253**")
+                
+        else:
+            st.error("⚠️ Debe agregar al menos un servicio o concepto con su valor antes de generar la proforma.")
 def vista_configuracion():
     import streamlit as st
     
