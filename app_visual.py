@@ -322,7 +322,43 @@ def vista_archivo():
 # MÓDULO 4: PLANTILLAS Y LEY 108-05
 # =====================================================================
 def vista_plantillas():
+    st.title("📄 Generador de Plantillas Automatizado")
+    st.markdown("### *AboAgrim Pro: Documentación Dinámica*")
     
+    # --- 1. CARGA DE ARCHIVOS ---
+    st.subheader("📤 Cargar Nuevos Modelos (.docx)")
+    with st.container(border=True):
+        archivos_subidos = st.file_uploader("Arrastre sus plantillas aquí", type=["docx"], accept_multiple_files=True, key="uploader_plantillas")
+        
+        if archivos_subidos:
+            import os
+            if not os.path.exists("plantillas_maestras"):
+                os.makedirs("plantillas_maestras")
+            
+            for archivo in archivos_subidos:
+                with open(os.path.join("plantillas_maestras", archivo.name), "wb") as f:
+                    f.write(archivo.getbuffer())
+            st.success(f"✅ {len(archivos_subidos)} archivos listos en la bóveda.")
+            st.rerun()
+
+    st.write("---")
+
+    # --- 2. ELIMINACIÓN DE ARCHIVOS ---
+    st.subheader("🗑️ Limpiar Bóveda de Plantillas")
+    import os
+    if os.path.exists("plantillas_maestras"):
+        archivos_locales = [f for f in os.listdir("plantillas_maestras") if f.endswith(".docx")]
+        if archivos_locales:
+            col_del1, col_del2 = st.columns([3, 1])
+            with col_del1:
+                archivo_a_borrar = st.selectbox("Seleccione para eliminar:", archivos_locales, key="sb_borrar")
+            with col_del2:
+                st.write("") # Espacio
+                if st.button("🔥 Borrar", use_container_width=True):
+                    os.remove(os.path.join("plantillas_maestras", archivo_a_borrar))
+                    st.rerun()
+        else:
+            st.info("La bóveda está limpia.")
 
 
 # =====================================================================
