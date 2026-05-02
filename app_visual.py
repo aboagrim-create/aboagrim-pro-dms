@@ -268,8 +268,8 @@ def vista_registro_maestro():
     st.markdown("### 🗃️ Creación y Actualización de Casos")
 
     # --- 0. INICIALIZACIÓN DE MEMORIA DINÁMICA ---
-    # Variables únicas para que no choquen con las plantillas
-    roles_rm = ["cant_cl_rm", "cant_ap_rm", "cant_ab_rm", "cant_ag_rm", "cant_no_rm", "cant_al_rm", "cant_in_rm"]
+    # Agregamos "cant_do_rm" para controlar la cantidad de Documentos/Actuaciones
+    roles_rm = ["cant_cl_rm", "cant_ap_rm", "cant_ab_rm", "cant_ag_rm", "cant_no_rm", "cant_al_rm", "cant_in_rm", "cant_do_rm"]
     for rol in roles_rm:
         if rol not in st.session_state:
             st.session_state[rol] = 1
@@ -280,7 +280,6 @@ def vista_registro_maestro():
         elif operacion == "del" and st.session_state[rol] > 0:
             st.session_state[rol] -= 1
 
-    # Base de datos global del sistema
     if "db_expedientes" not in st.session_state:
         st.session_state["db_expedientes"] = {}
 
@@ -293,14 +292,13 @@ def vista_registro_maestro():
     st.write("---")
 
     # --- 1. PARTES Y REPRESENTANTES ---
-    with st.expander("👥 1. Partes, Clientes y Representantes", expanded=True):
+    with st.expander("👥 1. Partes, Clientes y Representantes", expanded=False):
         t_cli, t_apo = st.tabs(["👤 Clientes / Propietarios", "🤝 Apoderados / Representantes"])
         
         with t_cli:
             c_btn1, c_btn2 = st.columns([1, 4])
             c_btn1.button("➕ Agregar Cliente", on_click=mod_cant_rm, args=("cant_cl_rm", "add"), key="rm_add_cl")
             c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_cl_rm", "del"), key="rm_del_cl")
-            
             lista_clientes = []
             for i in range(st.session_state["cant_cl_rm"]):
                 st.markdown(f"**Cliente {i+1}**")
@@ -317,7 +315,6 @@ def vista_registro_maestro():
             c_btn1, c_btn2 = st.columns([1, 4])
             c_btn1.button("➕ Agregar Apoderado", on_click=mod_cant_rm, args=("cant_ap_rm", "add"), key="rm_add_ap")
             c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_ap_rm", "del"), key="rm_del_ap")
-            
             lista_apoderados = []
             for i in range(st.session_state["cant_ap_rm"]):
                 st.markdown(f"**Apoderado {i+1}**")
@@ -390,7 +387,7 @@ def vista_registro_maestro():
                 m = c3.text_input("Tribunal:", key=f"rm_al_m_{i}")
                 if n: lista_alguaciles.append({"nombre": n, "cedula": c, "matricula": m})
 
-    # --- 3. INMUEBLES Y TÍTULOS ---
+    # --- 3. INMUEBLES Y TÍTULOS (AMPLIADO) ---
     with st.expander("📍 3. Inmuebles, Parcelas y Títulos", expanded=False):
         c_btn1, c_btn2 = st.columns([1, 4])
         c_btn1.button("➕ Agregar Inmueble", on_click=mod_cant_rm, args=("cant_in_rm", "add"), key="rm_add_in")
@@ -405,11 +402,37 @@ def vista_registro_maestro():
             prov = c3.text_input("Provincia:", key=f"rm_in_prov_{i}")
             
             c4, c5, c6 = st.columns(3)
-            num = c4.text_input("Matrícula/No. Título:", key=f"rm_in_n_{i}")
+            coord = c4.text_input("Coordenadas (UTM/Geo):", key=f"rm_in_co_{i}")
             sup = c5.text_input("Superficie:", key=f"rm_in_sup_{i}")
             tdoc = c6.selectbox("Tipo de Documento:", ["Certificado de Título", "Constancia Anotada", "Acto de Venta", "Otro"], key=f"rm_in_td_{i}")
             
-            if p: lista_inmuebles.append({"parcela": p, "dc": dc, "provincia": prov, "numero": num, "superficie": sup, "tipo_doc": tdoc})
+            c7, c8, c9, c10 = st.columns(4)
+            num = c7.text_input("Matrícula/No.:", key=f"rm_in_n_{i}")
+            lib = c8.text_input("Libro:", key=f"rm_in_l_{i}")
+            fol = c9.text_input("Folio:", key=f"rm_in_f_{i}")
+            f_ins = c10.text_input("Fecha de Inscripción:", key=f"rm_in_fi_{i}")
+            
+            if p: lista_inmuebles.append({"parcela": p, "dc": dc, "provincia": prov, "coordenadas": coord, "superficie": sup, "tipo_doc": tdoc, "numero": num, "libro": lib, "folio": fol, "fecha_ins": f_ins})
+
+    # --- 4. NUEVO: ACTUACIONES Y DOCUMENTOS ---
+    with st.expander("📝 4. Actuaciones y Documentos del Expediente", expanded=True):
+        st.info("Registre las instancias, demandas, actos y notificaciones vinculadas a este caso.")
+        c_btn1, c_btn2 = st.columns([1, 4])
+        c_btn1.button("➕ Agregar Documento", on_click=mod_cant_rm, args=("cant_do_rm", "add"), key="rm_add_do")
+        c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_do_rm", "del"), key="rm_del_do")
+        
+        lista_documentos = []
+        for i in range(st.session_state["cant_do_rm"]):
+            st.markdown(f"**Actuación / Documento {i+1}**")
+            c1, c2, c3, c4 = st.columns([2, 3, 2, 2])
+            
+            tipos_doc = ["Acto", "Acta", "Instancia", "Solicitud", "Informe", "Demanda", "Carta", "Notificación", "Otro"]
+            tipo_d = c1.selectbox("Clasificación:", tipos_doc, key=f"rm_do_t_{i}")
+            desc_d = c2.text_input("Descripción / Título:", placeholder="Ej. Instancia de fijación de audiencia", key=f"rm_do_d_{i}")
+            fecha_d = c3.date_input("Fecha:", key=f"rm_do_f_{i}")
+            estado_d = c4.selectbox("Estado Actual:", ["Redactado", "Depositado", "Notificado", "Aprobado", "Rechazado"], key=f"rm_do_e_{i}")
+            
+            if desc_d: lista_documentos.append({"tipo": tipo_d, "descripcion": desc_d, "fecha": str(fecha_d), "estado": estado_d})
 
     st.write("---")
     
@@ -425,10 +448,11 @@ def vista_registro_maestro():
                 "agrimensores": lista_agrimensores,
                 "notarios": lista_notarios,
                 "alguaciles": lista_alguaciles,
-                "inmuebles": lista_inmuebles
+                "inmuebles": lista_inmuebles,
+                "documentos": lista_documentos # Guardamos la nueva lista de actuaciones
             }
-            st.success(f"✅ ¡Expediente {num_expediente} guardado exitosamente en el Registro Maestro de la Firma!")
-            st.balloons() # Pequeña animación de celebración al guardar
+            st.success(f"✅ ¡Expediente {num_expediente} guardado exitosamente en el Registro Maestro!")
+            st.balloons()
         else:
             st.error("⚠️ Debe indicar al menos el Número de Expediente y el Asunto para poder guardar.")
 
@@ -438,11 +462,15 @@ def vista_registro_maestro():
     if st.session_state["db_expedientes"]:
         for exp_num, exp_data in st.session_state["db_expedientes"].items():
             with st.expander(f"📁 Expediente: {exp_num} - {exp_data['asunto']}"):
-                col_d1, col_d2 = st.columns(2)
-                col_d1.write(f"**Fecha de Registro:** {exp_data['fecha_creacion']}")
-                col_d1.write(f"**Clientes involucrados:** {len(exp_data['clientes'])}")
+                col_d1, col_d2, col_d3 = st.columns(3)
+                col_d1.write(f"**Fecha Registro:** {exp_data['fecha_creacion']}")
+                col_d1.write(f"**Clientes:** {len(exp_data['clientes'])}")
+                
                 col_d2.write(f"**Profesionales:** {len(exp_data['abogados']) + len(exp_data['agrimensores'])}")
                 col_d2.write(f"**Inmuebles:** {len(exp_data['inmuebles'])}")
+                
+                # Usamos .get() por si hay expedientes viejos que no tenían la lista de documentos
+                col_d3.write(f"**Actuaciones/Docs:** {len(exp_data.get('documentos', []))}")
                 
                 if st.button("🗑️ Eliminar Expediente", key=f"del_exp_{exp_num}"):
                     del st.session_state["db_expedientes"][exp_num]
