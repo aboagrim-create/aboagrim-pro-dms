@@ -231,72 +231,61 @@ def generar_paquete_documentos(datos_formulario, rutas_plantillas):
 # MÓDULO 1: MANDO CENTRAL
 # =====================================================================
 def vista_mando():
-    # Mantenemos su diseño elegante intacto
+    # 1. Encabezado Profesional
     st.markdown("""
-        <div style='background:linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%); padding:35px 30px; border-radius:12px; color:white; border-left:6px solid #FBBF24; margin-bottom: 20px;'>
-            <h1 style='margin:0; font-size: 2.8rem; font-weight: 800;'>AboAgrim Pro DMS ⚖️</h1>
+        <div style='background:linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%); padding:35px 30px; border-radius:12px; color:white; border-left:6px solid #FBBF24;'>
+            <h1 style='margin:0; font-size: 2.8rem; font-weight: 800;'>AboAgrim Pro DMS ⚖️🏗️</h1>
             <p style='font-size:1.2rem; color:#94A3B8; margin-bottom: 1rem;'>Centro de Mando: Jurisdicción Inmobiliaria y Mensura</p>
             <div style='font-size:1.1rem; color:#FBBF24; font-weight:600; text-transform:uppercase;'>Santiago | Lic. Jhonny Matos, M.A.</div>
         </div>
     """, unsafe_allow_html=True)
-                    # ==========================================
-                    # 6. MANTENIMIENTO CON PIN (RECUPERADO)
-                    # ==========================================
+
+    st.write("") 
+
+    # 2. Formulario de Fabricación
+    with st.container():
+        st.markdown("### 📝 Generar Documento Maestro")
+        col_f1, col_f2 = st.columns(2)
+        with col_f1:
+            jurisdiccion = st.selectbox("Órgano de la Jurisdicción:", ["MC", "JO", "TT"])
+            expediente = st.text_input("Número de Expediente:", placeholder="2026-0001")
+        with col_f2:
+            cliente = st.text_input("Nombre del Cliente:", placeholder="Ej: Juan Pérez")
+            tramite = st.text_input("Nombre del Trámite:", placeholder="Ej: Deslinde")
+
+        if st.button("🚀 FABRICAR DOCUMENTOS MAESTROS", use_container_width=True):
+            st.info("Generando documentos... Por favor, espere.")
+
     st.write("---")
-                with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS"):
-                        pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_p_auto")
-                        PIN_SECRETO = "0681"
-        
-                if pin_ingresado == PIN_SECRETO:
-                    maint_col1, maint_col2 = st.columns(2)
-                    import os
-                    
-                    # --- COLUMNA 1: SUBIR ---
-                    with maint_col1:
-                        st.markdown("**📤 Subir Nuevo Modelo**")
-                        opciones_destino = ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_tribunales_de_tierras"]
-                        destino = st.selectbox("Carpeta Destino:", opciones_destino)
-                        archivo_subido = st.file_uploader("Elija el archivo .docx", type=["docx"])
-                        
-                        if st.button("💾 Guardar Plantilla"):
-                            if archivo_subido:
-                                ruta_dir = f"plantillas_maestras/{destino}"
-                                os.makedirs(ruta_dir, exist_ok=True)
-                                ruta_final = f"{ruta_dir}/{archivo_subido.name}"
-                                with open(ruta_final, "wb") as f:
-                                    f.write(archivo_subido.getbuffer())
-                                st.success(f"✅ Documento guardado en {destino}.")
-                            else:
-                                st.warning("⚠️ Primero seleccione un archivo.")
-        
-                    # --- COLUMNA 2: BORRAR ---
-                    with maint_col2:
-                        st.markdown("**🗑️ Borrar Modelo Existente**")
-                        carpeta_borrar = st.selectbox("Buscar en Carpeta:", opciones_destino, key="del_dir")
-    st.markdown("### 📈 Desempeño Operativo en la Nube")
 
-    try:
-        # 1. Consultar datos reales de la nube Supabase
-        respuesta = supabase.table("expedientes_maestros").select("*").execute()
-        datos = respuesta.data
-        total_expedientes = len(datos)
-
-        # 2. Mostrar Indicadores Rápidos (Métricas reales)
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Expedientes Totales", total_expedientes)
-        col2.metric("Mensuras Pendientes", "Próximamente")
-        col3.metric("Estado del Sistema", "En Línea ☁️")
-
-        st.divider()
-
-        # 3. Mostrar los últimos movimientos reales
-        st.subheader("📝 Últimos Movimientos")
-        
-        if total_expedientes == 0:
-            st.info("Aún no hay expedientes en la base de datos. ¡Empiece hoy mismo en el Registro Maestro!")
-        else:
-            import pandas as pd
-            df = pd.DataFrame(datos)
+    # 3. Administración Protegida
+    with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS"):
+        pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_p_auto")
+        if pin_ingresado == "0681":
+            import os
+            maint_col1, maint_col2 = st.columns(2)
+            ops = ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_tribunales_de_tierras"]
+            with maint_col1:
+                st.markdown("**📤 Subir Nuevo Modelo**")
+                dest = st.selectbox("Carpeta Destino:", ops)
+                arc = st.file_uploader("Elija archivo .docx", type=["docx"])
+                if st.button("💾 Guardar Plantilla"):
+                    if arc:
+                        os.makedirs(f"plantillas_maestras/{dest}", exist_ok=True)
+                        with open(f"plantillas_maestras/{dest}/{arc.name}", "wb") as f:
+                            f.write(arc.getbuffer())
+                        st.success(f"✅ Guardado en {dest}.")
+            with maint_col2:
+                st.markdown("**🗑️ Borrar Modelo**")
+                c_borrar = st.selectbox("Buscar en:", ops, key="del_dir")
+                r_limp = f"plantillas_maestras/{c_borrar}"
+                arcs = os.listdir(r_limp) if os.path.exists(r_limp) else []
+                if arcs:
+                    a_borrar = st.selectbox("Seleccione archivo:", arcs)
+                    if st.button("🗑️ Eliminar Plantilla"):
+                        os.remove(f"{r_limp}/{a_borrar}")
+                        st.success("✅ Eliminado.")
+                        st.rerun()
             
             # Ordenamos para mostrar los más recientes arriba
             df_recientes = df.sort_values(by="fecha_creacion", ascending=False).head(5)
