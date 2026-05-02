@@ -1171,10 +1171,10 @@ def vista_plantillas_auto():
         st.write("---")
         st.markdown("### 🗂️ Datos para la Estructura Maestra")
                             
-                            # --- 1. PREPARACIÓN DE LA BÓVEDA FÍSICA ---
-                            cli_limpio = cliente_nombre.replace("/", "-").strip() if cliente_nombre else "Sin_Cliente"
-                            tram_limpio = tramite_nombre.replace("/", "-").strip() if tramite_nombre else "Sin_Tramite"
-                            exp_limpio = expediente_num.replace("/", "-").strip()
+        # --- 1. PREPARACIÓN DE LA BÓVEDA FÍSICA ---
+        cli_limpio = cliente_nombre.replace("/", "-").strip() if cliente_nombre else "Sin_Cliente"
+        tram_limpio = tramite_nombre.replace("/", "-").strip() if tramite_nombre else "Sin_Tramite"
+        exp_limpio = expediente_num.replace("/", "-").strip()
                             
                             nombre_carpeta = f"{organo_ji}_{exp_limpio} - {cli_limpio} - {tram_limpio}"
                             
