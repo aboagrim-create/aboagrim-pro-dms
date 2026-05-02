@@ -325,47 +325,44 @@ def vista_plantillas():
     st.title("📄 Generador de Plantillas Automatizado")
     st.markdown("### *AboAgrim Pro: Documentación Dinámica*")
     
-    # --- 1. CARGA DE ARCHIVOS ---
+    # --- 1. SUBIDA DE PLANTILLAS ---
     def vista_plantillas():
     st.title("📄 Generador de Plantillas Automatizado")
     st.markdown("### *AboAgrim Pro: Documentación Dinámica*")
     
-    # --- 1. SUBIDA DE PLANTILLAS ---
+    # --- 1. CARGA DE ARCHIVOS ---
     st.subheader("📤 Cargar Nuevos Modelos (.docx)")
-    with st.container(border=True):
-        archivos_subidos = st.file_uploader("Arrastre sus plantillas aquí", type=["docx"], accept_multiple_files=True, key="uploader_v2")
+    archivos_subidos = st.file_uploader("Arrastre sus plantillas aquí", type=["docx"], accept_multiple_files=True)
+    
+    if archivos_subidos:
+        import os
+        if not os.path.exists("plantillas_maestras"):
+            os.makedirs("plantillas_maestras")
         
-        if archivos_subidos:
-            import os
-            # Creamos la carpeta raíz si no existe
-            if not os.path.exists("plantillas_maestras"):
-                os.makedirs("plantillas_maestras")
-            
-            for archivo in archivos_subidos:
-                # Guardamos directamente en la raíz para que el sistema las vea
-                with open(os.path.join("plantillas_maestras", archivo.name), "wb") as f:
-                    f.write(archivo.getbuffer())
-            st.success(f"✅ {len(archivos_subidos)} archivos cargados.")
-            st.rerun()
+        for archivo in archivos_subidos:
+            with open(os.path.join("plantillas_maestras", archivo.name), "wb") as f:
+                f.write(archivo.getbuffer())
+        st.success(f"✅ {len(archivos_subidos)} archivos listos en la bóveda.")
+        st.rerun()
 
     st.write("---")
 
-    # --- 2. GESTIÓN / BORRADO ---
-    st.subheader("🗑️ Administrar Bóveda")
+    # --- 2. ELIMINACIÓN DE ARCHIVOS ---
+    st.subheader("🗑️ Limpiar Bóveda de Plantillas")
     import os
     if os.path.exists("plantillas_maestras"):
-        archivos = [f for f in os.listdir("plantillas_maestras") if f.endswith(".docx")]
-        if archivos:
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                archivo_sel = st.selectbox("Seleccione para eliminar:", archivos, key="del_sel_v2")
-            with col2:
-                st.write(" ") # Espacio nivelador
+        archivos_locales = [f for f in os.listdir("plantillas_maestras") if f.endswith(".docx")]
+        if archivos_locales:
+            col_del1, col_del2 = st.columns([3, 1])
+            with col_del1:
+                archivo_a_borrar = st.selectbox("Seleccione para eliminar:", archivos_locales)
+            with col_del2:
+                st.write("") # Espacio
                 if st.button("🔥 Borrar", use_container_width=True):
-                    os.remove(os.path.join("plantillas_maestras", archivo_sel))
+                    os.remove(os.path.join("plantillas_maestras", archivo_a_borrar))
                     st.rerun()
         else:
-            st.info("La bóveda está vacía.")
+            st.info("La bóveda está limpia.")
 
 
 # =====================================================================
