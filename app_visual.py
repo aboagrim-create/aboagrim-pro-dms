@@ -185,68 +185,85 @@ def generar_paquete_documentos(datos_formulario, rutas_plantillas):
 # MÓDULO 1: MANDO CENTRAL
 # =====================================================================
 def vista_mando():
-    import os
+    import streamlit as st
+    import json
+    from datetime import datetime
+
+    st.title("🏠 Mando Central")
+    st.markdown("### 📊 Panel de Control y Estadísticas")
     
-    # --- 1. PRESENTACIÓN DE LA OFICINA (LOGO Y DATOS) ---
-    col_logo, col_info = st.columns([1, 3])
+    # --- 1. LECTURA DE DATOS PARA MÉTRICAS ---
+    exps = st.session_state.get("db_expedientes", {})
+    total_exps = len(exps)
     
-    with col_logo:
-        # Busca el logo que usted tiene en su carpeta
-        if os.path.exists("logo_aboagrim.jpg"):
-            st.image("logo_aboagrim.jpg", use_container_width=True)
+    # Contar clientes e inmuebles totales navegando por los expedientes
+    total_clientes = sum(len(e.get("clientes", [])) for e in exps.values())
+    total_inmuebles = sum(len(e.get("inmuebles", [])) for e in exps.values())
+
+    # --- 2. TARJETAS DE INDICADORES ---
+    st.write("---")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        with st.container(border=True):
+            st.metric(label="📁 Expedientes Activos", value=total_exps)
+    with col2:
+        with st.container(border=True):
+            st.metric(label="👤 Clientes Registrados", value=total_clientes)
+    with col3:
+        with st.container(border=True):
+            st.metric(label="📍 Inmuebles / Parcelas", value=total_inmuebles)
+
+    st.write("---")
+
+    # --- 3. VISTA DIVIDIDA: ÚLTIMOS CASOS Y ACCIONES ---
+    c_izq, c_der = st.columns([2, 1])
+    
+    with c_izq:
+        st.subheader("⏱️ Expedientes Recientes")
+        if total_exps > 0:
+            # Mostrar los últimos 5 expedientes guardados
+            ultimos = list(exps.items())[-5:]
+            for num, datos in reversed(ultimos):
+                st.info(f"**{num}** | {datos['asunto']} *(Iniciado: {datos.get('fecha_creacion', 'N/A')})*")
         else:
-            st.markdown("🏢 **[LOGO ABOAGRIM]**") # Por si no lo encuentra
-            
-    with col_info:
-        st.markdown(f"<h1 style='margin-bottom: 0px; color: #1E3A8A;'>AboAgrim Pro DMS</h1>", unsafe_allow_html=True)
-        st.markdown(f"<h3 style='margin-top: 0px; color: #64748B;'>Servicios Legales y Catastrales</h3>", unsafe_allow_html=True)
-        st.write(f"**{PRESIDENTE_FIRMA}**")
-        st.caption(f"📍 {DIRECCION_FIRMA}")
-        st.caption(f"📞 {TELEFONOS_FIRMA} | ✉️ {CORREO_FIRMA}")
-        
-    st.divider()
+            st.warning("Aún no hay expedientes en el Registro Maestro.")
 
-    # --- 2. GRÁFICOS E INDICADORES (MÉTRICAS RÁPIDAS) ---
-    st.subheader("📊 Estado General de Operaciones")
-    c1, c2, c3, c4 = st.columns(4)
-    
-    c1.metric(label="Expedientes Activos", value="24", delta="3 Nuevos")
-    c2.metric(label="Plazos en Riesgo", value="2", delta="-1 Resuelto", delta_color="inverse")
-    c3.metric(label="Mensuras en Proceso", value="8", delta="Estable", delta_color="off")
-    c4.metric(label="Títulos Listos", value="5", delta="Esta semana")
-    
+    with c_der:
+        st.subheader("⚡ Acciones Rápidas")
+        st.button("➕ Crear Expediente", use_container_width=True, disabled=True, help="Vaya al menú 'Registro Maestro'")
+        st.button("📄 Forjar Instancia", use_container_width=True, disabled=True, help="Vaya al menú 'Plantillas Auto'")
+        st.button("💰 Cobrar Honorarios", use_container_width=True, disabled=True, help="Vaya al menú 'Gestión de Honorarios'")
+
+    # --- 4. BÓVEDA DE RESPALDO (BACKUP) ---
     st.write("---")
-
-    # --- 3. DESPLEGABLE DE EXPEDIENTES (VISOR RÁPIDO) ---
-    st.subheader("📂 Visor Rápido de Expedientes")
+    st.subheader("💾 Copia de Seguridad y Respaldo")
     
-    # Aquí luego conectaremos su base de datos real (Supabase). Por ahora es una simulación visual.
-    lista_simulada = [
-        "2026-0001 | Juan Pérez | Deslinde | 🟢 A Tiempo",
-        "2026-0002 | Constructora El Norte | Saneamiento | 🟡 Revisión",
-        "2026-0003 | María Rodríguez | Litis de Derechos | 🔴 Urgente"
-    ]
-    
-    expediente_sel = st.selectbox("Seleccione un expediente para revisar su estado actual:", ["-- Seleccione --"] + lista_simulada)
-    
-    if expediente_sel != "-- Seleccione --":
-        st.info(f"🔎 **Inspeccionando:** {expediente_sel}")
-        # Aquí se puede agregar un resumen rápido de lo que pasa con ese cliente
-        st.write("Última actualización: *Hoy a las 09:30 AM* - Fase de revisión técnica aprobada.")
-
-    st.write("---")
-
-    # --- 4. PANEL DE ALERTAS Y PLAZOS ---
-    st.subheader("🚨 Radar de Alertas Inminentes")
-    
-    alerta1, alerta2 = st.columns(2)
-    with alerta1:
-        st.warning("⏳ **Exp. 2026-0003 (María R.):** Vence plazo para depósito de réplica en Tribunal de Tierras en 3 días.")
-        st.error("❗ **Exp. 2026-0002 (Const. Norte):** Falta firma de contrato de cuota litis.")
+    if st.session_state.get("rol_actual") == "Administrador":
+        st.markdown("Descargue un archivo de respaldo con **todos sus expedientes y usuarios**. Guárdelo en su computadora para evitar pérdida de datos antes de conectar a la nube definitiva.")
         
-    with alerta2:
-        st.success("✅ **Exp. 2025-0089 (José Reyes):** Certificado de Título recibido de Jurisdicción Original.")
-        st.info("💡 **Aviso del Sistema:** Recuerde hacer respaldo de la Bóveda Digital este viernes.")
+        # Empaquetar la base de datos entera
+        backup_data = {
+            "fecha_respaldo": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "usuarios": st.session_state.get("db_usuarios", {}),
+            "expedientes": st.session_state.get("db_expedientes", {})
+        }
+        
+        # Convertir a texto JSON
+        json_str = json.dumps(backup_data, indent=4, ensure_ascii=False)
+        
+        c_down1, c_down2 = st.columns([1, 2])
+        c_down1.download_button(
+            label="⬇️ Descargar Backup (.json)",
+            data=json_str,
+            file_name=f"AboAgrim_Backup_{datetime.now().strftime('%d_%m_%Y')}.json",
+            mime="application/json",
+            type="primary",
+            use_container_width=True
+        )
+        c_down2.caption("🔒 *El archivo JSON es encriptado y solo puede ser leído por el sistema.*")
+    else:
+        st.info("El administrador es el único autorizado para descargar copias de seguridad de la firma.")
 
 # =====================================================================
 # MÓDULO 2: REGISTRO MAESTRO (CON PESTAÑAS Y 7 ROLES)
