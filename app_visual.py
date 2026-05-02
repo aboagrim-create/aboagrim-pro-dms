@@ -34,27 +34,32 @@ if "bandeja_descargas" not in st.session_state:
 if "plantillas_cargadas" not in st.session_state:
     st.session_state["plantillas_cargadas"] = []
 
-# --- MOTOR DE GUARDADO LOCAL ---
-def guardar_expediente_en_drive(ruta_archivo_original, nombre_carpeta_expediente):
-    
-    # Ruta directa a la sede en su disco local
-    ruta_sede_local = "Expedientes_AboAgrim"
-
+# --- MOTOR DE GENERACIÓN DE DOCUMENTOS WORD ---
+def generar_documento_word(ruta_plantilla, diccionario_datos):
+    """
+    Toma una plantilla .docx y la llena con los datos del diccionario.
+    """
     try:
-        # Creamos la ruta final con el nombre del expediente
-        destino_final = os.path.join(ruta_sede_local, nombre_carpeta_expediente)
+        doc = DocxTemplate(ruta_plantilla)
         
-        # Nos aseguramos de que la carpeta exista
-        os.makedirs(destino_final, exist_ok=True)
+        # Agregamos metadatos de la firma automáticamente
+        diccionario_datos.update({
+            "firma_nombre": PRESIDENTE_FIRMA,
+            "firma_direccion": DIRECCION_FIRMA,
+            "firma_tel": TELEFONOS_FIRMA,
+            "firma_correo": CORREO_FIRMA,
+            "fecha_hoy": datetime.now().strftime("%d de %B de %Y")
+        })
         
-        # Copiamos el documento fabricado a su bóveda
-        shutil.copy(ruta_archivo_original, destino_final)
+        doc.render(diccionario_datos)
         
-        return True  # ¡Esto enciende el cuadro verde!
-
+        buffer = io.BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
+        return buffer
     except Exception as e:
-        print(f"Error técnico al guardar en disco: {e}")
-        return False
+        st.error(f"❌ Error en la forja del documento: {e}")
+        return None
 
 
 # ==========================================
@@ -233,13 +238,80 @@ def vista_mando():
     # 1. Encabezado Profesional
     st.markdown("""
         <div style='background:linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%); padding:35px 30px; border-radius:12px; color:white; border-left:6px solid #FBBF24;'>
-            <h1 style='margin:0; font-size: 2.8rem; font-weight: 800;'>AboAgrim Pro DMS ⚖️🏗️</h1>
+            <h1 style='margin:0; font-size: 2.8rem; font-weight: 800;'>AboAgrim Pro DMS ⚖️📐</h1>
             <p style='font-size:1.2rem; color:#94A3B8; margin-bottom: 1rem;'>Centro de Mando: Jurisdicción Inmobiliaria y Mensura</p>
             <div style='font-size:1.1rem; color:#FBBF24; font-weight:600; text-transform:uppercase;'>Santiago | Lic. Jhonny Matos, M.A.</div>
         </div>
     """, unsafe_allow_html=True)
+    
+    st.write("") # Espacio
+    
+    # --- FORMULARIO DE RECOPILACIÓN DE DATOS ---
+    st.markdown("### 📝 Formulario de Actuaciones (Generador Maestro)")
+    
+    # División por Órgano
+    organo_ji = st.selectbox("⚖️ Órgano de la Jurisdicción:", ["Mensuras Catastrales", "Jurisdicción Original", "Registro de Títulos"])
+    
+    mapping_carpetas = {
+        "Mensuras Catastrales": "1_mensuras_catastrales",
+        "Jurisdicción Original": "2_jurisdiccion_original",
+        "Registro de Títulos": "3_registro_titulos"
+    }
 
-    # 4. Resumen de Operaciones (Conexión a la Nube)
+    # Campos divididos por roles para mayor control
+    with st.container(border=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            numero_expediente = st.text_input("📁 Número de Expediente:", value="2026-0001")
+            nombre_cliente = st.text_input("👤 Nombre del Reclamante / Cliente:")
+            nombre_tramite = st.text_input("📄 Tipo de Trámite (Ej. Deslinde, Litis, Saneamiento):")
+            
+        with col2:
+            nombre_agrimensor = st.text_input("📐 Agrimensor a Cargo:")
+            nombre_abogado = st.text_input("💼 Abogado Apoderado:")
+            nombre_notario = st.text_input("✒️ Notario Público:")
+
+    st.write("---")
+
+    # --- MOTOR DE BÚSQUEDA Y FORJA ---
+    import os
+    ruta_carpeta = os.path.join("plantillas_maestras", mapping_carpetas[organo_ji])
+    
+    if os.path.exists(ruta_carpeta):
+        opciones = [f for f in os.listdir(ruta_carpeta) if f.endswith(".docx")]
+        plantillas_elegidas = st.multiselect("📑 Seleccione los documentos a forjar para este caso:", opciones)
+        
+        if st.button("🚀 FABRICAR DOCUMENTOS MAESTROS", type="primary", use_container_width=True):
+            if not plantillas_elegidas:
+                st.warning("⚠️ Debe seleccionar al menos una plantilla para continuar.")
+            else:
+                # El Mega Diccionario: Atrapa todos los datos de la pantalla
+                datos_para_word = {
+                    "expediente": numero_expediente,
+                    "cliente": nombre_cliente,
+                    "tramite": nombre_tramite,
+                    "organo": organo_ji,
+                    "agrimensor": nombre_agrimensor,
+                    "abogado": nombre_abogado,
+                    "notario": nombre_notario
+                }
+                
+                st.success(f"✅ ¡Forja exitosa! Se han preparado {len(plantillas_elegidas)} documento(s).")
+                
+                # Generamos los documentos y creamos los botones de descarga
+                for p in plantillas_elegidas:
+                    # Llama a la función generadora que instalamos antes
+                    buffer = generar_documento_word(os.path.join(ruta_carpeta, p), datos_para_word)
+                    
+                    if buffer:
+                        st.download_button(
+                            label=f"⬇️ Descargar: {p}",
+                            data=buffer,
+                            file_name=f"{numero_expediente}_{p}", # Le pone el número de expediente al nombre del archivo
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        )
+    else:
+        st.info(f"ℹ️ La bóveda de '{organo_ji}' está vacía. Vaya a 'Plantillas Auto' para cargar sus modelos.")
 
 # =====================================================================
 # MÓDULO 2: REGISTRO MAESTRO (CON PESTAÑAS Y 7 ROLES)
