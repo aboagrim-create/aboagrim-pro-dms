@@ -1232,9 +1232,9 @@ with st.form("formulario_fabricacion"):
         boton_fabricar = st.form_submit_button("🚀 FABRICAR DOCUMENTOS MAESTROS", type="primary", use_container_width=True)
 
         if boton_fabricar:
-        if not plantillas_elegidas:
-            st.error("⚠️ Por favor, seleccione al menos un archivo de plantilla arriba antes de fabricar.")
-        else:
+                if not plantillas_elegidas:
+                        st.error("⚠️ Por favor, seleccione al menos un archivo de plantilla arriba antes de fabricar.")
+                else:
                         try:
                             import os
                             import json
