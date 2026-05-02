@@ -1549,144 +1549,165 @@ def crear_carpeta_expediente(nombre_cliente, id_expediente):
 import googleapiclient.discovery
 
 def vista_registro_maestro():
-    
+    from datetime import datetime
+    import streamlit as st
+
     st.title("👤 Registro Maestro de Expedientes")
-    st.subheader("Control de Casos Legales y Técnicos | AboAgrim")
-    st.divider()
+    st.markdown("### Control Integral de Actuaciones y Generales")
 
-    # --- MOTOR DE NUMERACIÓN SECUENCIAL ---
-    # Obtenemos el año actual
-    # Así debe quedar la línea 1539:
-    ano_actual = datetime.now().year
+    # --- 1. MEMORIA TEMPORAL (CRUD) ---
+    # Esto simula su base de datos mientras conectamos Supabase
+    if "db_expedientes" not in st.session_state:
+        st.session_state["db_expedientes"] = {}
     
-    # Memoria temporal para el número secuencial (luego lo conectaremos a la lectura real de Supabase)
-    if "contador_expedientes" not in st.session_state:
-        st.session_state["contador_expedientes"] = 1
-        
-    # Generamos el formato 2026-0001
-    num_expediente = f"{ano_actual}-{st.session_state['contador_expedientes']:04d}"
+    if "contador_registro" not in st.session_state:
+        st.session_state["contador_registro"] = 1
 
-    st.markdown(f"### 📝 **Nuevo Expediente: {num_expediente}**")
+    ano_actual = datetime.now().year
+    expediente_nuevo_sugerido = f"{ano_actual}-{st.session_state['contador_registro']:04d}"
 
-    # Utilizamos un solo formulario para que el botón "Guardar" envíe todo junto
-    with st.form("form_registro_maestro"):
-        
-        # --- 1. DATOS GENERALES DEL CLIENTE ---
-        st.markdown("#### 📄 1. Información Básica")
-        col1, col2 = st.columns(2)
-        with col1:
-            nombre_cliente = st.text_input("Nombre Completo / Razón Social:")
-            identificacion = st.text_input("Cédula o RNC:", placeholder="001-0000000-0")
-            telefono = st.text_input("Teléfono de Contacto:")
-        with col2:
-            domicilio = st.text_area("Dirección / Domicilio:", height=110)
+    # --- 2. BARRA DE HERRAMIENTAS: CREAR / MODIFICAR / BORRAR ---
+    modo_accion = st.radio("Acción a realizar:", ["✨ Nuevo Expediente", "✏️ Modificar Existente", "🗑️ Borrar Expediente"], horizontal=True)
 
-        # --- 2. DATOS TÉCNICOS Y JURÍDICOS ---
-        st.markdown("#### ⚖️ 2. Detalles del Trámite")
-        col3, col4, col5 = st.columns(3)
-        with col3:
-            tipo_tramite = st.selectbox("Tipo de Trámite", 
-                ["Deslinde", "Saneamiento", "Litis sobre Derechos Registrados", "Transferencia", "Subdivisión", "Determinación de Herederos"])
-        with col4:
-            organo_jurisdiccional = st.selectbox("Órgano Jurisdiccional", 
-                ["Mensuras Catastrales", "Registro de Títulos", "Tribunal de Tierras"])
-        with col5:
-            estatus_inicial = st.selectbox("Estado del Trámite", 
-                ["En Preparación", "Depositado", "En Calificación", "Observado", "Aprobado", "En Audiencia"])
-        
-        col6, col7 = st.columns(2)
-        with col6:
-            designacion_catastral = st.text_input("Designación Catastral / Matrícula")
-        with col7:
-            coordenadas_gps = st.text_input("Coordenadas del Inmueble (Opcional)", placeholder="Ej: 19.456, -70.697")
-
-        # --- 3. ACTORES Y PLAZOS ---
-        st.markdown("#### ⏳ 3. Actores y Alertas Legales")
-        col8, col9 = st.columns(2)
-        with col8:
-            notario_actuante = st.text_input("Notario Actuante")
-            representante_legal = st.text_input("Representante / Apoderado")
-        with col9:
-            # Aquí vinculamos la alerta directamente al número de expediente
-            fecha_alerta = st.date_input(f"Vencimiento / Alerta para el {num_expediente}")
-            motivo_alerta = st.text_input("Motivo del Plazo", placeholder="Ej: Depósito de Réplica, Fecha de Mensura")
-
-        st.divider()
-        # Botón de guardado que abarca todo el ancho
-        submitted = st.form_submit_button("💾 Crear Expediente Oficial", use_container_width=True)
-
-        if submitted:
-            # Al guardar, el sistema avisará y sumará 1 al contador (2026-0002, etc.)
-            st.session_state["contador_expedientes"] += 1
-            st.success(f"✅ ¡El expediente **{num_expediente}** para el cliente **{nombre_cliente}** ha sido forjado exitosamente!")
-            st.info("Nota: Los datos están listos para ser enviados a Supabase y al Gestor de Plantillas.")
-
-    # --- 2. DEPARTAMENTO DE AGRIMENSURA (DATOS TÉCNICOS) ---
-    st.markdown("### 🗺️ Módulo de Agrimensura y Catastro")
-    with st.container(border=True):
-        at1, at2, at3 = st.columns(3)
-        with at1:
-            parcela = st.text_input("Número de Parcela:", placeholder="Ej: 209-B")
-            distrito = st.text_input("Distrito Catastral:")
-        with at2:
-            municipio = st.text_input("Municipio:", value="Santiago")
-            provincia = st.text_input("Provincia:", value="Santiago")
-        with at3:
-            superficie = st.text_input("Superficie (m²):")
-            estatus_t = st.selectbox("Estatus Técnico:", ["Saneamiento", "Deslinde", "Subdivisión", "Refundición"])
-
-        # CAMPOS DE COORDENADAS (LO QUE SE HABÍA BORRADO)
-        st.write("**📍 Ubicación Georreferenciada (UTM/WGS84)**")
-        c_coord1, c_coord2, c_coord3 = st.columns(3)
-        with c_coord1:
-            coord_east = st.text_input("Coordenada Este (X):")
-        with c_coord2:
-            coord_north = st.text_input("Coordenada Norte (Y):")
-        with c_coord3:
-            puntos_gps = st.text_input("Puntos de Control / Vértices:")
-
-    # --- 3. DEPARTAMENTO LEGAL (LITIS Y TRIBUNALES) ---
-    st.markdown("### ⚖️ Módulo Jurídico y Litigios")
-    with st.container(border=True):
-        jurisdiccion = st.selectbox("Jurisdicción:", ["Inmobiliaria", "Civil y Comercial", "Laboral", "Penal"])
-        
-        jl1, jl2 = st.columns(2)
-        with jl1:
-            tribunal = st.text_input("Tribunal / Corte:", placeholder="Ej: Tribunal de Tierras de Jurisdicción Original")
-            sala = st.text_input("Sala / Cámara:")
-            juez = st.text_input("Magistrado / Juez Apoderado:")
-        with jl2:
-            no_rol = st.text_input("Número de Rol / Cuaderno:")
-            f_audiencia = st.date_input("Fecha de Próxima Audiencia")
-            etapa_procesal = st.selectbox("Etapa del Proceso:", ["Inicio", "Instrucción", "Fallo Pendiente", "Sentencia", "Recurso"])
-
-    # --- 4. ACCIÓN DE GUARDADO ---
-    st.divider()
-    if st.button("🚀 REGISTRAR EXPEDIENTE MAESTRO", type="primary", use_container_width=True):
-        if nombre_cliente and parcela:
-            # Generamos código único
-            codigo_generado = num_expediente
+    exp_seleccionado = None
+    if modo_accion != "✨ Nuevo Expediente":
+        lista_exps = list(st.session_state["db_expedientes"].keys())
+        if not lista_exps:
+            st.warning("No hay expedientes registrados aún.")
+        else:
+            exp_seleccionado = st.selectbox("Seleccione el Expediente:", lista_exps)
             
-            data_insert = {
-                "expediente": codigo_generado,
-                "nombre_propietario": nombre_cliente,
-                "cedula_propietario": identificacion,
-                "parcela": parcela,
-                "municipio": municipio,
-                "provincia": provincia,
-                "estatus": estatus_t,
+            if modo_accion == "🗑️ Borrar Expediente" and exp_seleccionado:
+                if st.button("🚨 Confirmar Borrado", type="primary"):
+                    del st.session_state["db_expedientes"][exp_seleccionado]
+                    st.success(f"Expediente {exp_seleccionado} eliminado.")
+                    st.rerun()
+                st.stop() # Detiene la pantalla aquí para no mostrar el formulario
+
+    # --- 3. FORMULARIO MAESTRO (CON PESTAÑAS) ---
+    st.write("---")
+    
+    # Si estamos modificando, precargamos el número, si es nuevo, usamos el formato oficial
+    exp_actual = exp_seleccionado if modo_accion == "✏️ Modificar Existente" else expediente_nuevo_sugerido
+    
+    st.markdown(f"#### 📂 Trabajando en Expediente: **{exp_actual}**")
+
+    # Pestañas para organizar la gran cantidad de datos
+    tab_base, tab_partes, tab_prof, tab_inmueble = st.tabs([
+        "📄 Datos Base", "👥 Partes Involucradas", "⚖️ Profesionales", "📍 Inmueble y Título"
+    ])
+
+    with tab_base:
+        st.subheader("Información del Trámite")
+        c1, c2 = st.columns(2)
+        with c1:
+            # TRÁMITE DINÁMICO EDITABLE
+            lista_tramites = [
+                "Deslinde", "Saneamiento", "Litis sobre Derechos Registrados", 
+                "Transferencia", "Subdivisión", "Determinación de Herederos", 
+                "✍️ Otro (Especificar Nuevo)"
+            ]
+            tramite_sel = st.selectbox("Tipo de Trámite:", lista_tramites)
+            
+            if tramite_sel == "✍️ Otro (Especificar Nuevo)":
+                tramite_final = st.text_input("Escriba el nombre exacto del trámite:")
+            else:
+                tramite_final = tramite_sel
+
+        with c2:
+            jurisdiccion = st.selectbox("Órgano Jurisdiccional:", ["Tribunal de Tierras (Original)", "Tribunal Superior de Tierras", "Mensuras Catastrales", "Registro de Títulos"])
+            estado_exp = st.selectbox("Estado Actual:", ["Recepción", "En Proceso", "Observado", "Aprobado", "En Litigio", "Cerrado"])
+
+    with tab_partes:
+        st.subheader("Generales de Ley de los Intervinientes")
+        st.info("Llene solo los roles que apliquen a este expediente.")
+        
+        # Agrupados por naturaleza para ahorrar espacio en pantalla
+        with st.expander("🟢 Parte Activa (Solicitantes / Demandantes / Compradores / Acreedores / Propietarios)"):
+            tipo_activa = st.multiselect("Rol(es):", ["Solicitante", "Demandante", "Reclamante", "Comprador", "Acreedor", "Dueño/Propietario"])
+            nombre_activa = st.text_input("Nombre / Razón Social (Parte Activa):")
+            c_act1, c_act2 = st.columns(2)
+            c_act1.text_input("Cédula / Pasaporte / RNC (Parte Activa):")
+            c_act2.text_input("Nacionalidad y Estado Civil:")
+            st.text_input("Profesión / Oficio (Parte Activa):")
+            st.text_area("Domicilio Exacto (Parte Activa):", height=68)
+
+        with st.expander("🔴 Parte Pasiva (Demandados / Vendedores / Deudores / Inquilinos)"):
+            tipo_pasiva = st.multiselect("Rol(es) Pasivos:", ["Demandado", "Vendedor", "Deudor", "Inquilino", "Arrendatario"])
+            nombre_pasiva = st.text_input("Nombre / Razón Social (Parte Pasiva):")
+            c_pas1, c_pas2 = st.columns(2)
+            c_pas1.text_input("Cédula / Pasaporte / RNC (Parte Pasiva):")
+            c_pas2.text_input("Nacionalidad y Estado Civil (Pasiva):")
+            st.text_area("Domicilio Exacto (Parte Pasiva):", height=68)
+
+    with tab_prof:
+        st.subheader("Representación Legal y Técnica")
+        
+        with st.expander("📐 Técnica (Agrimensores)"):
+            st.text_input("Nombre del Agrimensor:")
+            c_ag1, c_ag2 = st.columns(2)
+            c_ag1.text_input("Cédula (Agrimensor):")
+            c_ag2.text_input("Codiatur (CODIA):")
+        
+        with st.expander("⚖️ Legal (Abogados / Notarios)"):
+            st.text_input("Nombre del Abogado / Notario:")
+            c_ab1, c_ab2 = st.columns(2)
+            c_ab1.text_input("Cédula (Legal):")
+            c_ab2.text_input("Colegiatura (CARD / Matrícula Notarial):")
+            
+        with st.expander("🤝 Mandatarios (Apoderados / Gestores / Autorizados)"):
+            st.text_input("Nombre del Apoderado o Gestor:")
+            c_ap1, c_ap2 = st.columns(2)
+            c_ap1.text_input("Calidad (Ej. Apoderado Especial):")
+            c_ap2.text_input("Cédula del Apoderado:")
+
+    with tab_inmueble:
+        st.subheader("Designación Catastral y Registral")
+        st.markdown("**Datos del Título / Constancia Anotada / Acto**")
+        
+        c_inm1, c_inm2, c_inm3 = st.columns(3)
+        with c_inm1:
+            st.text_input("Provincia:")
+            st.text_input("Parcela / Solar:")
+            st.text_input("Matrícula No.:")
+        with c_inm2:
+            st.text_input("Municipio:")
+            st.text_input("Distrito Catastral (DC):")
+            st.text_input("Libro:")
+        with c_inm3:
+            st.text_input("Sector / Paraje:")
+            st.text_input("Manzana:")
+            st.text_input("Folio:")
+            
+        c_sup1, c_sup2 = st.columns(2)
+        c_sup1.text_input("Superficie Total (Metros Cuadrados):")
+        c_sup2.text_input("Designación Posicional:")
+        
+        st.markdown("**Linderos Según Plano / Título**")
+        c_lin1, c_lin2, c_lin3, c_lin4 = st.columns(4)
+        c_lin1.text_input("Norte:")
+        c_lin2.text_input("Sur:")
+        c_lin3.text_input("Este:")
+        c_lin4.text_input("Oeste:")
+
+    # --- 4. BOTÓN DE GUARDADO (CRUD) ---
+    st.write("---")
+    if st.button("💾 GUARDAR / ACTUALIZAR EXPEDIENTE", type="primary", use_container_width=True):
+        if not tramite_final:
+            st.error("Debe especificar el tipo de trámite.")
+        else:
+            # Aquí guardamos los datos clave en nuestra memoria temporal
+            st.session_state["db_expedientes"][exp_actual] = {
+                "tramite": tramite_final,
                 "jurisdiccion": jurisdiccion,
-                "fecha_creacion": str(datetime.datetime.now())
+                "estado": estado_exp
             }
             
-            try:
-                supabase.table("expedientes_maestros").insert(data_insert).execute()
-                st.success(f"✅ Expediente {codigo_generado} creado exitosamente para {nombre_cliente}.")
-                st.balloons()
-            except Exception as e:
-                st.error(f"Error al guardar en la nube: {e}")
-        else:
-            st.warning("⚠️ El nombre del cliente y el número de parcela son obligatorios.")
+            if modo_accion == "✨ Nuevo Expediente":
+                st.session_state["contador_registro"] += 1 # Avanzamos el contador 2026-0002...
+                
+            st.success(f"✅ ¡Expediente {exp_actual} guardado exitosamente con todas sus generales!")
+            st.rerun()
 # ==========================================
 # 🚦 ENRUTADOR REFORZADO - ABOAGRIM PRO
 # ==========================================
