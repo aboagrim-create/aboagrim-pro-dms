@@ -382,72 +382,188 @@ def vista_archivo():
 # =====================================================================
 # MÓDULO 4: PLANTILLAS Y LEY 108-05
 # =====================================================================
-def vista_plantillas():
-    st.title("📄 Generador de Plantillas Automatizado")
-    st.markdown("### *AboAgrim Pro: Documentación Dinámica*")
-    
-    # --- 1. CONFIGURACIÓN DE ÓRGANOS ---
-    carpetas_base = ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"]
-    
-    # Asegurar que la estructura física existe en el servidor
-    import os
-    if not os.path.exists("plantillas_maestras"):
-        os.makedirs("plantillas_maestras")
-    for c in carpetas_base:
-        ruta = os.path.join("plantillas_maestras", c)
-        if not os.path.exists(ruta):
-            os.makedirs(ruta)
+def vista_registro_maestro():
+    from datetime import datetime
+    import streamlit as st
 
-    # --- 2. RESUMEN DE BÓVEDA (Lo que le faltaba) ---
-    st.subheader("📊 Resumen de Modelos Disponibles")
-    cols_res = st.columns(3)
-    for i, cat in enumerate(carpetas_base):
-        ruta_cat = os.path.join("plantillas_maestras", cat)
-        conteo = len([f for f in os.listdir(ruta_cat) if f.endswith(".docx")])
-        label_cat = cat.replace("_", " ").title()[2:] # Limpia el nombre para mostrar
-        cols_res[i].metric(label_cat, f"{conteo} archivos")
+    st.title("👤 Registro Maestro de Expedientes")
+    st.markdown("### Control Integral de Actuaciones y Generales")
 
-    st.write("---")
-
-    # --- 3. CARGA INTELIGENTE POR CATEGORÍA ---
-    st.subheader("📤 Cargar Nuevos Modelos (.docx)")
-    col_up1, col_up2 = st.columns([2, 3])
+    # --- 1. MEMORIA TEMPORAL (CRUD) ---
+    # Esto simula su base de datos mientras conectamos Supabase
+    if "db_expedientes" not in st.session_state:
+        st.session_state["db_expedientes"] = {}
     
-    with col_up1:
-        destino = st.selectbox("Seleccione Órgano de destino:", carpetas_base, help="Indique en qué carpeta se guardará el modelo.")
-    
-    with col_up2:
-        archivos_subidos = st.file_uploader("Arrastre sus plantillas aquí", type=["docx"], accept_multiple_files=True, key="uploader_full_v4")
+    if "contador_registro" not in st.session_state:
+        st.session_state["contador_registro"] = 1
 
-    if archivos_subidos:
-        for archivo in archivos_subidos:
-            ruta_final = os.path.join("plantillas_maestras", destino, archivo.name)
-            with open(ruta_final, "wb") as f:
-                f.write(archivo.getbuffer())
-        st.success(f"✅ {len(archivos_subidos)} plantilla(s) guardada(s) en {destino}.")
-        st.rerun()
+    ano_actual = datetime.now().year
+    expediente_nuevo_sugerido = f"{ano_actual}-{st.session_state['contador_registro']:04d}"
 
-    st.write("---")
+    # --- 2. BARRA DE HERRAMIENTAS: CREAR / MODIFICAR / BORRAR ---
+    modo_accion = st.radio("Acción a realizar:", ["✨ Nuevo Expediente", "✏️ Modificar Existente", "🗑️ Borrar Expediente"], horizontal=True)
 
-    # --- 4. ADMINISTRADOR DE ELIMINACIÓN ---
-    st.subheader("🗑️ Administrar Bóveda")
-    col_adm1, col_adm2 = st.columns([2, 2])
-    
-    with col_adm1:
-        cat_ver = st.selectbox("Revisar categoría:", carpetas_base, key="cat_ver_admin")
-        ruta_ver = os.path.join("plantillas_maestras", cat_ver)
-        archivos_en_cat = [f for f in os.listdir(ruta_ver) if f.endswith(".docx")]
-    
-    with col_adm2:
-        if archivos_en_cat:
-            archivo_borrar = st.selectbox("Seleccione archivo para borrar:", archivos_en_cat)
-            if st.button("🔥 Confirmar Eliminación", use_container_width=True):
-                os.remove(os.path.join(ruta_ver, archivo_borrar))
-                st.success("Archivo eliminado.")
-                st.rerun()
+    exp_seleccionado = None
+    if modo_accion != "✨ Nuevo Expediente":
+        lista_exps = list(st.session_state["db_expedientes"].keys())
+        if not lista_exps:
+            st.warning("No hay expedientes registrados aún.")
         else:
-            st.info("No hay archivos en esta categoría para mostrar.")
+            exp_seleccionado = st.selectbox("Seleccione el Expediente:", lista_exps)
+            
+            if modo_accion == "🗑️ Borrar Expediente" and exp_seleccionado:
+                if st.button("🚨 Confirmar Borrado", type="primary"):
+                    del st.session_state["db_expedientes"][exp_seleccionado]
+                    st.success(f"Expediente {exp_seleccionado} eliminado.")
+                    st.rerun()
+                st.stop() # Detiene la pantalla aquí para no mostrar el formulario
 
+    # --- 3. FORMULARIO MAESTRO (CON PESTAÑAS) ---
+    st.write("---")
+    
+    # Si estamos modificando, precargamos el número, si es nuevo, usamos el formato oficial
+    exp_actual = exp_seleccionado if modo_accion == "✏️ Modificar Existente" else expediente_nuevo_sugerido
+    
+    st.markdown(f"#### 📂 Trabajando en Expediente: **{exp_actual}**")
+
+    # Pestañas para organizar la gran cantidad de datos
+    tab_base, tab_partes, tab_prof, tab_inmueble = st.tabs([
+        "📄 Datos Base", "👥 Partes Involucradas", "⚖️ Profesionales", "📍 Inmueble y Título"
+    ])
+
+    with tab_base:
+        st.subheader("Información del Trámite")
+        c1, c2 = st.columns(2)
+        with c1:
+            # --- CATÁLOGO MAESTRO DE TRÁMITES (Fusionado) ---
+            lista_tramites = [
+                "--- MENSURAS CATASTRALES ---",
+                "Saneamiento",
+                "Deslinde",
+                "Subdivisión",
+                "Refundición",
+                "Urbanización",
+                "Constitución de Condominio",
+                "Modificación de Condominio",
+                "Actualización de Mensura",
+                "--- JURISDICCIÓN Y REGISTRO ---",
+                "Transferencia (Venta / Donación)",
+                "Determinación de Herederos",
+                "Litis sobre Derechos Registrados",
+                "Inscripción de Hipoteca / Privilegio",
+                "Cancelación de Hipoteca",
+                "Corrección de Error Material",
+                "Pérdida o Deterioro de Título",
+                "Inscripción de Litis / Oposición",
+                "Certificación de Estado Jurídico",
+                "--- OTROS ---",
+                "✍️ Otro (Especificar Nuevo)"
+            ]
+            tramite_sel = st.selectbox("Tipo de Trámite:", lista_tramites)
+            
+            # Validación para que no elijan los títulos separadores
+            if tramite_sel.startswith("---"):
+                st.warning("☝️ Seleccione un trámite válido de la lista o elija 'Otro'.")
+                tramite_final = ""
+            elif tramite_sel == "✍️ Otro (Especificar Nuevo)":
+                tramite_final = st.text_input("Escriba el nombre exacto del trámite:")
+            else:
+                tramite_final = tramite_sel
+
+        with c2:
+            jurisdiccion = st.selectbox("Órgano Jurisdiccional:", ["Tribunal de Tierras (Original)", "Tribunal Superior de Tierras", "Mensuras Catastrales", "Registro de Títulos"])
+            estado_exp = st.selectbox("Estado Actual:", ["Recepción", "En Proceso", "Observado", "Aprobado", "En Litigio", "Cerrado"])
+
+    with tab_partes:
+        st.subheader("Generales de Ley de los Intervinientes")
+        st.info("Llene solo los roles que apliquen a este expediente.")
+        
+        # Agrupados por naturaleza para ahorrar espacio en pantalla
+        with st.expander("🟢 Parte Activa (Solicitantes / Demandantes / Compradores / Acreedores / Propietarios)"):
+            tipo_activa = st.multiselect("Rol(es):", ["Solicitante", "Demandante", "Reclamante", "Comprador", "Acreedor", "Dueño/Propietario"])
+            nombre_activa = st.text_input("Nombre / Razón Social (Parte Activa):")
+            c_act1, c_act2 = st.columns(2)
+            c_act1.text_input("Cédula / Pasaporte / RNC (Parte Activa):")
+            c_act2.text_input("Nacionalidad y Estado Civil:")
+            st.text_input("Profesión / Oficio (Parte Activa):")
+            st.text_area("Domicilio Exacto (Parte Activa):", height=68)
+
+        with st.expander("🔴 Parte Pasiva (Demandados / Vendedores / Deudores / Inquilinos)"):
+            tipo_pasiva = st.multiselect("Rol(es) Pasivos:", ["Demandado", "Vendedor", "Deudor", "Inquilino", "Arrendatario"])
+            nombre_pasiva = st.text_input("Nombre / Razón Social (Parte Pasiva):")
+            c_pas1, c_pas2 = st.columns(2)
+            c_pas1.text_input("Cédula / Pasaporte / RNC (Parte Pasiva):")
+            c_pas2.text_input("Nacionalidad y Estado Civil (Pasiva):")
+            st.text_area("Domicilio Exacto (Parte Pasiva):", height=68)
+
+    with tab_prof:
+        st.subheader("Representación Legal y Técnica")
+        
+        with st.expander("📐 Técnica (Agrimensores)"):
+            st.text_input("Nombre del Agrimensor:")
+            c_ag1, c_ag2 = st.columns(2)
+            c_ag1.text_input("Cédula (Agrimensor):")
+            c_ag2.text_input("Codiatur (CODIA):")
+        
+        with st.expander("⚖️ Legal (Abogados / Notarios)"):
+            st.text_input("Nombre del Abogado / Notario:")
+            c_ab1, c_ab2 = st.columns(2)
+            c_ab1.text_input("Cédula (Legal):")
+            c_ab2.text_input("Colegiatura (CARD / Matrícula Notarial):")
+            
+        with st.expander("🤝 Mandatarios (Apoderados / Gestores / Autorizados)"):
+            st.text_input("Nombre del Apoderado o Gestor:")
+            c_ap1, c_ap2 = st.columns(2)
+            c_ap1.text_input("Calidad (Ej. Apoderado Especial):")
+            c_ap2.text_input("Cédula del Apoderado:")
+
+    with tab_inmueble:
+        st.subheader("Designación Catastral y Registral")
+        st.markdown("**Datos del Título / Constancia Anotada / Acto**")
+        
+        c_inm1, c_inm2, c_inm3 = st.columns(3)
+        with c_inm1:
+            st.text_input("Provincia:")
+            st.text_input("Parcela / Solar:")
+            st.text_input("Matrícula No.:")
+        with c_inm2:
+            st.text_input("Municipio:")
+            st.text_input("Distrito Catastral (DC):")
+            st.text_input("Libro:")
+        with c_inm3:
+            st.text_input("Sector / Paraje:")
+            st.text_input("Manzana:")
+            st.text_input("Folio:")
+            
+        c_sup1, c_sup2 = st.columns(2)
+        c_sup1.text_input("Superficie Total (Metros Cuadrados):")
+        c_sup2.text_input("Designación Posicional:")
+        
+        st.markdown("**Linderos Según Plano / Título**")
+        c_lin1, c_lin2, c_lin3, c_lin4 = st.columns(4)
+        c_lin1.text_input("Norte:")
+        c_lin2.text_input("Sur:")
+        c_lin3.text_input("Este:")
+        c_lin4.text_input("Oeste:")
+
+    # --- 4. BOTÓN DE GUARDADO (CRUD) ---
+    st.write("---")
+    if st.button("💾 GUARDAR / ACTUALIZAR EXPEDIENTE", type="primary", use_container_width=True):
+        if not tramite_final:
+            st.error("Debe especificar el tipo de trámite.")
+        else:
+            # Aquí guardamos los datos clave en nuestra memoria temporal
+            st.session_state["db_expedientes"][exp_actual] = {
+                "tramite": tramite_final,
+                "jurisdiccion": jurisdiccion,
+                "estado": estado_exp
+            }
+            
+            if modo_accion == "✨ Nuevo Expediente":
+                st.session_state["contador_registro"] += 1 # Avanzamos el contador 2026-0002...
+                
+            st.success(f"✅ ¡Expediente {exp_actual} guardado exitosamente con todas sus generales!")
+            st.rerun()
 # =====================================================================
 # MÓDULO 5: ALERTAS Y PLAZOS
 # =====================================================================
@@ -1101,245 +1217,7 @@ def vista_archivo_digital():
                     mime="application/zip",
                     type="primary"
                 )
-def vista_plantillas():
-    st.title("📄 Generador de Plantillas Automatizado")
-    st.markdown("### *AboAgrim Pro: Documentación Dinámica*")
-    
-    import os
-    carpetas_base = ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"]
-    
-    # Crear estructura física
-    if not os.path.exists("plantillas_maestras"):
-        os.makedirs("plantillas_maestras")
-    for c in carpetas_base:
-        ruta = os.path.join("plantillas_maestras", c)
-        if not os.path.exists(ruta):
-            os.makedirs(ruta)
 
-    # --- CARGA DIRIGIDA ---
-    st.subheader("📤 Cargar Nuevos Modelos (.docx)")
-    col_up1, col_up2 = st.columns([2, 3])
-    with col_up1:
-        destino = st.selectbox("Seleccione Órgano de destino:", carpetas_base)
-    with col_up2:
-        archivos_subidos = st.file_uploader("Arrastre sus plantillas aquí", type=["docx"], accept_multiple_files=True, key="up_final")
-
-    if archivos_subidos:
-        for archivo in archivos_subidos:
-            ruta_final = os.path.join("plantillas_maestras", destino, archivo.name)
-            with open(ruta_final, "wb") as f:
-                f.write(archivo.getbuffer())
-        st.success(f"✅ {len(archivos_subidos)} plantilla(s) guardada(s) en {destino}.")
-        st.rerun()
-
-    st.write("---")
-
-    # --- ADMINISTRADOR DE BÓVEDA ---
-    st.subheader("🗑️ Administrar Bóveda y Modelos")
-    col_adm1, col_adm2 = st.columns([2, 2])
-    with col_adm1:
-        cat_ver = st.selectbox("Revisar categoría:", carpetas_base, key="cat_admin")
-        ruta_ver = os.path.join("plantillas_maestras", cat_ver)
-        archivos_en_cat = [f for f in os.listdir(ruta_ver) if f.endswith(".docx")]
-    
-    with col_adm2:
-        if archivos_en_cat:
-            archivo_borrar = st.selectbox("Seleccione archivo para borrar:", archivos_en_cat)
-            st.write("") # Espacio
-            if st.button("🔥 Confirmar Eliminación", use_container_width=True):
-                os.remove(os.path.join(ruta_ver, archivo_borrar))
-                st.rerun()
-        else:
-            st.info("ℹ️ Categoría vacía.")
-
-    # --- INICIALIZACIÓN DE MEMORIA DINÁMICA ---
-    if 'cant_extras' not in st.session_state: st.session_state.cant_extras = 0
-    if 'cant_profesionales' not in st.session_state: st.session_state.cant_profesionales = 0
-    if 'cant_apoderados' not in st.session_state: st.session_state.cant_apoderados = 0
-
-    TRAMITES_JI = {
-        "📍 Mensuras Catastrales": [
-            "Actualización de Mensura", "Corrección Mensura Desplazada", "Desafectación de Dominio Público", 
-            "Deslinde", "División para Constitución de Condominio", "Modificación Condominio", 
-            "Oposición Expediente Técnico", "Plano Definitivo", "Prórroga de Autorización", 
-            "Refundición", "Regularización Parcelaria", "Saneamiento", "Subdivisión", "Urbanización Parcelaria"
-        ],
-        "📜 Registro de Títulos": [
-            "Transferencia de Inmueble", "Transferencia de Mejoras", "Hipoteca Convencional", 
-            "Cancelación de Hipoteca Convencional", "Certificación del Estado Jurídico del Inmueble", 
-            "Actualización de Generales", "Duplicado por Pérdida o Deterioro", "Constitución de Régimen de Condominio", 
-            "Embargo Inmobiliario", "Privilegio de Honorarios de Abogados", "Anotación Preventiva"
-        ],
-        "⚖️ Tribunales de Tierras": [
-            "Determinación de Herederos", "Litis Sobre Derechos Registrados", "Recurso de Apelación", 
-            "Partición Amigable Entre Esposos", "Partición Amigable con Determinación de Herederos", 
-            "Renuncia de Bien de Familia", "Solicitud de Transferencias Administrativas", 
-            "Solicitud de Desglose como Instancia Principal Administrativa", "Revisión por Causa de Fraude"
-        ]
-    }
-
-    if True:
-        res = supabase.table("expedientes_maestros").select("id, nombre_propietario").order("id", desc=True).execute()
-        opciones_exp = {f"RES-{e['id']} | {e['nombre_propietario']}": e['id'] for e in res.data} if res.data else {"Ninguno": None}
-
-        col_menu1, col_menu2, col_menu3 = st.columns(3)
-        with col_menu1:
-            sel_cliente = st.selectbox("👤 Expediente:", list(opciones_exp.keys()))
-            id_cliente = opciones_exp.get(sel_cliente)
-        with col_menu2:
-            jurisdiccion = st.selectbox("🏛️ Jurisdicción:", list(TRAMITES_JI.keys()))
-        with col_menu3:
-            tramite = st.selectbox(f"📋 Trámite:", TRAMITES_JI[jurisdiccion])
-
-        st.divider()
-
-        # ==========================================
-        # 1. BLOQUE DE DATOS TÉCNICOS BASE
-        # ==========================================
-        st.write(f"### 📑 Datos Estándar de JI")
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            ji_parcela = st.text_input("Parcela No.", placeholder="Ej: 123-A")
-            ji_dc = st.text_input("Distrito Catastral (DC)", placeholder="Ej: 01")
-            ji_solar_manzana = st.text_input("Solar / Manzana", placeholder="Ej: Solar 5, Manzana 12")
-            
-        with c2:
-            ji_matricula = st.text_input("Matrícula / Certificado")
-            ji_libro = st.text_input("Libro / Folio")
-            ji_fecha_emision = st.text_input("Fecha Inscripción / Emisión", placeholder="DD/MM/AAAA")
-            
-        with c3:
-            ji_exp_ji = st.text_input("Expediente JI No.")
-            ji_ubicacion = st.text_input("Ubicación del Inmueble", value="Santiago")
-            ji_area = st.text_input("Área / Superficie (m²)")
-            ji_coordenadas = st.text_input("Coordenadas (UTM/WGS84)")
-
-        # ==========================================
-        # 1.5 BLOQUE DINÁMICO DE LITIGIO (SOLO TRIBUNALES)
-        # ==========================================
-        ji_demandante = ji_demandado = ji_sala = ji_juez = ji_rol = ji_audiencia = ""
-        
-        if jurisdiccion == "⚖️ Tribunales de Tierras":
-            st.write("---")
-            st.markdown("### ⚖️ Módulo de Litigios (Exclusivo Tribunal)")
-            lt1, lt2, lt3 = st.columns(3)
-            with lt1:
-                ji_demandante = st.text_input("Parte Demandante / Recurrente")
-                ji_demandado = st.text_input("Parte Demandada / Recurrida")
-            with lt2:
-                ji_sala = st.text_input("Sala / Cámara", placeholder="Ej: Segunda Sala")
-                ji_juez = st.text_input("Magistrado / Juez Apoderado")
-            with lt3:
-                ji_rol = st.text_input("Número de Rol / Cuaderno")
-                ji_audiencia = st.text_input("Fecha de Próxima Audiencia", placeholder="DD/MM/AAAA")
-
-        # ==========================================
-        # 2. CAMPOS EXTRA DINÁMICOS (JI)
-        # ==========================================
-        st.write("---")
-        col_btn1, col_btn2, col_space = st.columns([1, 1, 3])
-        with col_btn1:
-            if st.button("➕ Agregar Dato Extra JI", use_container_width=True): st.session_state.cant_extras += 1
-        with col_btn2:
-            if st.button("➖ Borrar Dato Extra", use_container_width=True) and st.session_state.cant_extras > 0: st.session_state.cant_extras -= 1
-
-        datos_extras_dict = {}
-        for i in range(st.session_state.cant_extras):
-            c_nom, c_val = st.columns(2)
-            with c_nom: 
-                nombre_campo = st.text_input(f"Nombre del dato {i+1}", key=f"ex_n_{i}")
-            with c_val: 
-                valor_campo = st.text_input(f"Valor {i+1}", key=f"ex_v_{i}")
-            if nombre_campo: datos_extras_dict[nombre_campo.replace(" ", "_").lower()] = valor_campo
-
-        # ==========================================
-        # 3. PROFESIONALES ACTUANTES DINÁMICOS
-        # ==========================================
-        st.write("---")
-        st.subheader("👥 Profesionales Actuantes")
-        col_p1, col_p2, col_p3 = st.columns([1, 1, 3])
-        with col_p1:
-            if st.button("➕ Agregar Profesional", use_container_width=True): st.session_state.cant_profesionales += 1
-        with col_p2:
-            if st.button("➖ Borrar Profesional", use_container_width=True) and st.session_state.cant_profesionales > 0: st.session_state.cant_profesionales -= 1
-
-        profesionales_lista = []
-        for i in range(st.session_state.cant_profesionales):
-            st.markdown(f"**Profesional {i+1}**")
-            cp1, cp2, cp3 = st.columns(3)
-            with cp1: n = st.text_input(f"Nombre Completo", key=f"p_nom_{i}")
-            with cp2: r = st.selectbox(f"Rol", ["Abogado", "Agrimensor", "Notario Público"], key=f"p_rol_{i}")
-            with cp3: c = st.text_input(f"Colegiatura", key=f"p_col_{i}")
-            
-            cpg1, cpg2, cpg3 = st.columns(3)
-            with cpg1: p_ced = st.text_input(f"Cédula", key=f"p_ced_{i}")
-            with cpg2: p_ec = st.selectbox(f"Estado Civil", ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a"], key=f"p_ec_{i}")
-            with cpg3: p_dom = st.text_input(f"Domicilio Profesional", key=f"p_dom_{i}")
-            
-            profesionales_lista.append({
-                "nombre": n, "rol": r, "colegiatura": c, 
-                "cedula": p_ced, "estado_civil": p_ec, "domicilio": p_dom
-            })
-
-        # ==========================================
-        # 4. APODERADOS / REPRESENTANTES DINÁMICOS
-        # ==========================================
-        st.write("---")
-        st.subheader("🤝 Representantes o Apoderados")
-        col_a1, col_a2, col_a3 = st.columns([1, 1, 3])
-        with col_a1:
-            if st.button("➕ Agregar Apoderado", use_container_width=True): st.session_state.cant_apoderados += 1
-        with col_a2:
-            if st.button("➖ Borrar Apoderado", use_container_width=True) and st.session_state.cant_apoderados > 0: st.session_state.cant_apoderados -= 1
-
-        apoderados_lista = []
-        for i in range(st.session_state.cant_apoderados):
-            st.markdown(f"**Apoderado / Representante {i+1}**")
-            ca1, ca2, ca3 = st.columns(3)
-            with ca1: an = st.text_input(f"Nombre Completo", key=f"a_nom_{i}")
-            with ca2: ac = st.text_input(f"Cédula / Pasaporte", key=f"a_ced_{i}")
-            with ca3: ar = st.text_input(f"En representación de", key=f"a_rep_{i}")
-            
-            cag1, cag2, cag3 = st.columns(3)
-            with cag1: a_nac = st.text_input(f"Nacionalidad", value="Dominicano/a", key=f"a_nac_{i}")
-            with cag2: a_ec = st.selectbox(f"Estado Civil", ["Soltero/a", "Casado/a", "Divorciado/a", "Viudo/a"], key=f"a_ec_{i}")
-            with cag3: a_dom = st.text_input(f"Domicilio", key=f"a_dom_{i}")
-            
-            apoderados_lista.append({
-                "nombre": an, "cedula": ac, "representa": ar,
-                "nacionalidad": a_nac, "estado_civil": a_ec, "domicilio": a_dom
-            })
-
-        st.divider()
-
-        # ==========================================
-        # 5. FABRICACIÓN FINAL
-        # ==========================================
-        archivo_nombre = tramite.lower().replace(" ", "_") + ".docx"
-        carpeta = "1_mensuras_catastrales" if "Mensuras" in jurisdiccion else "3_registro_titulos" if "Registro" in jurisdiccion else "2_jurisdiccion_original"
-        ruta_final = f"plantillas_maestras/{carpeta}/{archivo_nombre}"
-        st.divider()
-        st.markdown("### 📄 Selección de Plantilla Base")
-        
-        # 1. Escaneamos las carpetas buscando sus archivos Word
-        archivos_disponibles = []
-        carpetas_base = ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"]
-        
-        for carpeta in carpetas_base:
-            ruta_check = f"plantillas_maestras/{carpeta}"
-            if os.path.exists(ruta_check):
-                for f in os.listdir(ruta_check):
-                    if f.endswith(".docx"):
-                        # Guardamos la ruta completa (ej: 1_mensuras_catastrales/prueba.docx)
-                        archivos_disponibles.append(f"{carpeta}/{f}")
-        
-        # 🌟 1. EL NUEVO SELECTOR MÚLTIPLE (REEMPLAZA LA LÍNEA 1178)
-        plantillas_elegidas = st.multiselect("Elija los documentos Word que desea rellenar (puede elegir varios):", archivos_disponibles)
-        st.caption("💡 Los archivos que suba en el administrador de abajo aparecerán aquí automáticamente.")
-        st.write("---")
-        st.markdown("### 🗂️ Datos para la Estructura Maestra")
-                            
-        # --- 1. PREPARACIÓN DE LA BÓVEDA FÍSICA ---
 def motor_de_fabricacion_final(cliente_nombre, tramite_nombre, expediente_num, organo_ji):
         cli_limpio = cliente_nombre.replace("/", "-").strip() if cliente_nombre else "Sin_Cliente"
         tram_limpio = tramite_nombre.replace("/", "-").strip() if tramite_nombre else "Sin_Tramite"
