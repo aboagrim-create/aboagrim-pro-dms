@@ -1201,15 +1201,15 @@ diccionario_datos = {
 try:
     import datetime
                                 
-                                # Datos listos para su tabla "Maestros de Expedientes"
-                                datos_nube = {
-                                    "expediente_ji": expediente_num,
-                                    "nombre_propietario": cliente_nombre,
-                                    "tramite_tipo": tramite_nombre,
-                                    "jurisdiccion": organo_ji,
-                                    "estatus": "Registrado",
-                                    "fecha_registro": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                                }
+        # Datos listos para su tabla "Maestros de Expedientes"
+        datos_nube = {
+            "expediente_ji": expediente_num,
+            "nombre_propietario": cliente_nombre,
+            "tramite_tipo": tramite_nombre,
+            "jurisdiccion": organo_ji,
+            "estatus": "Registrado",
+            "fecha_registro": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
                                 
                                 # Subida automática a Supabase
                                 res = supabase.table("expedientes_maestros").insert(datos_nube).execute()
