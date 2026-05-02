@@ -1243,25 +1243,25 @@ for plantilla in plantillas_elegidas:
         archivos_creados += 1
                             
                             # --- 4. CONEXIÓN CON EL ARCHIVO DIGITAL ---
-                            if archivos_creados > 0:
-                                archivo_memoria = "memoria_expedientes.json"
-                                memoria = {}
-                                if os.path.exists(archivo_memoria):
-                                    with open(archivo_memoria, "r") as f:
-                                        memoria = json.load(f)
-                                
-                                memoria[exp_limpio] = {
-                                    "carpeta_relativa": nombre_carpeta,
-                                    "organo": organo_ji,
-                                    "cliente": cli_limpio
-                                }
-                                
-                                with open(archivo_memoria, "w") as f:
-                                    json.dump(memoria, f, indent=4)
-                                    
-                                st.success(f"✅ ¡Éxito Total! Se forjaron {archivos_creados} documentos y se guardaron en la bóveda local bajo: {nombre_carpeta}")
-                            else:
-                                st.error("❌ Ocurrió un error al forjar los documentos. Verifique las plantillas.")
+    if archivos_creados > 0:
+        archivo_memoria = "memoria_expedientes.json"
+        memoria = {}
+        if os.path.exists(archivo_memoria):
+            with open(archivo_memoria, "r") as f:
+                memoria = json.load(f)
+                
+        memoria[exp_limpio] = {
+            "carpeta_relativa": nombre_carpeta,
+            "organo": organo_ji,
+            "cliente": cli_limpio
+        }
+        
+        with open(archivo_memoria, "w") as f:
+            json.dump(memoria, f, indent=4)
+            
+        st.success(f"✅ ¡Éxito Total! Se forjaron {archivos_creados} documentos y se guardaron en la bóveda local bajo: {nombre_carpeta}")
+    else:
+        st.error("❌ Ocurrió un error al forjar los documentos. Verifique las plantillas.")
                                 
                         except Exception as e:
                                     st.error(f"❌ Error crítico al fabricar: {e}")
