@@ -1594,7 +1594,7 @@ def vista_plantillas():
     st.title("📄 Motor de Redacción y Plantillas")
     st.markdown("### *AboAgrim Pro: Sistema Experto de Forja Documental*")
 
-    # --- 0. INICIALIZACIÓN DE MEMORIA DINÁMICA (Para agregar/borrar) ---
+    # --- 0. INICIALIZACIÓN DE MEMORIA DINÁMICA ---
     for rol in ["cant_ab", "cant_ag", "cant_no", "cant_al"]:
         if rol not in st.session_state:
             st.session_state[rol] = 1
@@ -1637,9 +1637,9 @@ def vista_plantillas():
                 apoderado_cedula = st.text_input("Cédula del Representante:")
                 apoderado_calidad = st.text_input("Calidad (Ej. Poder Especial):")
 
-        # 2. PROFESIONALES (¡AQUÍ ESTÁ LA NUEVA MAGIA DINÁMICA!)
+        # 2. PROFESIONALES (DINÁMICOS)
         with st.expander("⚖️ Profesionales Actuantes (Agregar / Borrar)", expanded=False):
-            st.info("💡 Utilice los botones para agregar más de un profesional si el caso lo requiere.")
+            st.info("💡 Agregue los profesionales que participan en la actuación.")
             
             t_abo, t_agr, t_not, t_alg = st.tabs(["💼 Abogados", "📐 Agrimensores", "✒️ Notarios", "⚖️ Alguaciles"])
 
@@ -1707,7 +1707,7 @@ def vista_plantillas():
                     d = c2.text_input("Domicilio del Alguacil:", key=f"al_d_{i}")
                     if n: lista_alguaciles.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d})
 
-        # 3. INMUEBLE
+        # 3. INMUEBLE Y TRANSACCIONES... (resto del código se mantiene igual para evitar redundancia y asegurar estabilidad)
         with st.expander("📍 Inmueble y Documentos Base", expanded=False):
             c_inm1, c_inm2, c_inm3 = st.columns(3)
             inmueble_parcela = c_inm1.text_input("Parcela/Solar:")
@@ -1718,14 +1718,12 @@ def vista_plantillas():
             doc_base_numero = c_doc2.text_input("Número (Matrícula, Libro, Folio o Acto):")
             doc_base_fecha = st.text_input("Fecha del Documento Base:")
 
-        # 4. TRANSACCIONES
         with st.expander("💰 Datos Transaccionales", expanded=False):
             c_tran1, c_tran2 = st.columns(2)
             monto_venta = c_tran1.text_input("Monto / Precio:")
             forma_pago = c_tran2.text_input("Forma de pago:")
             testigos = st.text_input("Testigos Instrumentales (Nombres y Cédulas):")
 
-        # 5. REQUISITOS JI
         with st.expander("📝 Depositante, Impuestos y Requisitos (JI)", expanded=False):
             c_tram1, c_tram2 = st.columns(2)
             with c_tram1:
@@ -1738,7 +1736,6 @@ def vista_plantillas():
 
         st.write("---")
         
-        # --- MOTOR DE COMPILACIÓN Y FABRICACIÓN ---
         mapping_carpetas = {"Mensuras Catastrales": "1_mensuras_catastrales", "Jurisdicción Original": "2_jurisdiccion_original", "Registro de Títulos": "3_registro_titulos"}
         ruta_carpeta = os.path.join("plantillas_maestras", mapping_carpetas[organo_ji])
         
@@ -1749,32 +1746,25 @@ def vista_plantillas():
             if st.button("🚀 FORJAR DOCUMENTO AHORA", type="primary", use_container_width=True):
                 if plantillas_elegidas:
                     
-                    # --- COMPILADORES DE PÁRRAFOS LEGALES AUTOMÁTICOS ---
-                    # Abogados
                     ab_nombres = " y ".join([a['nombre'] for a in lista_abogados]) if lista_abogados else "N/A"
                     ab_generales = "; y ".join([f"{a['nombre']}, dominicano(a), mayor de edad, portador(a) de la cédula No. {a['cedula']}, matriculado(a) en el CARD bajo el No. {a['matricula']}, con estudio abierto en {a['domicilio']}" for a in lista_abogados]) if lista_abogados else "N/A"
                     
-                    # Agrimensores
                     ag_nombres = " y ".join([a['nombre'] for a in lista_agrimensores]) if lista_agrimensores else "N/A"
                     ag_generales = "; y ".join([f"{a['nombre']}, dominicano(a), mayor de edad, portador(a) de la cédula No. {a['cedula']}, CODIA No. {a['matricula']}, con oficina en {a['domicilio']}" for a in lista_agrimensores]) if lista_agrimensores else "N/A"
                     
-                    # Notarios
                     no_nombres = " y ".join([a['nombre'] for a in lista_notarios]) if lista_notarios else "N/A"
                     no_generales = "; y ".join([f"{a['nombre']}, Notario Público de los del número de {a['domicilio']}, matrícula No. {a['matricula']}, portador(a) de la cédula No. {a['cedula']}" for a in lista_notarios]) if lista_notarios else "N/A"
                     
-                    # Alguaciles
                     al_nombres = " y ".join([a['nombre'] for a in lista_alguaciles]) if lista_alguaciles else "N/A"
                     al_generales = "; y ".join([f"{a['nombre']}, dominicano(a), mayor de edad, portador(a) de la cédula No. {a['cedula']}, Alguacil ordinario/estrado del {a['matricula']}, domiciliado(a) en {a['domicilio']}" for a in lista_alguaciles]) if lista_alguaciles else "N/A"
 
                     impuestos_str = ", ".join(impuestos_pagados) if impuestos_pagados else "N/A"
                     
-                    # MEGA DICCIONARIO ACTUALIZADO
                     datos_para_word = {
                         "expediente": exp_seleccionado, "fecha_hoy": datetime.now().strftime("%d de %B del %Y"),
                         "cliente_nombre": cliente_nombre, "cliente_cedula": cliente_cedula, "cliente_domicilio": cliente_domicilio,
                         "apoderado_nombre": apoderado_nombre, "apoderado_cedula": apoderado_cedula, "apoderado_calidad": apoderado_calidad,
                         
-                        # LAS LLAVES MÁGICAS PARA PROFESIONALES
                         "abogados_nombres": ab_nombres, "abogados_generales": ab_generales,
                         "agrimensores_nombres": ag_nombres, "agrimensores_generales": ag_generales,
                         "notarios_nombres": no_nombres, "notarios_generales": no_generales,
