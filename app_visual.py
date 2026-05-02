@@ -1613,6 +1613,8 @@ def vista_plantillas():
             organo_ji = st.selectbox("Órgano Destino (Buscar Plantilla en):", ["Mensuras Catastrales", "Jurisdicción Original", "Registro de Títulos"])
 
         st.write("---")
+        
+        # 1. PARTES Y REPRESENTACIÓN
         with st.expander("👥 Partes, Clientes y Representantes", expanded=True):
             c_part1, c_part2 = st.columns(2)
             with c_part1:
@@ -1620,10 +1622,11 @@ def vista_plantillas():
                 cliente_cedula = st.text_input("Cédula / RNC (Principal):")
                 cliente_domicilio = st.text_input("Domicilio (Principal):")
             with c_part2:
-                apoderado_nombre = st.text_input("Apoderado / Representante / Gestor:")
+                apoderado_nombre = st.text_input("Apoderado / Representante Legal:")
                 apoderado_cedula = st.text_input("Cédula del Representante:")
                 apoderado_calidad = st.text_input("Calidad (Ej. Poder Especial):")
 
+        # 2. PROFESIONALES
         with st.expander("⚖️ Profesionales Actuantes (Agrimensor, Notario, Alguacil)", expanded=False):
             c_prof1, c_prof2 = st.columns(2)
             with c_prof1:
@@ -1635,6 +1638,7 @@ def vista_plantillas():
                 alguacil_cedula = st.text_input("Cédula del Alguacil:")
                 alguacil_tribunal = st.text_input("Tribunal al que pertenece:")
 
+        # 3. INMUEBLE
         with st.expander("📍 Inmueble y Documentos Base", expanded=False):
             c_inm1, c_inm2, c_inm3 = st.columns(3)
             inmueble_parcela = c_inm1.text_input("Parcela/Solar:")
@@ -1646,13 +1650,38 @@ def vista_plantillas():
             doc_base_numero = c_doc2.text_input("Número (Matrícula, Libro, Folio o Acto):")
             doc_base_fecha = st.text_input("Fecha del Documento Base:")
 
+        # 4. TRANSACCIONES
         with st.expander("💰 Datos Transaccionales", expanded=False):
             c_tran1, c_tran2 = st.columns(2)
             monto_venta = c_tran1.text_input("Monto / Precio:")
             forma_pago = c_tran2.text_input("Forma de pago:")
             testigos = st.text_input("Testigos Instrumentales (Nombres y Cédulas):")
 
+        # 5. REQUISITOS JI Y TRAMITANTE (¡NUEVO!)
+        with st.expander("📝 Depositante, Impuestos y Requisitos (JI)", expanded=False):
+            st.info("Ideal para forjar Instancias de Solicitud y Cartas de Depósito.")
+            c_tram1, c_tram2 = st.columns(2)
+            with c_tram1:
+                tramitante_nombre = st.text_input("Nombre del Tramitante / Depositante:")
+                tramitante_cedula = st.text_input("Cédula del Depositante:")
+            with c_tram2:
+                tramitante_calidad = st.text_input("Calidad del Depositante (Ej. Gestor, Paralegal, Asistente):")
+            
+            st.markdown("**Inventario de Depósito**")
+            impuestos_pagados = st.multiselect("Impuestos, Tasas y Sellos Anexos:", [
+                "Recibo de Ley 108-05 (Jurisdicción Inmobiliaria)", 
+                "Sello de Ley 33-91 (Colegio de Abogados)", 
+                "Recibo de Aportes CODIA", 
+                "Impuesto de Transferencia (DGII)", 
+                "Recibo de Ley 196 (Fondo de Pensiones)",
+                "Poder Legalizado por la PGR"
+            ])
+            
+            inventario_anexos = st.text_area("Lista de Documentos Físicos Anexos (Planos, Actos, Copias de Cédula):", height=100)
+
         st.write("---")
+        
+        # --- MOTOR DE FABRICACIÓN ---
         mapping_carpetas = {"Mensuras Catastrales": "1_mensuras_catastrales", "Jurisdicción Original": "2_jurisdiccion_original", "Registro de Títulos": "3_registro_titulos"}
         ruta_carpeta = os.path.join("plantillas_maestras", mapping_carpetas[organo_ji])
         
@@ -1662,6 +1691,9 @@ def vista_plantillas():
             
             if st.button("🚀 FORJAR DOCUMENTO AHORA", type="primary", use_container_width=True):
                 if plantillas_elegidas:
+                    # Convertimos la lista de impuestos en texto separado por comas para el Word
+                    impuestos_str = ", ".join(impuestos_pagados) if impuestos_pagados else "N/A"
+                    
                     datos_para_word = {
                         "expediente": exp_seleccionado, "fecha_hoy": datetime.now().strftime("%d de %B del %Y"),
                         "cliente_nombre": cliente_nombre, "cliente_cedula": cliente_cedula, "cliente_domicilio": cliente_domicilio,
@@ -1670,7 +1702,10 @@ def vista_plantillas():
                         "alguacil_nombre": alguacil_nombre, "alguacil_cedula": alguacil_cedula, "alguacil_tribunal": alguacil_tribunal,
                         "parcela": inmueble_parcela, "dc": inmueble_dc, "provincia": inmueble_provincia,
                         "tipo_doc_base": tipo_doc_base, "doc_base_numero": doc_base_numero, "doc_base_fecha": doc_base_fecha,
-                        "monto_venta": monto_venta, "forma_pago": forma_pago, "testigos": testigos
+                        "monto_venta": monto_venta, "forma_pago": forma_pago, "testigos": testigos,
+                        # Nuevas llaves para la JI
+                        "tramitante_nombre": tramitante_nombre, "tramitante_cedula": tramitante_cedula, "tramitante_calidad": tramitante_calidad,
+                        "impuestos_pagados": impuestos_str, "inventario_anexos": inventario_anexos
                     }
                     archivos_generados = 0
                     for p in plantillas_elegidas:
