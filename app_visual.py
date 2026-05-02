@@ -190,9 +190,6 @@ def crear_oficina_virtual(nombre_cliente, id_expediente, id_maestra):
         return None
 def generar_paquete_documentos(datos_formulario, rutas_plantillas):
     import io
-    import zipfile
-    import os
-    from docxtpl import DocxTemplate
     
     # 1. El Mega Diccionario (Atrapa todo lo de la pantalla)
     contexto = dict(datos_formulario)
@@ -243,8 +240,6 @@ def vista_mando():
 # =====================================================================
 # MÓDULO 2: REGISTRO MAESTRO (CON PESTAÑAS Y 7 ROLES)
 # =====================================================================
-import datetime
-
 
 # =====================================================================
 # MÓDULO 3: ARCHIVO DIGITAL (BÓVEDA, EXPLORADOR Y DESCARGA ZIP)
@@ -876,7 +871,6 @@ Por medio de la presente, AboAgrim, representada por el Lic. Jhonny Matos, M.A.,
                 st.components.v1.html(doc_html, height=600, scrolling=True)
 def vista_archivo_digital():
     import json
-    import os
     
     st.title("📁 Archivo Digital | AboAgrim Pro")
     st.subheader("Bóveda de Expedientes y Anexos Técnicos")
@@ -1160,7 +1154,6 @@ def vista_plantillas_auto():
         st.markdown("### 📄 Selección de Plantilla Base")
         
         # 1. Escaneamos las carpetas buscando sus archivos Word
-        import os
         archivos_disponibles = []
         carpetas_base = ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"]
         
