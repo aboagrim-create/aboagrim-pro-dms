@@ -1586,6 +1586,282 @@ with st.sidebar:
     st.caption("📞 829-826-5888 / 809-691-3333")
     st.caption("✉️ aboagrim@gmail.com")
     st.caption("👤 **Lic. Jhonny Matos, M.A.** (Presidente-Fundador)")
+
+def vista_alertas_plazos():
+    import streamlit as st
+    from datetime import date
+
+    st.title("⏱️ Sistema Integrado de Plazos (SIP)")
+    st.markdown("### Motor Lógico de Caducidad y Rutas Críticas")
+
+    # --- 1. CATÁLOGO LEGAL (Extraído de su app.js original) ---
+    catalogo_acciones = {
+        # MENSURAS CATASTRALES
+        'Vigencia Autorización de Mensura': {
+            'cat': 'Mensuras Catastrales', 'tipo': 'plazo', 'unidad': 'dias', 'plazo': 60,
+            'baseLegal': "Art. 25, Ley 108-05 | Reg. Mensuras Catastrales",
+            'jurisprudencia': "SCJ: Plazo busca evitar la inercia en el saneamiento (Art. 51 Const).",
+            'diagnosticoAprobado': "Autorización para trabajos de mensura vigente.",
+            'diagnosticoRechazado': "¡Caducidad! Han pasado más de 60 días sin presentar los trabajos.",
+            'estrategia': "Solicitar prórroga justificada o tramitar nueva autorización.",
+            'requisitos': ["Contrato de mensura firmado", "Copia de cédulas de los reclamantes", "Croquis ilustrativo de la porción a sanear", "Instancia motivada de solicitud"],
+            'procedimientos': ["1. Depósito de solicitud vía ventanilla de la Jurisdicción Original.", "2. Apoderamiento del tribunal y emisión de la Autorización (Auto).", "3. Notificación a la Dirección Regional de Mensuras Catastrales."]
+        },
+        'Plazo Aviso de Mensura (Colindantes)': {
+            'cat': 'Mensuras Catastrales', 'tipo': 'plazo_inverso', 'unidad': 'dias', 'plazo': 15,
+            'baseLegal': "Art. 69, Reglamento General de Mensuras Catastrales",
+            'jurisprudencia': "TC: La falta de notificación vulnera el debido proceso y acarrea nulidad.",
+            'diagnosticoAprobado': "Plazo correcto para avisar a colindantes antes del terreno.",
+            'diagnosticoRechazado': "Defecto de Plazo. No hay tiempo para el aviso previo legal.",
+            'estrategia': "Reprogramar la fecha del levantamiento en el terreno.",
+            'requisitos': ["Autorización de mensura / Contrato", "Formulario de Aviso de Mensura", "Lista de colindantes e interesados"],
+            'procedimientos': ["1. Redactar el aviso indicando fecha y hora del levantamiento.", "2. Notificar vía acto de alguacil, carta con acuse o publicación en prensa.", "3. Anexar constancias de notificación al expediente técnico."]
+        },
+        'Subsanar Expediente Técnico Observado': {
+            'cat': 'Mensuras Catastrales', 'tipo': 'plazo', 'unidad': 'dias', 'plazo': 30,
+            'baseLegal': "Art. 22, Reglamento General de Mensuras Catastrales (Res. 790-2022)",
+            'jurisprudencia': "Garantía de debido proceso administrativo ante rechazos provisionales.",
+            'diagnosticoAprobado': "Plazo hábil para reingresar el expediente técnico.",
+            'diagnosticoRechazado': "Rechazo Definitivo. Se agotó el plazo para subsanar.",
+            'estrategia': "Someter como expediente nuevo y pagar tasas.",
+            'requisitos': ["Oficio de observaciones emitido por el calificador", "Planos o XML corregidos", "Carta de reingreso motivada"],
+            'procedimientos': ["1. Corregir los defectos indicados en el sistema gráfico/documental.", "2. Reingresar el expediente.", "3. Dar seguimiento al nuevo turno de calificación."]
+        },
+        'Recurso Reconsideración (Dir. Regional)': {
+            'cat': 'Mensuras Catastrales', 'tipo': 'plazo', 'unidad': 'dias', 'plazo': 15,
+            'baseLegal': "Art. 74, Ley 108-05",
+            'jurisprudencia': "Agotamiento obligatorio de vías administrativas previas.",
+            'diagnosticoAprobado': "Plazo hábil para recurrir ante el Dir. Regional.",
+            'diagnosticoRechazado': "Caducidad. Acto técnico firme.",
+            'estrategia': "La calificación técnica adquiere carácter definitivo.",
+            'requisitos': ["Instancia motivada dirigida al Director Regional", "Acto impugnado (Calificación rechazada)", "Pruebas técnicas que desmientan la observación"],
+            'procedimientos': ["1. Redactar instancia de reconsideración anexando pruebas.", "2. Depositar vía Secretaría de la Dirección Regional.", "3. Esperar resolución administrativa en un plazo de 15 días."]
+        },
+
+        # REGISTRO DE TÍTULOS
+        'Subsanar Expediente Registral Observado': {
+            'cat': 'Registro de Títulos', 'tipo': 'plazo', 'unidad': 'dias', 'plazo': 30,
+            'baseLegal': "Art. 54, Reglamento General de Registro de Títulos",
+            'jurisprudencia': "Principios registrales de rogación y legalidad.",
+            'diagnosticoAprobado': "Plazo hábil para levantar el Rechazo Provisional.",
+            'diagnosticoRechazado': "Rechazo Definitivo Registral.",
+            'estrategia': "Reingresar la solicitud como expediente nuevo.",
+            'requisitos': ["Documento faltante (Impuestos DGII, Cédulas, Actas de Estado Civil)", "Copia del oficio de rechazo provisional"],
+            'procedimientos': ["1. Obtener la documentación omitida o corregir el acto jurídico.", "2. Depositar por ventanilla el complemento del expediente.", "3. Esperar la calificación definitiva."]
+        },
+        'Caducidad de Anotación Preventiva': {
+            'cat': 'Registro de Títulos', 'tipo': 'plazo', 'unidad': 'anos', 'plazo': 1,
+            'baseLegal': "Art. 89, Ley 108-05 | Reg. de Registro de Títulos",
+            'jurisprudencia': "La anotación caduca de pleno derecho si no se interpone demanda de fondo.",
+            'diagnosticoAprobado': "Anotación Preventiva mantiene vigencia.",
+            'diagnosticoRechazado': "Anotación Caducada de pleno derecho.",
+            'estrategia': "Solicitar cancelación administrativa por caducidad.",
+            'requisitos': ["Instancia solicitando anotación preventiva", "Prueba fehaciente del derecho o crédito reclamado", "Pago de tasas registrales"],
+            'procedimientos': ["1. Depositar instancia con pruebas ante el Registro de Títulos.", "2. El registrador inscribe el bloqueo preventivo.", "3. Obligación de demandar el fondo en los tribunales antes de 1 año."]
+        },
+        'Reclamo Indemnización (Fondo de Garantía)': {
+            'cat': 'Registro de Títulos', 'tipo': 'plazo', 'unidad': 'anos', 'plazo': 1,
+            'baseLegal': "Art. 39, Ley 108-05",
+            'jurisprudencia': "SCJ: La indemnización por errores registrales o desalojos sin negligencia del titular tiene un plazo de caducidad estricto de 1 año.",
+            'diagnosticoAprobado': "Acción indemnizatoria viable ante el Estado.",
+            'diagnosticoRechazado': "Acción caducada frente al Fondo de Garantía.",
+            'estrategia': "Reclamación inadmisible. No hay fondos públicos disponibles.",
+            'requisitos': ["Sentencia definitiva de privación de derecho", "Prueba de no negligencia del titular", "Tasación del inmueble"],
+            'procedimientos': ["1. Incoar demanda contra el Fondo ante el Tribunal Superior de Tierras.", "2. Demostrar el daño emergente.", "3. Ejecutar sentencia contra el Estado para el pago compensatorio."]
+        },
+
+        # TRIBUNALES
+        'Notificar Demanda Introductiva (10 días)': {
+            'cat': 'Tribunales (Litis e Incidentes)', 'tipo': 'plazo', 'unidad': 'dias', 'plazo': 10,
+            'baseLegal': "Art. 30, Ley 108-05 | Art. 62, Reglamento Tribunales",
+            'jurisprudencia': "TC/0071/13: La notificación oportuna garantiza la tutela judicial efectiva.",
+            'diagnosticoAprobado': "Plazo hábil para emplazar a la contraparte.",
+            'diagnosticoRechazado': "Caducidad del depósito por falta de emplazamiento.",
+            'estrategia': "Depositar nueva demanda inicial en Secretaría.",
+            'requisitos': ["Instancia original sellada por el tribunal", "Acto de alguacil (Emplazamiento)", "Fijación de audiencia (Si aplica)"],
+            'procedimientos': ["1. Depositar instancia en la Secretaría.", "2. Retirar instancia sellada.", "3. Alguacil notifica en 10 días máximo.", "4. Depositar acto de notificación en tribunal."]
+        },
+        'Caducidad de Instancia (Inactividad 3 años)': {
+            'cat': 'Tribunales (Litis e Incidentes)', 'tipo': 'plazo', 'unidad': 'anos', 'plazo': 3,
+            'baseLegal': "Art. 397 y ss. del Código de Procedimiento Civil",
+            'jurisprudencia': "SCJ: La inactividad de las partes por 3 años extingue el proceso, asimilándose al abandono.",
+            'diagnosticoAprobado': "Proceso activo. Se interrumpió la caducidad.",
+            'diagnosticoRechazado': "Presunción de abandono. Plazo cumplido.",
+            'estrategia': "Oponer incidente de Caducidad de Instancia.",
+            'requisitos': ["Certificación de inactividad expedida por Secretaría", "Último acto procesal fechado hace más de 3 años", "Conclusiones incidentales"],
+            'procedimientos': ["1. Solicitar fijación de audiencia.", "2. Presentar in limine litis la demanda en caducidad.", "3. El tribunal extingue el proceso sin fallar el fondo."]
+        },
+        'Litis: Nulidad Absoluta (Falsedad/Simulación)': {
+            'cat': 'Tribunales (Litis e Incidentes)', 'tipo': 'plazo', 'unidad': 'anos', 'plazo': 20,
+            'baseLegal': "Art. 2262, Código Civil | Principio VIII, Ley 108-05",
+            'jurisprudencia': "SCJ: Cómputo inicia desde publicidad en Registro de Títulos.",
+            'diagnosticoAprobado': "Litis viable. Acción viva.",
+            'diagnosticoRechazado': "Acción prescrita. Consolidación veintenal.",
+            'estrategia': "Oponer Medio de Inadmisión por prescripción.",
+            'requisitos': ["Acto atacado (Contrato falso/simulado)", "Pruebas del vicio", "Certificación de Estado Jurídico"],
+            'procedimientos': ["1. Depósito de demanda en Jurisdicción Original.", "2. Notificación en 10 días.", "3. Audiencia de Sometimiento de Pruebas.", "4. Audiencia de Fondo y conclusiones."]
+        },
+        'Solicitud Fuerza Pública (Abogado del Estado)': {
+            'cat': 'Tribunales (Litis e Incidentes)', 'tipo': 'plazo', 'unidad': 'dias', 'plazo': 15,
+            'baseLegal': "Art. 47, Ley 108-05",
+            'jurisprudencia': "SCJ: El Abogado del Estado ejecuta desalojos de intrusos sin título.",
+            'diagnosticoAprobado': "Plazo de intimación voluntaria corriendo.",
+            'diagnosticoRechazado': "Venció el plazo. Fuerza pública ejecutable.",
+            'estrategia': "Coordinar fuerza pública con Policía Nacional.",
+            'requisitos': ["Certificado de Título a nombre del solicitante", "Certificación de Estado Jurídico", "Acto de intimación a desocupar (15 días antelación)", "Comprobación de invasión"],
+            'procedimientos': ["1. Notificar acto de alguacil a los intrusos dando 15 días.", "2. Solicitar Fuerza Pública al Abogado del Estado anexando pruebas.", "3. Autorización y coordinación con fuerza pública para el lanzamiento."]
+        },
+
+        # ALTAS CORTES Y RECURSOS
+        'Recurso de Apelación (TST)': {
+            'cat': 'Altas Cortes y Recursos', 'tipo': 'plazo', 'unidad': 'dias', 'plazo': 30,
+            'baseLegal': "Art. 80, Ley 108-05",
+            'jurisprudencia': "SCJ: Plazos de orden público; inobservancia acarrea inadmisibilidad.",
+            'diagnosticoAprobado': "Plazo abierto para depositar apelación.",
+            'diagnosticoRechazado': "Plazo vencido. Sentencia firme.",
+            'estrategia': "Solicitar Certificado de No Apelación.",
+            'requisitos': ["Instancia de recurso motivando los agravios", "Sentencia impugnada notificada", "Pago de tasas judiciales"],
+            'procedimientos': ["1. Depositar recurso en la Secretaría del Tribunal que dictó la sentencia.", "2. Notificar a la contraparte en 10 días.", "3. El expediente es remitido al Tribunal Superior de Tierras."]
+        },
+        'Revisión Constitucional (Tribunal Constitucional)': {
+            'cat': 'Altas Cortes y Recursos', 'tipo': 'plazo', 'unidad': 'dias', 'plazo': 30,
+            'baseLegal': "Art. 53, Ley 137-11 (Orgánica del Tribunal Constitucional)",
+            'jurisprudencia': "TC: Procede contra decisiones jurisdiccionales firmes que vulneren derechos fundamentales.",
+            'diagnosticoAprobado': "Plazo hábil para interponer revisión ante el TC.",
+            'diagnosticoRechazado': "Recurso extemporáneo. Sentencia inatacable.",
+            'estrategia': "Ejecutar de forma definitiva la decisión de la SCJ.",
+            'requisitos': ["Sentencia de la Suprema Corte (irrevocable)", "Escrito motivando la vulneración constitucional", "Notificación previa a la SCJ"],
+            'procedimientos': ["1. Depositar recurso ante la Secretaría de la corte que dictó la decisión (SCJ).", "2. La corte lo tramita al TC.", "3. Notificar a la contraparte y esperar juicio de admisibilidad del TC."]
+        },
+
+        # IMPRESCRIPTIBLES
+        'Reivindicación, Deslinde, Saneamiento y Partición': {
+            'cat': 'Acciones Imprescriptibles', 'tipo': 'imprescriptible', 'unidad': None, 'plazo': None,
+            'baseLegal': "Principio IV, Ley 108-05 | Art. 51 Constitución",
+            'jurisprudencia': "TC/0214/18: Derechos registrados son imprescriptibles contra ocupantes ilegales.",
+            'diagnosticoAprobado': "La acción es de orden público y NO prescribe.",
+            'diagnosticoRechazado': "La acción es de orden público y NO prescribe.",
+            'estrategia': "Proceder sin restricciones de tiempo.",
+            'requisitos': ["Certificado de Título", "Identificación de ocupantes o linderos conflictivos", "Levantamiento planimétrico del agrimensor (Evidencia técnica)"],
+            'procedimientos': ["1. Preparar el plano de levantamiento o replanteo.", "2. Incoar la demanda en Reivindicación (o Deslinde) ante J.O.", "3. Probar la titularidad y la ocupación ilegal en audiencia."]
+        }
+    }
+
+    # --- 2. INTERFAZ DE USUARIO ---
+    with st.container(border=True):
+        st.markdown("#### Depuración y Operaciones")
+        
+        c_cat, c_acc = st.columns(2)
+        with c_cat:
+            categoria_sel = st.selectbox("1. Categoría de la Actuación:", 
+                                         ["Mensuras Catastrales", "Registro de Títulos", "Tribunales (Litis e Incidentes)", "Altas Cortes y Recursos", "Acciones Imprescriptibles"])
+        
+        acciones_filtradas = [k for k, v in catalogo_acciones.items() if v['cat'] == categoria_sel]
+        
+        with c_acc:
+            accion_sel = st.selectbox("2. Actuación Legal o Técnica:", acciones_filtradas)
+        
+        datos_accion = catalogo_acciones[accion_sel]
+
+        # Lógica de Fechas
+        fecha_ref = None
+        if datos_accion['tipo'] != 'imprescriptible':
+            if accion_sel == 'Plazo Aviso de Mensura (Colindantes)':
+                label_f = "Fecha proyectada para los trabajos de terreno:"
+            elif accion_sel == 'Solicitud Fuerza Pública (Abogado del Estado)':
+                label_f = "Fecha en que se notificó la intimación a desocupar:"
+            else:
+                label_f = "Fecha de inicio del cómputo (Depósito, Notificación o Título):"
+                
+            fecha_ref = st.date_input(label_f, value=date.today())
+            st.info("⚠️ **Atención:** Para plazos procesales, el cálculo excluye fines de semana si la norma indica 'días hábiles' o francos. El sistema calcula en días calendario base.")
+
+    # --- 3. MOTOR DE CÁLCULO Y RESULTADOS ---
+    if st.button("🚀 Generar Ruta Crítica y Diagnóstico", type="primary", use_container_width=True):
+        st.write("---")
+        
+        hoy = date.today()
+        esta_prescrita = False
+        texto_tiempo = ""
+        limite_ley = "No aplica"
+
+        # CÁLCULOS (Replicando la lógica de su app.js)
+        if datos_accion['tipo'] == 'imprescriptible':
+            color_badge = "#007bff" # Azul
+            titulo_alerta = "🔵 ACCIÓN DE ORDEN PÚBLICO (IMPRESCRIPTIBLE)"
+            texto_tiempo = "N/A"
+            diag_final = datos_accion['diagnosticoAprobado']
+        else:
+            limite_ley = f"{datos_accion['plazo']} {datos_accion['unidad']}"
+            
+            if datos_accion['tipo'] == 'plazo_inverso':
+                if fecha_ref < hoy:
+                    st.error("❌ Error: Para avisos y desalojos, la fecha objetivo debe ser futura.")
+                    st.stop()
+                dias_faltantes = (fecha_ref - hoy).days
+                esta_prescrita = dias_faltantes < datos_accion['plazo']
+                texto_tiempo = f"Faltan {dias_faltantes} días para el evento"
+                
+            elif datos_accion['unidad'] == 'anos':
+                anios_transcurridos = hoy.year - fecha_ref.year - ((hoy.month, hoy.day) < (fecha_ref.month, fecha_ref.day))
+                esta_prescrita = anios_transcurridos >= datos_accion['plazo']
+                texto_tiempo = f"{anios_transcurridos} años completos"
+                
+            elif datos_accion['unidad'] == 'dias':
+                dias_transcurridos = (hoy - fecha_ref).days
+                esta_prescrita = dias_transcurridos > datos_accion['plazo']
+                texto_tiempo = f"{dias_transcurridos} días transcurridos"
+
+            if esta_prescrita:
+                color_badge = "#dc3545" # Rojo
+                titulo_alerta = "🔴 PLAZO VENCIDO / CADUCIDAD"
+                diag_final = datos_accion['diagnosticoRechazado']
+            else:
+                color_badge = "#28a745" # Verde
+                titulo_alerta = "🟢 DENTRO DEL PLAZO LEGAL / ACTIVO"
+                diag_final = datos_accion['diagnosticoAprobado']
+
+        # --- 4. RENDERIZADO DEL DICTAMEN (Como su index.html) ---
+        with st.container(border=True):
+            st.markdown(f"<h2 style='text-align: center; color: #0d253f; font-family: serif;'>DICTAMEN TÉCNICO-LEGAL</h2>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align: center; color: gray; font-size: 0.85rem;'>Expedido vía plataforma automatizada • {hoy.strftime('%d de %B de %Y')}</p>", unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div style='background-color: {color_badge}20; color: {color_badge}; border: 1px solid {color_badge}; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; font-size: 1.1rem; margin-bottom: 20px;'>
+                {titulo_alerta}
+            </div>
+            """, unsafe_allow_html=True)
+
+            if datos_accion['tipo'] != 'imprescriptible':
+                st.markdown(f"**Tiempo medido:** {texto_tiempo}")
+                st.markdown(f"**Límite normativo:** {limite_ley}")
+            
+            st.markdown(f"**Diagnóstico:** <span style='color: #0d253f; font-size: 1.1rem; font-weight: bold;'>{diag_final}</span>", unsafe_allow_html=True)
+            st.markdown(f"**Acción a tomar:** {datos_accion['estrategia']}")
+            
+            st.write("---")
+            
+            c_req, c_proc = st.columns(2)
+            with c_req:
+                st.markdown("#### 📌 Requisitos Documentales")
+                for req in datos_accion['requisitos']:
+                    st.markdown(f"- {req}")
+            with c_proc:
+                st.markdown("#### ⚙️ Procedimiento (Ruta Crítica)")
+                for proc in datos_accion['procedimientos']:
+                    st.markdown(f"{proc}")
+            
+            st.write("---")
+            st.info(f"**⚖️ Normativa Legal:** {datos_accion['baseLegal']}\n\n**🏛️ Jurisprudencia:** {datos_accion['jurisprudencia']}")
+            
+            st.markdown(f"""
+            <div style="margin-top: 20px; text-align: right; font-size: 0.95rem; color: #333;">
+                <div style="font-family: serif; font-size: 1.4rem; color: #c5a059; font-weight: bold; margin-bottom: 5px;">ABOAGRIM</div>
+                <strong>{PRESIDENTE_FIRMA}</strong><br>
+                <span style="color: #0d253f; font-weight: 600;">Presidente | Abogado y Agrimensor</span><br>
+                <span style="color: gray; font-size: 0.85rem;">Tel: {TELEFONOS_FIRMA}</span>
+            </div>
+            """, unsafe_allow_html=True)
 def vista_plantillas():
     import streamlit as st
     import os
