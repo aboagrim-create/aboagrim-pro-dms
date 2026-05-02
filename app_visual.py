@@ -1264,18 +1264,19 @@ for plantilla in plantillas_elegidas:
         st.error("❌ Ocurrió un error al forjar los documentos. Verifique las plantillas.")
                                 
 
-        ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
-        archivos = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
-                
-                if archivos:
-                    archivo_a_borrar = st.selectbox("Seleccione el archivo a eliminar:", archivos)
-                    if st.button("🗑️ Eliminar Plantilla"):
-                        try:
-                            os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
-                            st.success(f"✅ Archivo {archivo_a_borrar} eliminado.")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"❌ Error al eliminar: {e}")
+        # (Asegúrese de que esta 'r' quede a la misma altura que el 'if' o 'else' de arriba)
+    ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
+    archivos = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
+
+    if archivos:
+        archivo_a_borrar = st.selectbox("Seleccione el archivo a eliminar:", archivos)
+        if st.button("🗑️ Eliminar Plantilla"):
+        try:
+            os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
+            st.success(f"✅ Archivo {archivo_a_borrar} eliminado.")
+            st.rerun()
+        except Exception as e:
+            st.error(f"❌ Error al eliminar: {e}")
                 else:
                     st.info("ℹ️ Carpeta vacía. No hay modelos para borrar.")
                
