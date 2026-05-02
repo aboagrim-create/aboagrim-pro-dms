@@ -1644,7 +1644,62 @@ def vista_honorarios():
             type="primary"
         )
 
-# 4. El Gatillo (Enrutamiento)
+# ==========================================
+# 🔒 SISTEMA DE SEGURIDAD Y LOGIN (RBAC)
+# ==========================================
+USUARIOS_PERMITIDOS = {
+    "jmatos": {"pass": "admin2026", "rol": "Administrador", "nombre": "Lic. Jhonny Matos"},
+    "asistente": {"pass": "abo123", "rol": "Usuario", "nombre": "Asistente Legal / Agrimensor"}
+}
+
+if "usuario_actual" not in st.session_state:
+    st.session_state["usuario_actual"] = None
+    st.session_state["rol_actual"] = None
+
+if st.session_state["usuario_actual"] is None:
+    st.markdown("<br><br><h2 style='text-align: center; color: #1E3A8A;'>🔒 Acceso Restringido</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center;'>AboAgrim Pro - Sistema de Gestión Integral</p>", unsafe_allow_html=True)
+    
+    col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
+    with col_l2:
+        with st.container(border=True):
+            usuario_input = st.text_input("👤 Usuario:")
+            pass_input = st.text_input("🔑 Contraseña:", type="password")
+            
+            if st.button("Iniciar Sesión", use_container_width=True, type="primary"):
+                if usuario_input in USUARIOS_PERMITIDOS and USUARIOS_PERMITIDOS[usuario_input]["pass"] == pass_input:
+                    st.session_state["usuario_actual"] = usuario_input
+                    st.session_state["rol_actual"] = USUARIOS_PERMITIDOS[usuario_input]["rol"]
+                    st.session_state["nombre_usuario"] = USUARIOS_PERMITIDOS[usuario_input]["nombre"]
+                    st.rerun()
+                else:
+                    st.error("❌ Credenciales incorrectas. Sistema bloqueado.")
+    st.stop()
+
+# ==========================================
+# 📱 MENÚ LATERAL AUTORIZADO
+# ==========================================
+with st.sidebar:
+    st.markdown(f"### 🧑‍💼 {st.session_state['nombre_usuario']}")
+    st.caption(f"🛡️ Nivel de acceso: **{st.session_state['rol_actual']}**")
+    if st.button("🚪 Cerrar Sesión", use_container_width=True):
+        st.session_state["usuario_actual"] = None
+        st.session_state["rol_actual"] = None
+        st.rerun()
+    
+    st.write("---")
+    st.markdown("**Navegación:**")
+    
+    opciones_menu = ["🏠 Mando Central", "👤 Registro Maestro", "📁 Archivo Digital", "📄 Plantillas Auto", "⏱️ Alertas y Plazos"]
+    
+    if st.session_state["rol_actual"] == "Administrador":
+        opciones_menu.extend(["💳 Gestión de Honorarios", "⚙️ Configuración"])
+        
+    menu = st.radio("Módulos", opciones_menu, label_visibility="collapsed")
+
+# ==========================================
+# 🚀 EJECUCIÓN DE MÓDULOS
+# ==========================================
 if menu == "🏠 Mando Central":
     vista_mando()
 elif menu == "👤 Registro Maestro":
@@ -1652,285 +1707,43 @@ elif menu == "👤 Registro Maestro":
 elif menu == "📁 Archivo Digital":
     vista_archivo_digital()
 elif menu == "📄 Plantillas Auto":
-    vista_plantillas()  # <-- Quite el "_auto" para que llame a la función correcta
-elif menu == "📅 Alertas y Plazos":
+    vista_plantillas()
+elif menu == "⏱️ Alertas y Plazos":
     vista_alertas_plazos()
-elif menu == "💵 Facturación":
-    vista_facturacion()
+elif menu == "💳 Gestión de Honorarios":
+    vista_honorarios()
 elif menu == "⚙️ Configuración":
-    st.title("⚙️ Configuración del Sistema")
-
-    # --- 🔒 CANDADO DE SEGURIDAD PRESIDENCIAL ---
-    if "pin_config" not in st.session_state:
-        st.session_state.pin_config = False
-
-    if not st.session_state.pin_config:
-        st.warning("🛑 **ACCESO RESTRINGIDO:** Área exclusiva de la Presidencia.")
-        c_pin1, c_pin2 = st.columns([2, 2])
-        with c_pin1:
-            pin_maestro = st.text_input("Ingrese el PIN Maestro:", type="password")
-            if st.button("🔓 Desbloquear Panel"):
-                if pin_maestro == "0681":  # Puede cambiar su clave aquí
-                    st.session_state.pin_config = True
-                    st.rerun()
-                else:
-                    st.error("❌ PIN incorrecto.")
-        st.stop() # 🛑 Detiene el código aquí si no hay PIN
-
-    if st.button("🔒 Bloquear Panel de Configuración"):
-        st.session_state.pin_config = False
-        st.rerun()
-
-    # --- CREACIÓN REAL DE LAS PESTAÑAS ---
-    tab_perfil, tab_usuarios, tab_seguridad, tab_maestro = st.tabs([
-        "👤 Perfil", "👥 Usuarios", "🔐 Seguridad", "🎨 Panel Maestro"
-    ])
-
-    # === 1. PESTAÑA DE PERFIL ===
-    with tab_perfil:
-        st.subheader("👤 Mi Perfil Oficial")
-        c_perf1, c_perf2 = st.columns([1, 2])
-        with c_perf1:
-            st.image("logo_aboagrim.jpg", width=120)
-        with c_perf2:
-            st.markdown("**Nombre:** Lic. Jhonny Matos. M.A.")
-            st.markdown("**Cargo:** Presidente-Fundador")
-            st.markdown("**Nivel de Acceso:** 🟢 Acceso Total (Nivel Dios)")
-
-    # === 2. PESTAÑA DE USUARIOS ===
-    with tab_usuarios:
-        st.subheader("👥 Gestión de Capital Humano")
+    st.warning("Módulo de configuración en desarrollo.")
+with tab_boveda:
+        st.subheader("Gestión de Archivos Maestros (.docx)")
         
-        # A. Crear la memoria primero
-        if "db_empleados" not in st.session_state:
-            st.session_state.db_empleados = [
-                {"Nombre Completo": "Lic. Jhonny Matos", "Usuario": "JMatos", "Rol": "Presidente-Fundador", "Estado": "🟢 Activo"}
-            ]
+        # 🛡️ VERIFICACIÓN DE SEGURIDAD
+        if st.session_state.get("rol_actual") == "Administrador":
+            col_up1, col_up2 = st.columns([2, 3])
+            with col_up1:
+                destino = st.selectbox("Cargar en:", carpetas_base)
+            with col_up2:
+                archivos_subidos = st.file_uploader("Arrastrar Plantillas Nuevas", type=["docx"], accept_multiple_files=True)
 
-        # B. Mostrar la tabla
-        st.dataframe(st.session_state.db_empleados, use_container_width=True)
+            if archivos_subidos:
+                for archivo in archivos_subidos:
+                    with open(os.path.join("plantillas_maestras", destino, archivo.name), "wb") as f:
+                        f.write(archivo.getbuffer())
+                st.success("✅ Plantillas guardadas en la bóveda.")
+                st.rerun()
 
-        # C. Agregar Usuario
-        with st.expander("➕ Dar de Alta a Nuevo Miembro", expanded=False):
-            c_u1, c_u2 = st.columns(2)
-            with c_u1:
-                nuevo_nombre = st.text_input("Nombre y Apellidos:")
-                nuevo_user = st.text_input("Usuario (Login):")
-            with c_u2:
-                nuevo_rol = st.selectbox("Rol:", ["Abogado", "Agrimensor", "Asistente"])
-                estado_cuenta = st.selectbox("Estado:", ["🟢 Activo", "🔴 Inactivo"])
-
-            if st.button("💾 Guardar Usuario", type="primary"):
-                if nuevo_nombre != "":
-                    st.session_state.db_empleados.append({
-                        "Nombre Completo": nuevo_nombre, "Usuario": nuevo_user, "Rol": nuevo_rol, "Estado": estado_cuenta
-                    })
-                    st.rerun()
-
-        # D. Eliminar Usuario (Ahora sí, en el lugar correcto)
-        with st.expander("🗑️ Eliminar Usuario", expanded=False):
-            if len(st.session_state.db_empleados) > 0:
-                nombres_emp = [emp["Nombre Completo"] for emp in st.session_state.db_empleados]
-                usuario_a_borrar = st.selectbox("Seleccione el empleado a eliminar:", nombres_emp)
-                
-                if st.button("🚨 Eliminar Definitivamente"):
-                    st.session_state.db_empleados = [emp for emp in st.session_state.db_empleados if emp["Nombre Completo"] != usuario_a_borrar]
-                    st.rerun()
-
-    # === 3. PESTAÑA DE SEGURIDAD ===
-    with tab_seguridad:
-        st.subheader("🔐 Cambio de Credenciales")
-        nueva_clave = st.text_input("Nueva Contraseña Maestra:", type="password")
-        confirmar_clave = st.text_input("Confirmar Contraseña:", type="password")
-        if st.button("🔑 Actualizar Clave", type="primary"):
-            if nueva_clave != "" and nueva_clave == confirmar_clave:
-                st.success("✅ ¡Contraseña actualizada!")
-            else:
-                st.error("❌ Las contraseñas no coinciden o están vacías.")
-                # (Pegue esto debajo del st.error de las contraseñas)
-        st.divider()
-        # --- NUEVO: SINCRONIZACIÓN DUAL CON GOOGLE DRIVE ---
-        st.markdown("### ☁️ Bóveda en la Nube (Google Drive Dual)")
-        st.info("El sistema enviará una copia exacta de cada expediente a estas dos cuentas simultáneamente.")
-        
-        with st.expander("⚙️ Configurar Rutas de Sincronización", expanded=True):
-            # --- MEMORIA DE DISCO DURO (Sobrevive a actualizaciones de pantalla) ---
-            
-            archivo_rutas = "config_rutas.json"
-            
-            # 1. Leer el archivo secreto si existe
-            ruta_ab_guardada = ""
-            ruta_per_guardada = ""
-            if os.path.exists(archivo_rutas):
-                try:
-                    with open(archivo_rutas, "r") as f:
-                        datos_rutas = json.load(f)
-                        ruta_ab_guardada = datos_rutas.get("corporativa", "")
-                        ruta_per_guardada = datos_rutas.get("personal", "")
-                except:
-                    pass
-
-            c_drive1, c_drive2 = st.columns(2)
-            with c_drive1:
-                st.markdown("**Cuenta Corporativa:** `aboagrim@gmail.com`")
-                nueva_ruta_ab = st.text_input("ID de la Carpeta Google Drive:", value=ruta_ab_guardada)
-            
-            with c_drive2:
-                st.markdown("**Cuenta Personal:** `lic.jhonnymatos@gmail.com`")
-                nueva_ruta_per = st.text_input("Ruta en su PC personal: ", value=ruta_per_guardada)
-
-            if st.button("🔗 Enlazar Cuentas de Google Drive", type="primary"):
-                # 2. Guardar las rutas en el archivo físico
-                with open(archivo_rutas, "w") as f:
-                    json.dump({"corporativa": nueva_ruta_ab, "personal": nueva_ruta_per}, f)
-                st.success("✅ ¡Rutas tatuadas en el disco duro! Ya no se borrarán al actualizar la pantalla.")
-
-    # (Nota: Debajo de esto debe quedar su código de "with tab_maestro:" intacto)
-
-    with tab_maestro:
-        st.subheader("🎨 Identidad Corporativa y Diseño Global")
-        st.info("Desde aquí controla la apariencia de AboAgrim Pro. Los cambios se aplican a todo el sistema.")
-
-        # --- SECCIÓN 1: COLORES Y FONDOS ---
-        with st.expander("🌈 Paleta de Colores y Fondos", expanded=True):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.session_state["tema_fondo"] = st.selectbox("Modo de Fondo:", ["Oscuro Profundo", "Claro Ejecutivo", "Azul Corporativo", "Crema Vintage"], index=0)
-                st.session_state["color_primario"] = st.color_picker("Color de Acentos (Botones y Títulos):", "#deff9a")
-            with col2:
-                st.session_state["color_texto"] = st.color_picker("Color de Fuente Principal:", "#f5f5f5")
-                st.session_state["radio_bordes"] = st.slider("Curvatura de Casillas y Botones:", 0, 30, 15)
-
-        # --- SECCIÓN 2: TIPOGRAFÍA Y TEXTOS ---
-        with st.expander("🔡 Tipografía y Estilo de Letra"):
-            col_f1, col_f2 = st.columns(2)
-            with col_f1:
-                fuentes = ["Urbanist", "Poppins", "Merriweather", "Roboto", "Lato"]
-                st.session_state["fuente_sistema"] = st.selectbox("Fuente Global:", fuentes)
-            with col_f2:
-                st.session_state["tamano_letra"] = st.slider("Tamaño de letra base:", 12, 20, 16)
-
-        # --- SECCIÓN 3: BRANDING Y LOGO ---
-        with st.expander("🖼️ Gestión de Branding (Logo)"):
-            c_logo1, c_logo2 = st.columns([1, 2])
-            with c_logo1:
-                st.image("logo_aboagrim.jpg", width=150, caption="Logo Actual")
-            with c_logo2:
-                nuevo_logo = st.file_uploader("Subir Nuevo Logo (PNG/JPG):", type=["png", "jpg", "jpeg"])
-                if nuevo_logo:
-                    st.success("Logo cargado temporalmente. (Para cambio permanente, reemplace el archivo logo_aboagrim.jpg)")
-
-        # --- SECCIÓN 4: DATOS DE OFICINA PRINCIPAL ---
-        with st.expander("📍 Información de Oficina y Contacto"):
-            st.session_state["direccion_master"] = st.text_input("Dirección Física:", "Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Centro Ciudad, Santiago.")
-            col_t1, col_t2 = st.columns(2)
-            with col_t1:
-                st.session_state["tel_master"] = st.text_input("Teléfonos de Oficina:", "829-826-5888 / 809-691-3333")
-            with col_t2:
-                st.session_state["correo_master"] = st.text_input("Correo Corporativo:", "aboagrim@gmail.com")
-            
-        if st.button("💾 Guardar Configuración Maestra", type="primary", use_container_width=True):
-            st.balloons()
-            st.success("¡Identidad del sistema actualizada correctamente!")
-# 👇 ESTE BLOQUE DEBE IR AL FINAL DE TODO SU CÓDIGO 👇
-elif menu == "💰 Gestión de Honorarios":
-    st.title("💰 Gestión de Honorarios y Cobros")
-    st.subheader("Control Financiero de la Firma")
-    # Tarjeta de Contacto en la Barra Lateral
-    st.sidebar.divider()
-    with st.sidebar.container():
-        st.markdown(f"""
-        <div style='text-align: center; background-color: #f0f2f6; padding: 10px; border-radius: 10px; border: 1px solid #dcdcdc;'>
-            <p style='margin: 0; font-weight: bold; color: #0E1117;'>{PRESIDENTE_FIRMA}</p>
-            <p style='margin: 0; font-size: 0.8em; color: #555;'>Presidente-Fundador</p>
-            <hr style='margin: 8px 0;'>
-            <p style='margin: 0; font-size: 0.75em; color: #333;'>📍 {DIRECCION_FIRMA}</p>
-            <p style='margin: 0; font-size: 0.75em; color: #333;'>📞 {TELEFONOS_FIRMA}</p>
-            <p style='margin: 0; font-size: 0.75em; color: #333;'>✉️ {CORREO_FIRMA}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # --- REGISTRO DE MOVIMIENTOS ---
-    with st.expander("📝 Registrar Nuevo Pago o Abono", expanded=True):
-        # Simulamos los expedientes de su oficina (luego vendrán de Supabase)
-        lista_expedientes = [
-            "Seleccione un expediente...",
-            "Exp. 2026-001 - Deslinde Parcela 44 (Juan Pérez)",
-            "Exp. 2026-002 - Litis Derecho Registrado (Familia García)",
-            "Exp. 2026-003 - Determinación de Herederos (María López)",
-            "➕ Nuevo Cliente / Expediente"
-        ]
-        
-        # El buscador inteligente (permite escribir para buscar)
-        cliente_pago = st.selectbox("🔍 Buscar Cliente o Expediente:", lista_expedientes)
-        
-        # Si elige "Nuevo Cliente", le muestra una casilla para escribirlo
-        if cliente_pago == "➕ Nuevo Cliente / Expediente":
-            cliente_pago = st.text_input("Ingrese el nombre del nuevo cliente o proyecto:")
-
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            monto_pago = st.number_input("Monto Recibido:", min_value=0.0, step=1000.0)
-            moneda = st.radio("Moneda:", ["RD$", "US$"], horizontal=True)
-            
-        with c2:
-            concepto_pago = st.selectbox("Concepto del Pago:", [
-                "Primer Pago (Avance de Honorarios)", 
-                "Segundo Pago de Honorarios", 
-                "Pago de Sellos e Impuestos", 
-                "Gastos de Mensura / Operativos",
-                "Saldo Final del Contrato"
-            ])
-            metodo_pago = st.selectbox("Método:", ["Transferencia BHD", "Transferencia Reservas", "Efectivo", "Cheque"])
-            
-        with c3:
-            fecha_pago = st.date_input("Fecha de Recepción:")
-            estado_cobro = st.selectbox("Estado del Recibo:", ["Completado", "Pendiente de Confirmación Bancaria"])
-            
-        st.divider()
-        
-        # Botones de Acción
-        c_btn1, c_btn2 = st.columns(2)
-        with c_btn1:
-            if st.button("💾 Guardar en Registro Contable", use_container_width=True, type="primary"):
-                st.success(f"✅ Pago de {moneda} {monto_pago} registrado a nombre de {cliente_pago}")
-        with c_btn2:
-            if st.button("📄 Generar Recibo PDF", use_container_width=True):
-                st.info("Generando recibo oficial con el logo de AboAgrim... (Simulado)")
-
-    st.divider()
-
-    # --- DATOS BANCARIOS Y CONTACTO ---
-    st.markdown("### 🏦 Cuentas para Depósitos y Contacto Oficial")
-    b1, b2 = st.columns(2)
-    with b1:
-        st.info(f"**DEPÓSITOS OFICIALES**\n\n- **Titular:** {PRESIDENTE_FIRMA}\n- **Correo:** {CORREO_FIRMA}\n- **Banco de Reservas:** 960-XXXXXX-X\n- **Banco BHD:** 124-XXXXXX-X")
-    with b2:
-        st.warning(f"**OFICINA PRINCIPAL**\n\n- **Dirección:** {DIRECCION_FIRMA}\n- **Teléfonos:** {TELEFONOS_FIRMA}")
-
-    st.divider()
-
-    # --- PANEL DE ESTADO DE CUENTAS (PESTAÑAS) ---
-    st.markdown("### 📊 Estado General de Cuentas")
-    
-    # Creamos pestañas para organizar mejor la información
-    tab_pendientes, tab_historial = st.tabs(["🔴 Pendientes de Cobro", "🟢 Historial de Pagos Recibidos"])
-    
-    with tab_pendientes:
-        st.dataframe({
-            "Expediente / Asunto": ["Deslinde Parcela 44", "Litis Familia García"],
-            "Cliente": ["Juan Pérez", "María López"],
-            "Total Contrato": ["RD$ 150,000", "RD$ 85,000"],
-            "Abonado": ["RD$ 75,000", "RD$ 40,000"],
-            "Pendiente": ["RD$ 75,000", "RD$ 45,000"]
-        }, use_container_width=True)
-        
-    with tab_historial:
-        st.dataframe({
-            "Fecha": ["28/04/2026", "25/04/2026"],
-            "Cliente": ["Pedro Rodríguez", "Constructora Cibao"],
-            "Concepto": ["Segundo Pago Honorarios", "Avance de Honorarios"],
-            "Monto": ["RD$ 25,000", "RD$ 100,000"],
-            "Método": ["Transferencia BHD", "Cheque"]
-        }, use_container_width=True)
-
+            st.divider()
+            st.write("**Borrar Plantillas Existentes**")
+            cat_ver = st.selectbox("Revisar categoría:", carpetas_base)
+            ruta_ver = os.path.join("plantillas_maestras", cat_ver)
+            if os.path.exists(ruta_ver):
+                archivos_en_cat = [f for f in os.listdir(ruta_ver) if f.endswith(".docx")]
+                if archivos_en_cat:
+                    c_del1, c_del2 = st.columns([3, 1])
+                    archivo_borrar = c_del1.selectbox("Seleccione para eliminar:", archivos_en_cat)
+                    if c_del2.button("🔥 Eliminar Modelo"):
+                        os.remove(os.path.join(ruta_ver, archivo_borrar))
+                        st.rerun()
+        else:
+            st.error("⛔ Acceso Denegado: Nivel de autorización insuficiente.")
+            st.warning("Solo el Administrador General tiene permisos para alterar las plantillas. Vaya a 'Taller de Redacción' para forjar documentos.")
