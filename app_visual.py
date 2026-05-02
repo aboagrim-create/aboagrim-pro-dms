@@ -1726,7 +1726,7 @@ elif menu == "👤 Registro Maestro":
 elif menu == "📁 Archivo Digital":
     vista_archivo_digital()
 elif menu == "📄 Plantillas Auto":
-    vista_plantillas_auto()
+    vista_plantillas()  # <-- Quite el "_auto" para que llame a la función correcta
 elif menu == "📅 Alertas y Plazos":
     vista_alertas_plazos()
 elif menu == "💵 Facturación":
