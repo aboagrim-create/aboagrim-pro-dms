@@ -32,8 +32,6 @@ if "plantillas_cargadas" not in st.session_state:
 
 # --- MOTOR DE GUARDADO LOCAL ---
 def guardar_expediente_en_drive(ruta_archivo_original, nombre_carpeta_expediente):
-    import shutil
-    import os
     
     # Ruta directa a la sede en su disco local
     ruta_sede_local = "Expedientes_AboAgrim"
