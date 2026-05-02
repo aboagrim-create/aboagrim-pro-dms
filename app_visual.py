@@ -1586,7 +1586,129 @@ with st.sidebar:
     st.caption("📞 829-826-5888 / 809-691-3333")
     st.caption("✉️ aboagrim@gmail.com")
     st.caption("👤 **Lic. Jhonny Matos, M.A.** (Presidente-Fundador)")
+def vista_plantillas():
+    import streamlit as st
+    import os
+    from datetime import datetime
 
+    st.title("📄 Motor de Redacción y Plantillas")
+    st.markdown("### *AboAgrim Pro: Sistema Experto de Forja Documental*")
+
+    carpetas_base = ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"]
+    if not os.path.exists("plantillas_maestras"):
+        os.makedirs("plantillas_maestras")
+    for c in carpetas_base:
+        if not os.path.exists(os.path.join("plantillas_maestras", c)):
+            os.makedirs(os.path.join("plantillas_maestras", c))
+
+    tab_redaccion, tab_boveda = st.tabs(["⚙️ Taller de Redacción (Generar)", "📂 Bóveda de Modelos (Administrar)"])
+
+    with tab_redaccion:
+        lista_exps = ["-- Expediente Independiente --"] + list(st.session_state.get("db_expedientes", {}).keys())
+            
+        col_sel1, col_sel2 = st.columns([1, 2])
+        with col_sel1:
+            exp_seleccionado = st.selectbox("Vincular a Expediente:", lista_exps)
+        with col_sel2:
+            organo_ji = st.selectbox("Órgano Destino (Buscar Plantilla en):", ["Mensuras Catastrales", "Jurisdicción Original", "Registro de Títulos"])
+
+        st.write("---")
+        with st.expander("👥 Partes, Clientes y Representantes", expanded=True):
+            c_part1, c_part2 = st.columns(2)
+            with c_part1:
+                cliente_nombre = st.text_input("Nombre (Cliente/Propietario/Comprador):")
+                cliente_cedula = st.text_input("Cédula / RNC (Principal):")
+                cliente_domicilio = st.text_input("Domicilio (Principal):")
+            with c_part2:
+                apoderado_nombre = st.text_input("Apoderado / Representante / Gestor:")
+                apoderado_cedula = st.text_input("Cédula del Representante:")
+                apoderado_calidad = st.text_input("Calidad (Ej. Poder Especial):")
+
+        with st.expander("⚖️ Profesionales Actuantes (Agrimensor, Notario, Alguacil)", expanded=False):
+            c_prof1, c_prof2 = st.columns(2)
+            with c_prof1:
+                agrimensor_nombre = st.text_input("Agrimensor / CODIA:")
+                abogado_nombre = st.text_input("Abogado Apoderado / CARD:")
+                notario_nombre = st.text_input("Notario Público / Matrícula:")
+            with c_prof2:
+                alguacil_nombre = st.text_input("Nombre del Alguacil:")
+                alguacil_cedula = st.text_input("Cédula del Alguacil:")
+                alguacil_tribunal = st.text_input("Tribunal al que pertenece:")
+
+        with st.expander("📍 Inmueble y Documentos Base", expanded=False):
+            c_inm1, c_inm2, c_inm3 = st.columns(3)
+            inmueble_parcela = c_inm1.text_input("Parcela/Solar:")
+            inmueble_dc = c_inm2.text_input("DC / Municipio:")
+            inmueble_provincia = c_inm3.text_input("Provincia:")
+            
+            c_doc1, c_doc2 = st.columns(2)
+            tipo_doc_base = c_doc1.selectbox("Tipo de Documento Base:", ["Ninguno", "Certificado de Título Definitivo", "Constancia Anotada", "Acto de Venta", "Promesa de Venta", "Acta de Hitos"])
+            doc_base_numero = c_doc2.text_input("Número (Matrícula, Libro, Folio o Acto):")
+            doc_base_fecha = st.text_input("Fecha del Documento Base:")
+
+        with st.expander("💰 Datos Transaccionales", expanded=False):
+            c_tran1, c_tran2 = st.columns(2)
+            monto_venta = c_tran1.text_input("Monto / Precio:")
+            forma_pago = c_tran2.text_input("Forma de pago:")
+            testigos = st.text_input("Testigos Instrumentales (Nombres y Cédulas):")
+
+        st.write("---")
+        mapping_carpetas = {"Mensuras Catastrales": "1_mensuras_catastrales", "Jurisdicción Original": "2_jurisdiccion_original", "Registro de Títulos": "3_registro_titulos"}
+        ruta_carpeta = os.path.join("plantillas_maestras", mapping_carpetas[organo_ji])
+        
+        if os.path.exists(ruta_carpeta):
+            opciones = [f for f in os.listdir(ruta_carpeta) if f.endswith(".docx")]
+            plantillas_elegidas = st.multiselect("📑 Seleccione la(s) plantilla(s) a forjar:", opciones)
+            
+            if st.button("🚀 FORJAR DOCUMENTO AHORA", type="primary", use_container_width=True):
+                if plantillas_elegidas:
+                    datos_para_word = {
+                        "expediente": exp_seleccionado, "fecha_hoy": datetime.now().strftime("%d de %B del %Y"),
+                        "cliente_nombre": cliente_nombre, "cliente_cedula": cliente_cedula, "cliente_domicilio": cliente_domicilio,
+                        "apoderado_nombre": apoderado_nombre, "apoderado_cedula": apoderado_cedula, "apoderado_calidad": apoderado_calidad,
+                        "agrimensor": agrimensor_nombre, "abogado": abogado_nombre, "notario": notario_nombre,
+                        "alguacil_nombre": alguacil_nombre, "alguacil_cedula": alguacil_cedula, "alguacil_tribunal": alguacil_tribunal,
+                        "parcela": inmueble_parcela, "dc": inmueble_dc, "provincia": inmueble_provincia,
+                        "tipo_doc_base": tipo_doc_base, "doc_base_numero": doc_base_numero, "doc_base_fecha": doc_base_fecha,
+                        "monto_venta": monto_venta, "forma_pago": forma_pago, "testigos": testigos
+                    }
+                    archivos_generados = 0
+                    for p in plantillas_elegidas:
+                        buffer = generar_documento_word(os.path.join(ruta_carpeta, p), datos_para_word)
+                        if buffer:
+                            prefijo = exp_seleccionado if exp_seleccionado != "-- Expediente Independiente --" else "Doc"
+                            st.download_button(label=f"⬇️ Descargar: {p}", data=buffer, file_name=f"{prefijo}_{p}")
+                            archivos_generados += 1
+                    if archivos_generados > 0:
+                        st.success(f"⚖️ Se redactaron {archivos_generados} documentos.")
+
+    with tab_boveda:
+        st.subheader("Gestión de Archivos Maestros (.docx)")
+        col_up1, col_up2 = st.columns([2, 3])
+        with col_up1:
+            destino = st.selectbox("Cargar en:", carpetas_base)
+        with col_up2:
+            archivos_subidos = st.file_uploader("Arrastrar Plantillas Nuevas", type=["docx"], accept_multiple_files=True)
+
+        if archivos_subidos:
+            for archivo in archivos_subidos:
+                with open(os.path.join("plantillas_maestras", destino, archivo.name), "wb") as f:
+                    f.write(archivo.getbuffer())
+            st.success("✅ Plantillas guardadas en la bóveda.")
+            st.rerun()
+
+        st.divider()
+        st.write("**Borrar Plantillas Existentes**")
+        cat_ver = st.selectbox("Revisar categoría:", carpetas_base)
+        ruta_ver = os.path.join("plantillas_maestras", cat_ver)
+        if os.path.exists(ruta_ver):
+            archivos_en_cat = [f for f in os.listdir(ruta_ver) if f.endswith(".docx")]
+            if archivos_en_cat:
+                c_del1, c_del2 = st.columns([3, 1])
+                archivo_borrar = c_del1.selectbox("Seleccione para eliminar:", archivos_en_cat)
+                if c_del2.button("🔥 Eliminar Modelo"):
+                    os.remove(os.path.join(ruta_ver, archivo_borrar))
+                    st.rerun()
 # 4. El Gatillo (Enrutamiento)
 if menu == "🏠 Mando Central":
     vista_mando()
