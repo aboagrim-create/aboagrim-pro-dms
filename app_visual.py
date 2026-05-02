@@ -14,11 +14,12 @@ from docxtpl import DocxTemplate
 # from fpdf import FPDF  <-- Agréguela aquí si usa la parte de facturación
 # --- OCULTAR ICONOS Y MENÚ DE STREAMLIT PARA UN DISEÑO LIMPIO ---
 ocultar_iconos = """
-        <style>
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        </style>
-        """
+    <style>
+    /* Oculta las herramientas de programador (Deploy, GitHub), pero mantiene el menú ☰ del celular */
+    [data-testid="stToolbar"] {visibility: hidden !important;}
+    footer {visibility: hidden !important;}
+    </style>
+    """
 st.markdown(ocultar_iconos, unsafe_allow_html=True)
 # === DATOS MAESTROS DE LA FIRMA ABOAGRIM ===
 PRESIDENTE_FIRMA = "Lic. Jhonny Matos, M.A."
