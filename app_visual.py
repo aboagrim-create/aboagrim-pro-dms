@@ -1219,17 +1219,7 @@ def vista_plantillas_auto():
         st.write("---")
         st.markdown("### 🗂️ Datos para la Estructura Maestra")
 
-        col_e1, col_e2 = st.columns(2)
-        with col_e1:
-            organo_ji = st.selectbox("Órgano de la Jurisdicción:", ["MC", "RT", "TT"])
-            expediente_num = st.text_input("Número de Expediente:", value="2026-0001")
-
-        with col_e2:
-            cliente_nombre = st.text_input("Nombre del Cliente:", placeholder="Ej: Juan Pérez")
-            tramite_nombre = st.text_input("Nombre del Trámite:", placeholder="Ej: Deslinde")
-
-        if st.button("🚀 FABRICAR DOCUMENTOS MAESTROS", type="primary", use_container_width=True):
-                    if not plantillas_elegidas:
+        
                         st.error("⚠️ Por favor, seleccione al menos un archivo de plantilla arriba antes de fabricar.")
                     else:
                         try:
@@ -1243,7 +1233,7 @@ def vista_plantillas_auto():
                             
                             nombre_carpeta = f"{organo_ji}_{exp_limpio} - {cli_limpio} - {tram_limpio}"
                             
-                            ruta_sede = r"C:\AboAgrim Pro Oficial\Expedientes_AboAgrim"
+                            ruta_sede = "Carpeta_Temporal_Nube"
                             ruta_fisica = os.path.join(ruta_sede, nombre_carpeta)
                             
                             os.makedirs(ruta_fisica, exist_ok=True)
