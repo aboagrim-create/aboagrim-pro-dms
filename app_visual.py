@@ -1337,8 +1337,8 @@ with st.form("formulario_fabricacion"):
     # ==========================================
         st.write("---")
         with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS"):
-        pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_p_auto")
-        PIN_SECRETO = "0681"
+                pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_p_auto")
+                PIN_SECRETO = "0681"
         
         if pin_ingresado == PIN_SECRETO:
         maint_col1, maint_col2 = st.columns(2)
