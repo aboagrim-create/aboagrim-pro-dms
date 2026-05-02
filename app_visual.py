@@ -1198,88 +1198,88 @@ def motor_de_fabricacion_final(cliente_nombre, tramite_nombre, expediente_num, o
             "expediente_num": exp_limpio
         }
 
-# --- SINCRONIZACIÓN CON LA NUBE (SUPABASE) ---
-try:
-    import datetime
-
-    # Datos listos para su tabla "Maestros de Expedientes"
-    datos_nube = {
-        "expediente_ji": expediente_num,
-        "nombre_propietario": cliente_nombre,
-        "tramite_tipo": tramite_nombre,
-        "jurisdiccion": organo_ji,
-        "estatus": "Registrado",
-        "fecha_registro": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-
-    # Subida automática a Supabase
-    res = supabase.table("expedientes_maestros").insert(datos_nube).execute()
-    
-    if res.data:
-        st.info("☁️ Expediente sincronizado con la nube exitosamente.")
-
-except Exception as e:
-    st.error(f"❌ Error de conexión con la nube: {e}")
-
-# --- 3. FORJA Y GUARDADO ---
-st.session_state["bandeja_descargas"] = []
-archivos_creados = 0
-
-for plantilla in plantillas_elegidas:
-    ruta_exacta = f"plantillas_maestras/{plantilla}"
-    buffer = generar_documento_word(ruta_exacta, diccionario_datos)
-    
-    if buffer:
-        nombre_limpio = plantilla.split('/')[-1]
-        nombre_final_word = f"{organo_ji}_{nombre_limpio}"
-        ruta_guardado_word = os.path.join(ruta_fisica, nombre_final_word)
+        # --- SINCRONIZACIÓN CON LA NUBE (SUPABASE) ---
+        try:
+            import datetime
         
-        with open(ruta_guardado_word, "wb") as f:
-            f.write(buffer.getvalue())
+            # Datos listos para su tabla "Maestros de Expedientes"
+            datos_nube = {
+                "expediente_ji": expediente_num,
+                "nombre_propietario": cliente_nombre,
+                "tramite_tipo": tramite_nombre,
+                "jurisdiccion": organo_ji,
+                "estatus": "Registrado",
+                "fecha_registro": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+        
+            # Subida automática a Supabase
+            res = supabase.table("expedientes_maestros").insert(datos_nube).execute()
             
-        st.session_state["bandeja_descargas"].append({
-            "nombre": nombre_final_word,
-            "buffer": buffer
-        })
-        archivos_creados += 1
-                            
-                            # --- 4. CONEXIÓN CON EL ARCHIVO DIGITAL ---
-    if archivos_creados > 0:
-        archivo_memoria = "memoria_expedientes.json"
-        memoria = {}
-        if os.path.exists(archivo_memoria):
-            with open(archivo_memoria, "r") as f:
-                memoria = json.load(f)
+            if res.data:
+                st.info("☁️ Expediente sincronizado con la nube exitosamente.")
+        
+        except Exception as e:
+            st.error(f"❌ Error de conexión con la nube: {e}")
+        
+        # --- 3. FORJA Y GUARDADO ---
+        st.session_state["bandeja_descargas"] = []
+        archivos_creados = 0
+        
+        for plantilla in plantillas_elegidas:
+            ruta_exacta = f"plantillas_maestras/{plantilla}"
+            buffer = generar_documento_word(ruta_exacta, diccionario_datos)
+            
+            if buffer:
+                nombre_limpio = plantilla.split('/')[-1]
+                nombre_final_word = f"{organo_ji}_{nombre_limpio}"
+                ruta_guardado_word = os.path.join(ruta_fisica, nombre_final_word)
                 
-        memoria[exp_limpio] = {
-            "carpeta_relativa": nombre_carpeta,
-            "organo": organo_ji,
-            "cliente": cli_limpio
-        }
+                with open(ruta_guardado_word, "wb") as f:
+                    f.write(buffer.getvalue())
+                    
+                st.session_state["bandeja_descargas"].append({
+                    "nombre": nombre_final_word,
+                    "buffer": buffer
+                })
+                archivos_creados += 1
+                                    
+            # --- 4. CONEXIÓN CON EL ARCHIVO DIGITAL ---
+            if archivos_creados > 0:
+                archivo_memoria = "memoria_expedientes.json"
+                memoria = {}
+                if os.path.exists(archivo_memoria):
+                    with open(archivo_memoria, "r") as f:
+                        memoria = json.load(f)
+                        
+                memoria[exp_limpio] = {
+                    "carpeta_relativa": nombre_carpeta,
+                    "organo": organo_ji,
+                    "cliente": cli_limpio
+                }
+                
+                with open(archivo_memoria, "w") as f:
+                    json.dump(memoria, f, indent=4)
+                    
+                st.success(f"✅ ¡Éxito Total! Se forjaron {archivos_creados} documentos y se guardaron en la bóveda local bajo: {nombre_carpeta}")
+            else:
+                st.error("❌ Ocurrió un error al forjar los documentos. Verifique las plantillas.")
+                                        
         
-        with open(archivo_memoria, "w") as f:
-            json.dump(memoria, f, indent=4)
-            
-        st.success(f"✅ ¡Éxito Total! Se forjaron {archivos_creados} documentos y se guardaron en la bóveda local bajo: {nombre_carpeta}")
-    else:
-        st.error("❌ Ocurrió un error al forjar los documentos. Verifique las plantillas.")
-                                
-
-        # (Asegúrese de que esta 'r' quede a la misma altura que el 'if' o 'else' de arriba)
-    ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
-    archivos = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
-
-    if archivos:
-        archivo_a_borrar = st.selectbox("Seleccione el archivo a eliminar:", archivos)
-        if st.button("🗑️ Eliminar Plantilla"):
-            try:
-                os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
-                st.success(f"✅ Archivo {archivo_a_borrar} eliminado.")
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Error al eliminar: {e}")
-    else:
-        st.info("ℹ️ Carpeta vacía. No hay modelos para borrar.")
+                # (Asegúrese de que esta 'r' quede a la misma altura que el 'if' o 'else' de arriba)
+            ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
+            archivos = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
+        
+            if archivos:
+                archivo_a_borrar = st.selectbox("Seleccione el archivo a eliminar:", archivos)
+                if st.button("🗑️ Eliminar Plantilla"):
+                    try:
+                        os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
+                        st.success(f"✅ Archivo {archivo_a_borrar} eliminado.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Error al eliminar: {e}")
+            else:
+                st.info("ℹ️ Carpeta vacía. No hay modelos para borrar.")
 
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
 # Aquí debajo empieza su def generar_documento_word...
