@@ -322,50 +322,7 @@ def vista_archivo():
 # MÓDULO 4: PLANTILLAS Y LEY 108-05
 # =====================================================================
 def vista_plantillas():
-    st.title("📄 Generador de Plantillas Automatizado")
-    st.markdown("### *AboAgrim Pro: Documentación Dinámica*")
     
-    # --- PARTE 1: SUBIR NUEVAS PLANTILLAS ---
-    st.subheader("📤 Cargar Nuevos Modelos (.docx)")
-    archivos_subidos = st.file_uploader("Arrastre aquí sus plantillas", type=["docx"], accept_multiple_files=True)
-    
-    if archivos_subidos:
-        import os
-        # Creamos la carpeta si no existe
-        if not os.path.exists("plantillas_maestras"):
-            os.makedirs("plantillas_maestras")
-            
-        for archivo in archivos_subidos:
-            ruta_destino = os.path.join("plantillas_maestras", archivo.name)
-            with open(ruta_destino, "wb") as f:
-                f.write(archivo.getbuffer())
-        st.success(f"✅ {len(archivos_subidos)} plantilla(s) cargada(s) correctamente.")
-        st.rerun()
-
-    st.write("---")
-
-    # --- PARTE 2: GESTIÓN DE PLANTILLAS EXISTENTES ---
-    st.subheader("🗑️ Administrar Bóveda de Plantillas")
-    
-    # Escaneamos físicamente la carpeta para ver qué archivos hay
-    import os
-    if os.path.exists("plantillas_maestras"):
-        # Lista todos los .docx en la carpeta principal
-        archivos_locales = [f for f in os.listdir("plantillas_maestras") if f.endswith(".docx")]
-        
-        if archivos_locales:
-            archivo_sel = st.selectbox("Seleccione plantilla para eliminar de la base:", archivos_locales)
-            if st.button("🗑️ Eliminar Definitivamente"):
-                try:
-                    os.remove(os.path.join("plantillas_maestras", archivo_sel))
-                    st.success(f"🔥 '{archivo_sel}' eliminado.")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Error: {e}")
-        else:
-            st.info("ℹ️ La carpeta de plantillas está vacía.")
-    else:
-        st.warning("⚠️ No se encontró la carpeta 'plantillas_maestras'. suba un archivo para crearla.")
 
 
 # =====================================================================
