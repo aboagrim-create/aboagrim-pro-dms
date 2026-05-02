@@ -809,21 +809,6 @@ def generar_documento_word(ruta_plantilla, diccionario_datos):
     except Exception as e:
         st.error(f"❌ Error en la forja del documento: {e}")
         return None
-def guardar_y_actualizar(tipo_perfil, datos, ventana_origen, menu_desplegable=None):
-    """Guarda en la base de datos y refresca el menú desplegable."""
-    
-    # 1. Lógica de inserción (Ejemplo SQL)
-    # query = f"INSERT INTO {tipo_perfil} (nombre, cedula, profesion, ...) VALUES (...)"
-    # ejecutar_query(query)
-    
-    print(f"Datos guardados en la nube para {tipo_perfil}: {datos}")
-    
-    # 2. Refrescar el Menú Desplegable si existe
-    if menu_desplegable:
-    
-        nueva_lista = ["Seleccione..."] + ["Juan Pérez", "Lic. Matos", "Nuevo Registro..."] # Ejemplo
-        menu_desplegable.configure(values=nueva_lista)
-        menu_desplegable.set(datos["Nombre Completo"]) # Selecciona el recién creado
 
 def ventana_registro_profesional(tipo, menu_a_refrescar=None):
     ventana = ctk.CTkToplevel()
