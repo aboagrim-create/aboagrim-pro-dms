@@ -988,115 +988,119 @@ Por medio de la presente, AboAgrim, representada por el Lic. Jhonny Matos, M.A.,
                 """
                 st.components.v1.html(doc_html, height=600, scrolling=True)
 def vista_archivo_digital():
+    import streamlit as st
+    import os
+
+    st.title("🗄️ Archivo Digital y Bóveda")
+    st.markdown("### Repositorio Central de Expedientes y Anexos Técnicos")
     
-    st.title("📁 Archivo Digital | AboAgrim Pro")
-    st.subheader("Bóveda de Expedientes y Anexos Técnicos")
-    st.divider()
+    # --- 1. SINCRONIZACIÓN CON EL REGISTRO MAESTRO ---
+    # Verificamos si el otro módulo ya creó expedientes en la memoria
+    if "db_expedientes" not in st.session_state or not st.session_state["db_expedientes"]:
+        st.info("ℹ️ El Archivo Digital está esperando datos. Registre un caso en el 'Registro Maestro' primero para que aparezca aquí.")
+        return
 
-    st.markdown("### 🔍 Localizador de Carpetas")
+    # Crear estructura física de la bóveda si no existe
+    if not os.path.exists("boveda_digital"):
+        os.makedirs("boveda_digital")
 
-    try:
-        # 1. Consulta a Supabase para obtener clientes
-        res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario").execute()
-        lista_expedientes = [f"{e['expediente']} - {e['nombre_propietario']}" for e in res_exp.data] if res_exp.data else []
+    st.write("---")
 
-        if not lista_expedientes:
-            st.info("📌 No hay expedientes registrados. Vaya al 'Registro Maestro' para crear el primer caso.")
-            return
+    # --- 2. BUSCADOR INTELIGENTE INTERCONECTADO ---
+    lista_exps = list(st.session_state["db_expedientes"].keys())
+    
+    col_busq1, col_busq2 = st.columns([3, 1])
+    with col_busq1:
+        exp_seleccionado = st.selectbox("🔍 Buscar y Seleccionar Expediente:", lista_exps)
+    
+    # El sistema crea una carpeta única para ese expediente automáticamente
+    ruta_exp = os.path.join("boveda_digital", exp_seleccionado)
+    if not os.path.exists(ruta_exp):
+        os.makedirs(ruta_exp)
 
-        # 2. Selector desplegable
-        expediente_seleccionado = st.selectbox("Seleccione el Expediente a consultar:", ["Seleccione..."] + lista_expedientes)
+    # Extraemos los datos que usted llenó en el Registro Maestro
+    datos_exp = st.session_state["db_expedientes"][exp_seleccionado]
 
-        if expediente_seleccionado == "Seleccione...":
-            return # Pausa la pantalla hasta que elija un cliente
+    # --- 3. INTERFAZ DE GESTIÓN DOCUMENTAL ---
+    tab_resumen, tab_anexos, tab_zip = st.tabs([
+        "📋 Resumen del Caso", "📎 Subir Anexos (Planos, PDF)", "📦 Empaquetar Expediente"
+    ])
 
-        # 3. Extraemos el código
-        codigo_exp = expediente_seleccionado.split(" - ")[0]
-        st.success(f"📁 Expediente Activo: **{expediente_seleccionado}**")
+    # PESTAÑA A: Visor de Memoria
+    with tab_resumen:
+        st.subheader(f"Radiografía: {exp_seleccionado}")
+        st.markdown(f"**Trámite Solicitado:** {datos_exp.get('tramite', 'No especificado')}")
+        st.markdown(f"**Jurisdicción:** {datos_exp.get('jurisdiccion', 'No especificada')}")
+        
+        estado = datos_exp.get('estado', 'N/A')
+        # Etiqueta de estado con colores dinámicos
+        if estado in ["Aprobado", "Cerrado"]:
+            st.success(f"**Estado del Caso:** {estado}")
+        elif estado == "En Litigio":
+            st.error(f"**Estado del Caso:** {estado}")
+        else:
+            st.warning(f"**Estado del Caso:** {estado}")
+            
+        st.info("💡 Este módulo lee en tiempo real los datos que usted ingresa en el Registro Maestro. Si modifica algo allá, se reflejará aquí.")
 
-        # --- MOTOR PARA ABRIR LA CARPETA FÍSICA ---
-        archivo_memoria = "memoria_expedientes.json"
-        if os.path.exists(archivo_memoria):
-            with open(archivo_memoria, "r") as f:
-                memoria = json.load(f)
-                
-            if codigo_exp in memoria:
-                datos = memoria[codigo_exp]
-                ruta_sede = r"C:\AboAgrim Pro Oficial\Expedientes_AboAgrim"
-                ruta_fisica = os.path.join(ruta_sede, datos.get("carpeta_relativa", datos.get("carpeta_relative", "")))
-                
-                if st.button("📂 ABRIR ARCHIVERO DIGITAL LOCAL", type="primary"):
-                    try:
-                        os.startfile(ruta_fisica)
-                    except Exception as e:
-                        st.error(f"No se encontró la ruta física. Error: {e}")
-            else:
-                st.warning("Aún no se han fabricado documentos maestros locales para este expediente.")
-
+    # PESTAÑA B: Bóveda de Anexos
+    with tab_anexos:
+        st.subheader("Bóveda de Anexos Físicos y Planos")
+        st.write("Suba aquí copias de cédulas, planos topográficos (DWG), sentencias y actos firmados.")
+        
+        archivos_subidos = st.file_uploader(f"Anexar a {exp_seleccionado}", accept_multiple_files=True, help="Puede subir PDF, JPG, DWG, DOCX...")
+        
+        if archivos_subidos:
+            if st.button("💾 Guardar Anexos en Bóveda", type="primary"):
+                for archivo in archivos_subidos:
+                    with open(os.path.join(ruta_exp, archivo.name), "wb") as f:
+                        f.write(archivo.getbuffer())
+                st.success(f"✅ {len(archivos_subidos)} documento(s) blindado(s) exitosamente.")
+                st.rerun()
+        
+        # Listador de documentos anexos con opción a borrar
         st.write("---")
+        st.markdown(f"**Documentos actualmente en la carpeta {exp_seleccionado}:**")
+        archivos_guardados = os.listdir(ruta_exp)
         
-        # --- 4. GESTIÓN DEL EXPEDIENTE (PESTAÑAS) ---
-        tab_visor, tab_carga = st.tabs(["📄 Visor de Documentos", "📤 Digitalizar y Subir"])
-        
-        with tab_visor:
-            st.markdown(f"### 📄 Inventario del Expediente {codigo_exp}")
-            
-            # LECTOR INTELIGENTE DE ARCHIVOS FÍSICOS
-            if 'ruta_fisica' in locals() and os.path.exists(ruta_fisica):
-                archivos = os.listdir(ruta_fisica)
-                # Filtramos los archivos temporales invisibles de Word
-                archivos_validos = [f for f in archivos if not f.startswith("~")] 
-                
-                if archivos_validos:
-                    st.success(f"Se encontraron **{len(archivos_validos)}** documentos en la bóveda:")
-                    for archivo in archivos_validos:
-                        if archivo.endswith(".docx"):
-                            st.markdown(f"📝 **Word:** `{archivo}`")
-                        elif archivo.endswith(".pdf"):
-                            st.markdown(f"📕 **PDF:** `{archivo}`")
-                        elif archivo.endswith((".jpg", ".png", ".jpeg")):
-                            st.markdown(f"🖼️ **Imagen/Plano:** `{archivo}`")
-                        else:
-                            st.markdown(f"📄 `{archivo}`")
-                else:
-                    st.info("La bóveda está creada, pero aún no contiene documentos.")
-            else:
-                st.warning("Debe fabricar los documentos maestros primero para que la carpeta exista.")
-            
-        with tab_carga:
-            st.markdown(f"### 📤 Ingreso de Nuevos Documentos")
-            st.write(f"Clasifique y suba los escaneos directamente a la bóveda del cliente **{codigo_exp}**.")
-            
-            if 'ruta_fisica' in locals() and ruta_fisica:
-                os.makedirs(ruta_fisica, exist_ok=True) 
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    clasificacion = st.selectbox("Clasificación del Documento:", ["Certificado de Título", "Plano Mensura", "Contrato Original", "Poder de Representación", "Otro Anexo"])
-                    descripcion = st.text_input("Breve descripción (Opcional):")
-                with col2:
-                    archivo_subido = st.file_uploader("Seleccione el archivo escaneado (PDF, JPG)", type=["pdf", "jpg", "png", "jpeg"])
-                
-                if st.button("💾 Encriptar y Guardar en Bóveda", type="primary", use_container_width=True):
-                    if archivo_subido is not None:
-                        try:
-                            nombre_seguro = archivo_subido.name.replace(" ", "_")
-                            nombre_final = f"{clasificacion}_{nombre_seguro}"
-                            ruta_guardado = os.path.join(ruta_fisica, nombre_final)
-                            
-                            with open(ruta_guardado, "wb") as f:
-                                f.write(archivo_subido.getbuffer())
-                                
-                            st.success(f"✅ Documento guardado exitosamente en la carpeta de **{codigo_exp}**.")
-                        except Exception as e:
-                            st.error(f"Error técnico al guardar en el disco: {e}")
-                    else:
-                        st.warning("⚠️ Por favor, seleccione un archivo antes de presionar guardar.")
-            else:
-                st.error("⚠️ No se puede subir el archivo. Primero debe fabricar los documentos maestros.")
+        if archivos_guardados:
+            for arch in archivos_guardados:
+                col_file, col_del = st.columns([4, 1])
+                col_file.markdown(f"📄 `{arch}`")
+                if col_del.button("❌ Borrar", key=f"del_{exp_seleccionado}_{arch}"):
+                    os.remove(os.path.join(ruta_exp, arch))
+                    st.rerun()
+        else:
+            st.caption("No hay documentos anexos todavía.")
 
-    except Exception as e:
-        st.error(f"Detalle técnico del error general: {e}")
+    # PESTAÑA C: Empaquetado para el Tribunal
+    with tab_zip:
+        st.subheader("Preparación para Depósito / Entrega")
+        st.write("Genere un archivo comprimido (.zip) con todo el contenido del expediente para enviarlo por correo o subirlo a la plataforma virtual de la Jurisdicción Inmobiliaria.")
+        
+        if st.button("📦 Empaquetar Todo en ZIP", use_container_width=True):
+            if not os.listdir(ruta_exp):
+                st.warning("⚠️ El expediente no tiene documentos para empaquetar.")
+            else:
+                import io
+                import zipfile
+                
+                zip_buffer = io.BytesIO()
+                with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                    for root, _, files in os.walk(ruta_exp):
+                        for file in files:
+                            ruta_completa = os.path.join(root, file)
+                            zip_file.write(ruta_completa, file)
+                
+                zip_buffer.seek(0)
+                st.success("✅ Paquete de depósito generado con éxito.")
+                st.download_button(
+                    label=f"⬇️ Descargar {exp_seleccionado}_Completo.zip",
+                    data=zip_buffer,
+                    file_name=f"{exp_seleccionado}_AboAgrim_Completo.zip",
+                    mime="application/zip",
+                    type="primary"
+                )
 def vista_plantillas():
     st.title("📄 Generador de Plantillas Automatizado")
     st.markdown("### *AboAgrim Pro: Documentación Dinámica*")
