@@ -1336,44 +1336,55 @@ with st.form("formulario_fabricacion"):
             # 6. MANTENIMIENTO CON PIN (RECUPERADO)
             # ==========================================
                 st.write("---")
-                with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS"):
-                        pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_p_auto")
-                        PIN_SECRETO = "0681"
-                
-                if pin_ingresado == PIN_SECRETO:
-                        maint_col1, maint_col2 = st.columns(2)
-                        import os
-                        
-                        with maint_col1:
-                                st.markdown("**📥 Subir Nuevo Modelo**")
-                                destino = st.selectbox("Carpeta Destino:", ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_tribunales_de_tierras"])
-                                archivo_subido = st.file_uploader("Elija el archivo .docx", type=["docx"])
-                        
-                                                if st.button("💾 Guardar Plantilla"):
-                                                        if archivo_subido:
-                                                                os.makedirs(f"plantillas_maestras/{destino}", exist_ok=True)
-                                                                ruta_guardado = f"plantillas_maestras/{destino}/{archivo_subido.name}"
-                                                                with open(ruta_guardado, "wb") as f:
-                                                                        f.write(archivo_subido.getbuffer())
-                                                                st.success(f"✅ Documento guardado en {destino}. ¡Ya puede usarlo arriba!")
-        
-                        with maint_col2:
-                                st.markdown("**🗑️ Borrar Modelo Existente**")
-                                carpeta_borrar = st.selectbox("Buscar en Carpeta:", ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_tribunales_de_tierras"])
-                                ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
-                                archivos = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
-                                
-                                if archivos:
-                                archivo_a_borrar = st.selectbox("Seleccione el archivo a eliminar:", archivos)
-                                if st.button("🗑️ Eliminar Plantilla"):
-                                        try:
-                                                os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
-                                                st.success(f"✅ Archivo {archivo_a_borrar} eliminado.")
-                                                except Exception as e:
-                                                st.error(f"Error al eliminar: {e}")
-                                else:
-                                st.info("Carpeta vacía. No hay modelos para borrar.")
+    with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS"):
+        pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_p_auto")
+        PIN_SECRETO = "0681"
 
+        if pin_ingresado == PIN_SECRETO:
+            maint_col1, maint_col2 = st.columns(2)
+            import os
+            
+            # --- COLUMNA 1: SUBIR ---
+            with maint_col1:
+                st.markdown("**📤 Subir Nuevo Modelo**")
+                opciones_destino = [
+                    "1_mensuras_catastrales", 
+                    "2_jurisdiccion_original", 
+                    "3_tribunales_de_tierras"
+                ]
+                destino = st.selectbox("Carpeta Destino:", opciones_destino)
+                archivo_subido = st.file_uploader("Elija el archivo .docx", type=["docx"])
+                
+                if st.button("💾 Guardar Plantilla"):
+                    if archivo_subido:
+                        ruta_dir = f"plantillas_maestras/{destino}"
+                        os.makedirs(ruta_dir, exist_ok=True)
+                        ruta_final = f"{ruta_dir}/{archivo_subido.name}"
+                        with open(ruta_final, "wb") as f:
+                            f.write(archivo_subido.getbuffer())
+                        st.success(f"✅ Documento guardado en {destino}. ¡Ya puede usarlo!")
+                    else:
+                        st.warning("⚠️ Primero seleccione un archivo.")
+
+            # --- COLUMNA 2: BORRAR ---
+            with maint_col2:
+                st.markdown("**🗑️ Borrar Modelo Existente**")
+                carpeta_borrar = st.selectbox("Buscar en Carpeta:", opciones_destino, key="del_dir")
+                ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
+                
+                archivos = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
+                
+                if archivos:
+                    archivo_a_borrar = st.selectbox("Seleccione el archivo a eliminar:", archivos)
+                    if st.button("🗑️ Eliminar Plantilla"):
+                        try:
+                            os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
+                            st.success(f"✅ Archivo {archivo_a_borrar} eliminado.")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Error al eliminar: {e}")
+                else:
+                    st.info("ℹ️ Carpeta vacía. No hay modelos para borrar.")
 
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
 # Aquí debajo empieza su def generar_documento_word...
