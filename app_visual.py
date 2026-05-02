@@ -325,14 +325,9 @@ def vista_plantillas():
     st.title("📄 Generador de Plantillas Automatizado")
     st.markdown("### *AboAgrim Pro: Documentación Dinámica*")
     
-    # --- 1. SUBIDA DE PLANTILLAS ---
-    def vista_plantillas():
-    st.title("📄 Generador de Plantillas Automatizado")
-    st.markdown("### *AboAgrim Pro: Documentación Dinámica*")
-    
     # --- 1. CARGA DE ARCHIVOS ---
     st.subheader("📤 Cargar Nuevos Modelos (.docx)")
-    archivos_subidos = st.file_uploader("Arrastre sus plantillas aquí", type=["docx"], accept_multiple_files=True)
+    archivos_subidos = st.file_uploader("Arrastre sus plantillas aquí", type=["docx"], accept_multiple_files=True, key="uploader_final")
     
     if archivos_subidos:
         import os
@@ -355,15 +350,14 @@ def vista_plantillas():
         if archivos_locales:
             col_del1, col_del2 = st.columns([3, 1])
             with col_del1:
-                archivo_a_borrar = st.selectbox("Seleccione para eliminar:", archivos_locales)
+                archivo_a_borrar = st.selectbox("Seleccione para eliminar:", archivos_locales, key="sb_borrar_final")
             with col_del2:
-                st.write("") # Espacio
+                st.write("") # Espacio para alinear con el selectbox
                 if st.button("🔥 Borrar", use_container_width=True):
                     os.remove(os.path.join("plantillas_maestras", archivo_a_borrar))
                     st.rerun()
         else:
             st.info("La bóveda está limpia.")
-
 
 # =====================================================================
 # MÓDULO 5: ALERTAS Y PLAZOS
