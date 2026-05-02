@@ -1345,17 +1345,17 @@ with st.form("formulario_fabricacion"):
                         import os
                         
                         with maint_col1:
-                        st.markdown("**📥 Subir Nuevo Modelo**")
-                        destino = st.selectbox("Carpeta Destino:", ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_tribunales_de_tierras"])
-                        archivo_subido = st.file_uploader("Elija el archivo .docx", type=["docx"])
+                                st.markdown("**📥 Subir Nuevo Modelo**")
+                                destino = st.selectbox("Carpeta Destino:", ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_tribunales_de_tierras"])
+                                archivo_subido = st.file_uploader("Elija el archivo .docx", type=["docx"])
                         
-                        if st.button("💾 Guardar Plantilla"):
-                        if archivo_subido:
-                        os.makedirs(f"plantillas_maestras/{destino}", exist_ok=True)
-                        ruta_guardado = f"plantillas_maestras/{destino}/{archivo_subido.name}"
-                        with open(ruta_guardado, "wb") as f:
-                        f.write(archivo_subido.getbuffer())
-                        st.success(f"✅ Documento guardado en {destino}. ¡Ya puede usarlo arriba!")
+                                if st.button("💾 Guardar Plantilla"):
+                                if archivo_subido:
+                                os.makedirs(f"plantillas_maestras/{destino}", exist_ok=True)
+                                ruta_guardado = f"plantillas_maestras/{destino}/{archivo_subido.name}"
+                                with open(ruta_guardado, "wb") as f:
+                                f.write(archivo_subido.getbuffer())
+                                st.success(f"✅ Documento guardado en {destino}. ¡Ya puede usarlo arriba!")
         
                         with maint_col2:
                         st.markdown("**🗑️ Borrar Modelo Existente**")
