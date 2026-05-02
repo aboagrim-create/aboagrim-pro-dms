@@ -389,18 +389,15 @@ def vista_registro_maestro():
     st.title("👤 Registro Maestro de Expedientes")
     st.markdown("### Control Integral de Actuaciones y Generales")
 
-    # --- 1. MEMORIA TEMPORAL (CRUD) ---
-    # Esto simula su base de datos mientras conectamos Supabase
+    # --- MEMORIA TEMPORAL ---
     if "db_expedientes" not in st.session_state:
         st.session_state["db_expedientes"] = {}
-    
     if "contador_registro" not in st.session_state:
         st.session_state["contador_registro"] = 1
 
     ano_actual = datetime.now().year
     expediente_nuevo_sugerido = f"{ano_actual}-{st.session_state['contador_registro']:04d}"
 
-    # --- 2. BARRA DE HERRAMIENTAS: CREAR / MODIFICAR / BORRAR ---
     modo_accion = st.radio("Acción a realizar:", ["✨ Nuevo Expediente", "✏️ Modificar Existente", "🗑️ Borrar Expediente"], horizontal=True)
 
     exp_seleccionado = None
@@ -410,23 +407,17 @@ def vista_registro_maestro():
             st.warning("No hay expedientes registrados aún.")
         else:
             exp_seleccionado = st.selectbox("Seleccione el Expediente:", lista_exps)
-            
             if modo_accion == "🗑️ Borrar Expediente" and exp_seleccionado:
                 if st.button("🚨 Confirmar Borrado", type="primary"):
                     del st.session_state["db_expedientes"][exp_seleccionado]
                     st.success(f"Expediente {exp_seleccionado} eliminado.")
                     st.rerun()
-                st.stop() # Detiene la pantalla aquí para no mostrar el formulario
+                st.stop()
 
-    # --- 3. FORMULARIO MAESTRO (CON PESTAÑAS) ---
     st.write("---")
-    
-    # Si estamos modificando, precargamos el número, si es nuevo, usamos el formato oficial
     exp_actual = exp_seleccionado if modo_accion == "✏️ Modificar Existente" else expediente_nuevo_sugerido
-    
     st.markdown(f"#### 📂 Trabajando en Expediente: **{exp_actual}**")
 
-    # Pestañas para organizar la gran cantidad de datos
     tab_base, tab_partes, tab_prof, tab_inmueble = st.tabs([
         "📄 Datos Base", "👥 Partes Involucradas", "⚖️ Profesionales", "📍 Inmueble y Título"
     ])
@@ -435,33 +426,12 @@ def vista_registro_maestro():
         st.subheader("Información del Trámite")
         c1, c2 = st.columns(2)
         with c1:
-            # --- CATÁLOGO MAESTRO DE TRÁMITES (Fusionado) ---
             lista_tramites = [
-                "--- MENSURAS CATASTRALES ---",
-                "Saneamiento",
-                "Deslinde",
-                "Subdivisión",
-                "Refundición",
-                "Urbanización",
-                "Constitución de Condominio",
-                "Modificación de Condominio",
-                "Actualización de Mensura",
-                "--- JURISDICCIÓN Y REGISTRO ---",
-                "Transferencia (Venta / Donación)",
-                "Determinación de Herederos",
-                "Litis sobre Derechos Registrados",
-                "Inscripción de Hipoteca / Privilegio",
-                "Cancelación de Hipoteca",
-                "Corrección de Error Material",
-                "Pérdida o Deterioro de Título",
-                "Inscripción de Litis / Oposición",
-                "Certificación de Estado Jurídico",
-                "--- OTROS ---",
-                "✍️ Otro (Especificar Nuevo)"
+                "--- MENSURAS CATASTRALES ---", "Saneamiento", "Deslinde", "Subdivisión", "Refundición", "Urbanización", "Constitución de Condominio", "Modificación de Condominio", "Actualización de Mensura",
+                "--- JURISDICCIÓN Y REGISTRO ---", "Transferencia (Venta / Donación)", "Determinación de Herederos", "Litis sobre Derechos Registrados", "Inscripción de Hipoteca / Privilegio", "Cancelación de Hipoteca", "Corrección de Error Material", "Pérdida o Deterioro de Título", "Inscripción de Litis / Oposición", "Certificación de Estado Jurídico",
+                "--- OTROS ---", "✍️ Otro (Especificar Nuevo)"
             ]
             tramite_sel = st.selectbox("Tipo de Trámite:", lista_tramites)
-            
-            # Validación para que no elijan los títulos separadores
             if tramite_sel.startswith("---"):
                 st.warning("☝️ Seleccione un trámite válido de la lista o elija 'Otro'.")
                 tramite_final = ""
@@ -475,11 +445,7 @@ def vista_registro_maestro():
             estado_exp = st.selectbox("Estado Actual:", ["Recepción", "En Proceso", "Observado", "Aprobado", "En Litigio", "Cerrado"])
 
     with tab_partes:
-        st.subheader("Generales de Ley de los Intervinientes")
-        st.info("Llene solo los roles que apliquen a este expediente.")
-        
-        # Agrupados por naturaleza para ahorrar espacio en pantalla
-        with st.expander("🟢 Parte Activa (Solicitantes / Demandantes / Compradores / Acreedores / Propietarios)"):
+        with st.expander("🟢 Parte Activa (Solicitantes / Demandantes / Compradores / Propietarios)"):
             tipo_activa = st.multiselect("Rol(es):", ["Solicitante", "Demandante", "Reclamante", "Comprador", "Acreedor", "Dueño/Propietario"])
             nombre_activa = st.text_input("Nombre / Razón Social (Parte Activa):")
             c_act1, c_act2 = st.columns(2)
@@ -497,20 +463,16 @@ def vista_registro_maestro():
             st.text_area("Domicilio Exacto (Parte Pasiva):", height=68)
 
     with tab_prof:
-        st.subheader("Representación Legal y Técnica")
-        
         with st.expander("📐 Técnica (Agrimensores)"):
             st.text_input("Nombre del Agrimensor:")
             c_ag1, c_ag2 = st.columns(2)
             c_ag1.text_input("Cédula (Agrimensor):")
             c_ag2.text_input("Codiatur (CODIA):")
-        
         with st.expander("⚖️ Legal (Abogados / Notarios)"):
             st.text_input("Nombre del Abogado / Notario:")
             c_ab1, c_ab2 = st.columns(2)
             c_ab1.text_input("Cédula (Legal):")
             c_ab2.text_input("Colegiatura (CARD / Matrícula Notarial):")
-            
         with st.expander("🤝 Mandatarios (Apoderados / Gestores / Autorizados)"):
             st.text_input("Nombre del Apoderado o Gestor:")
             c_ap1, c_ap2 = st.columns(2)
@@ -518,9 +480,6 @@ def vista_registro_maestro():
             c_ap2.text_input("Cédula del Apoderado:")
 
     with tab_inmueble:
-        st.subheader("Designación Catastral y Registral")
-        st.markdown("**Datos del Título / Constancia Anotada / Acto**")
-        
         c_inm1, c_inm2, c_inm3 = st.columns(3)
         with c_inm1:
             st.text_input("Provincia:")
@@ -539,30 +498,21 @@ def vista_registro_maestro():
         c_sup1.text_input("Superficie Total (Metros Cuadrados):")
         c_sup2.text_input("Designación Posicional:")
         
-        st.markdown("**Linderos Según Plano / Título**")
         c_lin1, c_lin2, c_lin3, c_lin4 = st.columns(4)
         c_lin1.text_input("Norte:")
         c_lin2.text_input("Sur:")
         c_lin3.text_input("Este:")
         c_lin4.text_input("Oeste:")
 
-    # --- 4. BOTÓN DE GUARDADO (CRUD) ---
     st.write("---")
     if st.button("💾 GUARDAR / ACTUALIZAR EXPEDIENTE", type="primary", use_container_width=True):
         if not tramite_final:
             st.error("Debe especificar el tipo de trámite.")
         else:
-            # Aquí guardamos los datos clave en nuestra memoria temporal
-            st.session_state["db_expedientes"][exp_actual] = {
-                "tramite": tramite_final,
-                "jurisdiccion": jurisdiccion,
-                "estado": estado_exp
-            }
-            
+            st.session_state["db_expedientes"][exp_actual] = {"tramite": tramite_final, "jurisdiccion": jurisdiccion, "estado": estado_exp}
             if modo_accion == "✨ Nuevo Expediente":
-                st.session_state["contador_registro"] += 1 # Avanzamos el contador 2026-0002...
-                
-            st.success(f"✅ ¡Expediente {exp_actual} guardado exitosamente con todas sus generales!")
+                st.session_state["contador_registro"] += 1
+            st.success(f"✅ ¡Expediente {exp_actual} guardado exitosamente!")
             st.rerun()
 # =====================================================================
 # MÓDULO 5: ALERTAS Y PLAZOS
