@@ -235,7 +235,10 @@ def generar_paquete_documentos(datos_formulario, rutas_plantillas):
 # MÓDULO 1: MANDO CENTRAL
 # =====================================================================
 def vista_mando():
-    # --- ENCABEZADO DE LA FIRMA ---
+    from datetime import datetime
+    import os
+
+    # --- 1. ENCABEZADO DE LA FIRMA ---
     st.markdown("""
         <div style='background:linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%); padding:35px 30px; border-radius:12px; color:white; border-left:6px solid #FBBF24;'>
             <h1 style='margin:0; font-size: 2.8rem; font-weight: 800;'>AboAgrim Pro DMS ⚖️📐</h1>
@@ -246,7 +249,15 @@ def vista_mando():
     """, unsafe_allow_html=True)
     st.write("")
     
-    # --- FORMULARIO MAESTRO ---
+    # --- 2. GENERADOR AUTOMÁTICO DE EXPEDIENTES ---
+    ano_actual = datetime.now().year
+    if "contador_mando" not in st.session_state:
+        st.session_state["contador_mando"] = 1
+    
+    # Formato oficial: Ej. 2026-0001
+    expediente_sugerido = f"{ano_actual}-{st.session_state['contador_mando']:04d}"
+
+    # --- 3. FORMULARIO MAESTRO DIVIDIDO POR SECCIONES ---
     st.markdown("### 📝 Formulario de Actuaciones y Forja de Documentos")
     organo_ji = st.selectbox("⚖️ Órgano de la Jurisdicción:", ["Mensuras Catastrales", "Jurisdicción Original", "Registro de Títulos"])
     
@@ -256,22 +267,33 @@ def vista_mando():
         "Registro de Títulos": "3_registro_titulos"
     }
 
-    with st.container(border=True):
+    # Sección A: Roles y Cliente
+    with st.expander("👤 1. Datos Generales y Roles", expanded=True):
         col1, col2 = st.columns(2)
         with col1:
-            numero_expediente = st.text_input("📁 Número de Expediente:", value="2026-0001")
-            nombre_cliente = st.text_input("👤 Reclamante / Cliente:")
-            nombre_tramite = st.text_input("📄 Tipo de Trámite:")
+            numero_expediente = st.text_input("📁 Número de Expediente:", value=expediente_sugerido)
+            nombre_cliente = st.text_input("👤 Reclamante / Propietario:")
+            cedula_cliente = st.text_input("🪪 Cédula / RNC:")
+            nombre_tramite = st.text_input("📄 Tipo de Trámite (Ej. Deslinde):")
         with col2:
             nombre_agrimensor = st.text_input("📐 Agrimensor a Cargo:")
             nombre_abogado = st.text_input("💼 Abogado Apoderado:")
             nombre_notario = st.text_input("✒️ Notario Público:")
 
+    # Sección B: Inmueble (NUEVO)
+    with st.expander("📍 2. Designación Catastral (Inmueble)", expanded=True):
+        col3, col4, col5 = st.columns(3)
+        with col3:
+            parcela = st.text_input("Parcela No.:")
+        with col4:
+            solar = st.text_input("Solar No.:")
+        with col5:
+            dc = st.text_input("Distrito Catastral (DC):")
+        provincia = st.text_input("Ubicación (Provincia/Municipio):")
+
     st.write("---")
 
-    # --- MOTOR DE FABRICACIÓN ---
-    import os
-    from datetime import datetime
+    # --- 4. MOTOR DE FABRICACIÓN ---
     ruta_carpeta = os.path.join("plantillas_maestras", mapping_carpetas[organo_ji])
     
     if os.path.exists(ruta_carpeta):
@@ -282,34 +304,33 @@ def vista_mando():
             if not plantillas_elegidas:
                 st.warning("⚠️ Seleccione al menos una plantilla.")
             else:
-                # 1. SINCRONIZACIÓN CON SUPABASE (Restaurado)
-                try:
-                    datos_nube = {
-                        "expediente_ji": numero_expediente,
-                        "nombre_propietario": nombre_cliente,
-                        "tramite_tipo": nombre_tramite,
-                        "jurisdiccion": organo_ji,
-                        "estatus": "Registrado",
-                        "fecha_registro": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    }
-                    # Descomente la línea de abajo si Supabase ya está conectado
-                    # supabase.table("expedientes_maestros").insert(datos_nube).execute()
-                    st.info("☁️ Registro preparado para la Nube (Supabase).")
-                except Exception as e:
-                    st.error(f"Error de conexión con la nube: {e}")
-
-                # 2. FORJA DE DOCUMENTOS WORD
+                # El Mega-Diccionario ahora tiene TODO para sus plantillas Word
                 datos_para_word = {
                     "expediente": numero_expediente,
                     "cliente": nombre_cliente,
+                    "cedula": cedula_cliente,
                     "tramite": nombre_tramite,
                     "organo": organo_ji,
                     "agrimensor": nombre_agrimensor,
                     "abogado": nombre_abogado,
                     "notario": nombre_notario,
+                    "parcela": parcela,
+                    "solar": solar,
+                    "dc": dc,
+                    "provincia": provincia,
                     "fecha_hoy": datetime.now().strftime("%d/%m/%Y")
                 }
                 
+                # 1. Registro en Supabase (Silencioso para no interrumpir)
+                try:
+                    # Descomente cuando supabase esté activo
+                    # supabase.table("expedientes_maestros").insert({"expediente_ji": numero_expediente, "nombre_propietario": nombre_cliente, "jurisdiccion": organo_ji}).execute()
+                    pass
+                except Exception:
+                    pass
+
+                # 2. Generación de Archivos
+                archivos_generados = 0
                 for p in plantillas_elegidas:
                     buffer = generar_documento_word(os.path.join(ruta_carpeta, p), datos_para_word)
                     if buffer:
@@ -319,7 +340,12 @@ def vista_mando():
                             file_name=f"{numero_expediente}_{p}",
                             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                         )
-                st.success(f"✅ ¡Éxito Total! Se forjaron {len(plantillas_elegidas)} documentos.")
+                        archivos_generados += 1
+                
+                if archivos_generados > 0:
+                    st.success(f"✅ ¡Éxito Total! Se forjaron {archivos_generados} documentos listos para imprimir.")
+                    # Aumentamos el contador para el próximo expediente automáticamente
+                    st.session_state["contador_mando"] += 1
     else:
         st.info("ℹ️ La bóveda está vacía. Cargue sus modelos en 'Plantillas Auto'.")
 
