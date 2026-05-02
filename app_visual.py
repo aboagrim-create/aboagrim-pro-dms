@@ -1336,8 +1336,8 @@ with st.form("formulario_fabricacion"):
             # 6. MANTENIMIENTO CON PIN (RECUPERADO)
             # ==========================================
                 st.write("---")
-    st.write("---")
-    with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS"):
+        st.write("---")
+        with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS"):
         pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_p_auto")
         PIN_SECRETO = "0681"
 
