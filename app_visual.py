@@ -26,7 +26,7 @@ def guardar_expediente_en_drive(ruta_archivo_original, nombre_carpeta_expediente
     import os
     
     # Ruta directa a la sede en su disco local
-    ruta_sede_local = r"C:\AboAgrim Pro Oficial\Expedientes_AboAgrim"
+    ruta_sede_local = "Expedientes_AboAgrim"
 
     try:
         # Creamos la ruta final con el nombre del expediente
