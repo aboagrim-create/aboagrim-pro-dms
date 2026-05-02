@@ -8,6 +8,16 @@ import zipfile
 from docxtpl import DocxTemplate
 import os
 import shutil
+# --- OCULTAR ICONOS Y MENÚ DE STREAMLIT PARA UN DISEÑO LIMPIO ---
+    ocultar_iconos = """
+        <style>
+        #MainMenu {visibility: hidden;}
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
+        .stDeployButton {display:none;}
+        </style>
+        """
+    st.markdown(ocultar_iconos, unsafe_allow_html=True)
 # === DATOS MAESTROS DE LA FIRMA ABOAGRIM ===
 PRESIDENTE_FIRMA = "Lic. Jhonny Matos, M.A."
 DIRECCION_FIRMA = "Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Centro Ciudad, Santiago."
