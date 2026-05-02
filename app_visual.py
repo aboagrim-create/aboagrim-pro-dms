@@ -2,100 +2,47 @@
 # INTERFAZ GRÁFICA Y SISTEMA EXPERTO LEGAL JI (EDICIÓN PREMIUM FULL)
 # Sistema: AboAgrim Pro DMS 
 # =====================================================================
+from database import db as supabase
 import streamlit as st
 import zipfile
 from docxtpl import DocxTemplate
 import os
 import shutil
-
-# --- MOTOR DE GUARDADO DUAL (NUEVO BLINDADO) ---
-def guardar_expediente_en_drive(ruta_archivo_original, nombre_carpeta_expediente):
-    """Copia un archivo o carpeta hacia los dos Google Drives configurados en el disco duro."""
-    import os
-    import shutil
-    import json
-
-    archivo_rutas = "config_rutas.json"
-    ruta_ab = ""
-    ruta_per = ""
-
-    # 1. Leer las rutas desde nuestro archivo blindado
-    if os.path.exists(archivo_rutas):
-        try:
-            with open(archivo_rutas, "r") as f:
-                datos = json.load(f)
-                ruta_ab = datos.get("corporativa", "")
-                ruta_per = datos.get("personal", "")
-        except:
-            pass
-
-    try:
-        # 2. Guardar en la Cuenta Corporativa
-        if ruta_ab and os.path.exists(ruta_ab):
-            destino_ab = os.path.join(ruta_ab, nombre_carpeta_expediente)
-            os.makedirs(destino_ab, exist_ok=True)
-            shutil.copy2(ruta_archivo_original, destino_ab)
-            
-        # 3. Guardar en la Cuenta Personal
-        if ruta_per and os.path.exists(ruta_per):
-            destino_per = os.path.join(ruta_per, nombre_carpeta_expediente)
-            os.makedirs(destino_per, exist_ok=True)
-            shutil.copy2(ruta_archivo_original, destino_per)
-            
-        return True
-    except Exception as e:
-        return False
-# ... arriba están los import ...
-# --- NAVEGACIÓN LATERAL ---
-with st.sidebar:
-    st.image("logo_aboagrim.jpg", width=180)
-    st.title("AboAgrim Pro")
-    st.write("**Lic. Jhonny Matos. M.A.**")
-    st.write("Presidente")
-    st.divider()
-
-# --- DATOS OFICIALES DE LA FIRMA ABOAGRIM ---
-NOMBRE_FIRMA = "AboAgrim - Servicios Legales y de Agrimensura"
-DIRECCION_FIRMA = "Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Centro Ciudad, Santiago, R.D."
+# === DATOS MAESTROS DE LA FIRMA ABOAGRIM ===
+PRESIDENTE_FIRMA = "Lic. Jhonny Matos, M.A."
+DIRECCION_FIRMA = "Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Centro Ciudad, Santiago."
 TELEFONOS_FIRMA = "829-826-5888 / 809-691-3333"
 CORREO_FIRMA = "aboagrim@gmail.com"
-PRESIDENTE_FIRMA = "Lic. Jhonny Matos, M.A."
+# --- INICIALIZACIÓN DE MEMORIA DEL SISTEMA ---
+if "bandeja_descargas" not in st.session_state:
+    st.session_state["bandeja_descargas"] = []
     
-# =========================================================
-# MOTOR DE ESTILOS VISUALES (Se ejecuta siempre al inicio)
-# =========================================================
-if "tema_color" in st.session_state:
-    # Definimos si el fondo es oscuro o claro
-    bg_color = "#0e1117" if st.session_state["tema_fondo"] == "Oscuro Profundo" else "#ffffff"
-    text_color = "#ffffff" if st.session_state["tema_fondo"] == "Oscuro Profundo" else "#000000"
+if "plantillas_cargadas" not in st.session_state:
+    st.session_state["plantillas_cargadas"] = []
+
+# --- MOTOR DE GUARDADO LOCAL ---
+def guardar_expediente_en_drive(ruta_archivo_original, nombre_carpeta_expediente):
+    import shutil
+    import os
     
-    # Inyectamos el diseño personalizado en toda la aplicación
-    custom_css = f"""
-    <style>
-        /* Cambiar color de fondo principal y texto */
-        .stApp {{
-            background-color: {bg_color};
-            color: {text_color};
-            font-family: {st.session_state['tema_fuente']} !important;
-        }}
-        /* Cambiar el color de todos los Títulos */
-        h1, h2, h3, h4, h5, h6 {{
-            color: {st.session_state['tema_color']} !important;
-            font-family: {st.session_state['tema_fuente']} !important;
-        }}
-        /* Cambiar el color de los botones principales */
-        .stButton>button[kind="primary"] {{
-            background-color: {st.session_state['tema_color']};
-            border-color: {st.session_state['tema_color']};
-            color: white;
-        }}
-        /* Cambiar el color del texto en los inputs si el fondo es blanco */
-        .stTextInput>div>div>input {{
-            color: {text_color};
-        }}
-    </style>
-    """
-    st.markdown(custom_css, unsafe_allow_html=True)
+    # Ruta directa a la sede en su disco local
+    ruta_sede_local = r"C:\AboAgrim Pro Oficial\Expedientes_AboAgrim"
+
+    try:
+        # Creamos la ruta final con el nombre del expediente
+        destino_final = os.path.join(ruta_sede_local, nombre_carpeta_expediente)
+        
+        # Nos aseguramos de que la carpeta exista
+        os.makedirs(destino_final, exist_ok=True)
+        
+        # Copiamos el documento fabricado a su bóveda
+        shutil.copy(ruta_archivo_original, destino_final)
+        
+        return True  # ¡Esto enciende el cuadro verde!
+
+    except Exception as e:
+        print(f"Error técnico al guardar en disco: {e}")
+        return False
 
 
 # ==========================================
@@ -959,108 +906,117 @@ Por medio de la presente, AboAgrim, representada por el Lic. Jhonny Matos, M.A.,
                 """
                 st.components.v1.html(doc_html, height=600, scrolling=True)
 def vista_archivo_digital():
+    import json
+    import os
+    
     st.title("📁 Archivo Digital | AboAgrim Pro")
     st.subheader("Bóveda de Expedientes y Anexos Técnicos")
     st.divider()
 
-    # --- 1. BUSCADOR DE EXPEDIENTES ---
     st.markdown("### 🔍 Localizador de Carpetas")
-    
+
     try:
-        # Consulta a Supabase para obtener los expedientes activos
+        # 1. Consulta a Supabase para obtener clientes
         res_exp = supabase.table("expedientes_maestros").select("expediente, nombre_propietario").execute()
         lista_expedientes = [f"{e['expediente']} - {e['nombre_propietario']}" for e in res_exp.data] if res_exp.data else []
-        
+
         if not lista_expedientes:
             st.info("📌 No hay expedientes registrados. Vaya al 'Registro Maestro' para crear el primer caso.")
             return
 
-        # Selector desplegable (diseño limpio sin exceso de botones)
+        # 2. Selector desplegable
         expediente_seleccionado = st.selectbox("Seleccione el Expediente a consultar:", ["Seleccione..."] + lista_expedientes)
-        
+
         if expediente_seleccionado == "Seleccione...":
             return # Pausa la pantalla hasta que elija un cliente
 
+        # 3. Extraemos el código
         codigo_exp = expediente_seleccionado.split(" - ")[0]
-        st.success(f"📂 Carpeta Abierta: **{expediente_seleccionado}**")
+        st.success(f"📁 Expediente Activo: **{expediente_seleccionado}**")
+
+        # --- MOTOR PARA ABRIR LA CARPETA FÍSICA ---
+        archivo_memoria = "memoria_expedientes.json"
+        if os.path.exists(archivo_memoria):
+            with open(archivo_memoria, "r") as f:
+                memoria = json.load(f)
+                
+            if codigo_exp in memoria:
+                datos = memoria[codigo_exp]
+                ruta_sede = r"C:\AboAgrim Pro Oficial\Expedientes_AboAgrim"
+                ruta_fisica = os.path.join(ruta_sede, datos.get("carpeta_relativa", datos.get("carpeta_relative", "")))
+                
+                if st.button("📂 ABRIR ARCHIVERO DIGITAL LOCAL", type="primary"):
+                    try:
+                        os.startfile(ruta_fisica)
+                    except Exception as e:
+                        st.error(f"No se encontró la ruta física. Error: {e}")
+            else:
+                st.warning("Aún no se han fabricado documentos maestros locales para este expediente.")
+
+        st.write("---")
+        
+        # --- 4. GESTIÓN DEL EXPEDIENTE (PESTAÑAS) ---
+        tab_visor, tab_carga = st.tabs(["📄 Visor de Documentos", "📤 Digitalizar y Subir"])
+        
+        with tab_visor:
+            st.markdown(f"### 📄 Inventario del Expediente {codigo_exp}")
+            
+            # LECTOR INTELIGENTE DE ARCHIVOS FÍSICOS
+            if 'ruta_fisica' in locals() and os.path.exists(ruta_fisica):
+                archivos = os.listdir(ruta_fisica)
+                # Filtramos los archivos temporales invisibles de Word
+                archivos_validos = [f for f in archivos if not f.startswith("~")] 
+                
+                if archivos_validos:
+                    st.success(f"Se encontraron **{len(archivos_validos)}** documentos en la bóveda:")
+                    for archivo in archivos_validos:
+                        if archivo.endswith(".docx"):
+                            st.markdown(f"📝 **Word:** `{archivo}`")
+                        elif archivo.endswith(".pdf"):
+                            st.markdown(f"📕 **PDF:** `{archivo}`")
+                        elif archivo.endswith((".jpg", ".png", ".jpeg")):
+                            st.markdown(f"🖼️ **Imagen/Plano:** `{archivo}`")
+                        else:
+                            st.markdown(f"📄 `{archivo}`")
+                else:
+                    st.info("La bóveda está creada, pero aún no contiene documentos.")
+            else:
+                st.warning("Debe fabricar los documentos maestros primero para que la carpeta exista.")
+            
+        with tab_carga:
+            st.markdown(f"### 📤 Ingreso de Nuevos Documentos")
+            st.write(f"Clasifique y suba los escaneos directamente a la bóveda del cliente **{codigo_exp}**.")
+            
+            if 'ruta_fisica' in locals() and ruta_fisica:
+                os.makedirs(ruta_fisica, exist_ok=True) 
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    clasificacion = st.selectbox("Clasificación del Documento:", ["Certificado de Título", "Plano Mensura", "Contrato Original", "Poder de Representación", "Otro Anexo"])
+                    descripcion = st.text_input("Breve descripción (Opcional):")
+                with col2:
+                    archivo_subido = st.file_uploader("Seleccione el archivo escaneado (PDF, JPG)", type=["pdf", "jpg", "png", "jpeg"])
+                
+                if st.button("💾 Encriptar y Guardar en Bóveda", type="primary", use_container_width=True):
+                    if archivo_subido is not None:
+                        try:
+                            nombre_seguro = archivo_subido.name.replace(" ", "_")
+                            nombre_final = f"{clasificacion}_{nombre_seguro}"
+                            ruta_guardado = os.path.join(ruta_fisica, nombre_final)
+                            
+                            with open(ruta_guardado, "wb") as f:
+                                f.write(archivo_subido.getbuffer())
+                                
+                            st.success(f"✅ Documento guardado exitosamente en la carpeta de **{codigo_exp}**.")
+                        except Exception as e:
+                            st.error(f"Error técnico al guardar en el disco: {e}")
+                    else:
+                        st.warning("⚠️ Por favor, seleccione un archivo antes de presionar guardar.")
+            else:
+                st.error("⚠️ No se puede subir el archivo. Primero debe fabricar los documentos maestros.")
 
     except Exception as e:
-        st.error(f"Detalle técnico del error: {e}")
-        return
-
-    st.write("---")
-
-    # --- 2. GESTIÓN DEL EXPEDIENTE (PESTAÑAS) ---
-    tab_visor, tab_carga = st.tabs(["📄 Visor de Documentos", "📤 Digitalizar y Subir"])
-
-    # PESTAÑA A: VISOR ORGANIZADO
-    with tab_visor:
-        st.markdown(f"### 📑 Inventario del Expediente {codigo_exp}")
-        
-        # Filtro de vista rápida
-        filtro_vista = st.radio(
-            "Filtrar por departamento:", 
-            ["Todo", "⚖️ Legal (Títulos y Actos)", "🗺️ Agrimensura (Planos y Coordenadas)", "🆔 Anexos"], 
-            horizontal=True
-        )
-
-        # Aquí simulamos la lectura de archivos desde su "Storage" en Supabase
-        st.info(f"Conectando con el servidor Cloud para recuperar archivos de {codigo_exp}...")
-        
-        # Cuadrícula de documentos (Diseño Ejecutivo)
-        col_doc1, col_doc2 = st.columns(2)
-        
-        with col_doc1:
-            st.markdown("#### 🗺️ Área Técnica")
-            with st.expander("Planos y Mensura", expanded=True):
-                st.caption("No hay archivos cargados en: Planos Generales.")
-                st.caption("No hay archivos cargados en: Tablas de Coordenadas.")
-                st.caption("No hay archivos cargados en: Datos Parcelarios.")
-
-        with col_doc2:
-            st.markdown("#### ⚖️ Área Legal")
-            with st.expander("Títulos y Actos", expanded=True):
-                st.caption("No hay archivos cargados en: Certificados de Título.")
-                st.caption("No hay archivos cargados en: Actos de Venta/Poderes.")
-                st.caption("No hay archivos cargados en: Cédulas de Identidad.")
-
-    # PESTAÑA B: ZONA DE CARGA
-    with tab_carga:
-        st.markdown("### 📥 Ingreso de Nuevos Documentos")
-        st.write("Clasifique y suba los escaneos directamente a la bóveda del cliente.")
-        
-        with st.container(border=True):
-            col_form1, col_form2 = st.columns(2)
-            
-            with col_form1:
-                # Categorías técnicas y legales detalladas
-                categoria_doc = st.selectbox(
-                    "Clasificación del Documento:", 
-                    [
-                        "Plano General Catastral",
-                        "Tabla de Coordenadas", 
-                        "Datos Parcelarios (Derrotero)",
-                        "Certificado de Título", 
-                        "Acto de Venta / Contrato", 
-                        "Poder de Representación",
-                        "Cédula / Identificación",
-                        "Resolución del Tribunal"
-                    ]
-                )
-                descripcion_doc = st.text_input("Breve descripción (Opcional):", placeholder="Ej: Plano aprobado marzo 2026")
-                
-            with col_form2:
-                archivo_pdf = st.file_uploader("Seleccione el archivo escaneado (PDF, JPG)", type=["pdf", "jpg", "png"])
-            
-            if st.button("💾 Encriptar y Guardar en Bóveda", use_container_width=True, type="primary"):
-                if archivo_pdf:
-                    # Lógica futura para: supabase.storage.from_('boveda').upload(f"{codigo_exp}/{archivo_pdf.name}")
-                    st.toast(f"Archivo '{archivo_pdf.name}' procesado.", icon="✅")
-                    st.success(f"El documento se ha guardado exitosamente bajo la categoría '{categoria_doc}' en el expediente {codigo_exp}.")
-                else:
-                    st.warning("⚠️ Debe adjuntar un archivo antes de proceder a guardar.")
-        
-        
+        st.error(f"Detalle técnico del error general: {e}")
 def vista_plantillas_auto():
     st.title("📄 Fábrica de Documentos AboAgrim Pro")
     st.subheader("Módulo de Control Técnico y Legal JI")
@@ -1091,7 +1047,7 @@ def vista_plantillas_auto():
         ]
     }
 
-    try:
+    if True:
         res = supabase.table("expedientes_maestros").select("id, nombre_propietario").order("id", desc=True).execute()
         opciones_exp = {f"RES-{e['id']} | {e['nombre_propietario']}": e['id'] for e in res.data} if res.data else {"Ninguno": None}
 
@@ -1263,144 +1219,147 @@ def vista_plantillas_auto():
             tramite_nombre = st.text_input("Nombre del Trámite:", placeholder="Ej: Deslinde")
 
         if st.button("🚀 FABRICAR DOCUMENTOS MAESTROS", type="primary", use_container_width=True):
-            if not plantillas_elegidas:
-                st.error("⚠️ Por favor, seleccione al menos un archivo de plantilla arriba antes de fabricar.")
-            else:
-                # 1. Empaquetamos los datos
-                diccionario_datos = {
-                    "expediente_ji": ji_exp_ji if 'ji_exp_ji' in locals() else "",
-                    "ubicacion": ji_ubicacion if 'ji_ubicacion' in locals() else "Santiago",
-                    "area": ji_area if 'ji_area' in locals() else "",
-                    "coordenadas": ji_coordenadas if 'ji_coordenadas' in locals() else "",
-                    "demandante": ji_demandante if 'ji_demandante' in locals() else "",
-                    "demandado": ji_demandado if 'ji_demandado' in locals() else ""
-                }
-                
-                # 2. Creamos una "Bandeja de salida" en la memoria del sistema
-                st.session_state["bandeja_descargas"] = []
-                
-                # 3. Forjamos todos los documentos y los guardamos en la bandeja
-                for plantilla in plantillas_elegidas:
-                    ruta_exacta = f"plantillas_maestras/{plantilla}"
-                    buffer = generar_documento_word(ruta_exacta, diccionario_datos)
-                    
-                    if buffer:
-                        nombre_limpio = plantilla.split('/')[-1]
-                        st.session_state["bandeja_descargas"].append({
-                            "nombre": nombre_limpio,
-                            "archivo": buffer
-                        })
+                    if not plantillas_elegidas:
+                        st.error("⚠️ Por favor, seleccione al menos un archivo de plantilla arriba antes de fabricar.")
+                    else:
+                        try:
+                            import os
+                            import json
+                            
+                            # --- 1. PREPARACIÓN DE LA BÓVEDA FÍSICA ---
+                            cli_limpio = cliente_nombre.replace("/", "-").strip() if cliente_nombre else "Sin_Cliente"
+                            tram_limpio = tramite_nombre.replace("/", "-").strip() if tramite_nombre else "Sin_Tramite"
+                            exp_limpio = expediente_num.replace("/", "-").strip()
+                            
+                            nombre_carpeta = f"{organo_ji}_{exp_limpio} - {cli_limpio} - {tram_limpio}"
+                            
+                            ruta_sede = r"C:\AboAgrim Pro Oficial\Expedientes_AboAgrim"
+                            ruta_fisica = os.path.join(ruta_sede, nombre_carpeta)
+                            
+                            os.makedirs(ruta_fisica, exist_ok=True)
 
-        # 4. MOSTRAR LOS BOTONES (Fuera del botón rojo para que no desparezcan)
-
-        if "bandeja_descargas" in st.session_state and len(st.session_state["bandeja_descargas"]) > 0:
-            st.write("---")
-            st.success("✅ ¡Fábrica terminada! Sus documentos están listos en la bandeja:")
-    
-            # --- NUEVO SISTEMA DIRECTO Y MEMORIA DE EXPEDIENTES ---
-        import json
-        import os
-
-        # 1. Diseñamos la ruta maestra de las carpetas
-        nombre_carpeta_maestra = f"{organo_ji}/{expediente_num} - {cliente_nombre} - {tramite_nombre}"
-
-        # 2. CEREBRO: Guardamos la memoria del expediente para el futuro
-        archivo_memoria = "memoria_expedientes.json"
-        memoria = {}
-        if os.path.exists(archivo_memoria):
-            try:
-                with open(archivo_memoria, "r") as f:
-                    memoria = json.load(f)
-            except:
-                pass
-        
-        # Inyectamos los datos del cliente al número de expediente
-        memoria[expediente_num] = {
-            "cliente": cliente_nombre,
-            "tramite": tramite_nombre,
-            "organo": organo_ji,
-            "carpeta_relativa": nombre_carpeta_maestra
-        }
-        with open(archivo_memoria, "w") as f:
-            json.dump(memoria, f)
-
-        # 3. GATILLO DIRECTO A DRIVE (Crea carpetas automáticamente)
-        ruta_ab, ruta_per = "", ""
-        if os.path.exists("config_rutas.json"):
-            try:
-                with open("config_rutas.json", "r") as f:
-                    datos = json.load(f)
-                    ruta_ab = datos.get("corporativa", "")
-                    ruta_per = datos.get("personal", "")
-            except:
-                pass
-
-        archivos_guardados = 0
-        for doc in st.session_state["bandeja_descargas"]:
-            # Guardar en la PC Corporativa (Crea las carpetas MC > 2026-0001...)
-            if ruta_ab and os.path.exists(ruta_ab):
-                destino_ab = os.path.join(ruta_ab, nombre_carpeta_maestra)
-                os.makedirs(destino_ab, exist_ok=True) 
-                with open(os.path.join(destino_ab, f"AboAgrim_{doc['nombre']}"), "wb") as f_out:
-                    f_out.write(doc['archivo'].getvalue())
-                archivos_guardados += 1
-                
-            # Guardar en la PC Personal
-            if ruta_per and os.path.exists(ruta_per):
-                destino_per = os.path.join(ruta_per, nombre_carpeta_maestra)
-                os.makedirs(destino_per, exist_ok=True)
-                with open(os.path.join(destino_per, f"AboAgrim_{doc['nombre']}"), "wb") as f_out:
-                    f_out.write(doc['archivo'].getvalue())
-        
-        # 4. Confirmación en pantalla
-        st.write("---")
-        if archivos_guardados > 0:
-            st.success(f"📂 ¡Expediente {expediente_num} creado y guardado con éxito directamente en sus carpetas de Drive!")
-        else:
-            st.warning("⚠️ Ojo: Los documentos se fabricaron, pero el sistema no pudo depositarlos en Drive. (Verifique que esté ejecutando el programa desde su Mini PC local y no desde la nube).")
-               
-    except Exception as e:
-        st.error(f"❌ Error al fabricar: {e}")
+                            # --- 2. EMPAQUETADO DE DATOS ---
+                            diccionario_datos = {
+                                "expediente_ji": ji_exp_ji if 'ji_exp_ji' in locals() else "",
+                                "ubicacion": ji_ubicacion if 'ji_ubicacion' in locals() else "Santiago",
+                                "area": ji_area if 'ji_area' in locals() else "",
+                                "coordenadas": ji_coordenadas if 'ji_coordenadas' in locals() else "",
+                                "demandante": ji_demandante if 'ji_demandante' in locals() else "",
+                                "demandado": ji_demandado if 'ji_demandado' in locals() else "",
+                                "cliente_nombre": cli_limpio,
+                                "tramite_nombre": tram_limpio,
+                                "organo_ji": organo_ji,
+                                "expediente_num": exp_limpio
+                                
+                            }
+                    # --- SINCRONIZACIÓN CON LA NUBE (SUPABASE) ---
+                            try:
+                                import datetime
+                                
+                                # Datos listos para su tabla "Maestros de Expedientes"
+                                datos_nube = {
+                                    "expediente_ji": expediente_num,
+                                    "nombre_propietario": cliente_nombre,
+                                    "tramite_tipo": tramite_nombre,
+                                    "jurisdiccion": organo_ji,
+                                    "estatus": "Registrado",
+                                    "fecha_registro": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                                }
+                                
+                                # Subida automática a Supabase
+                                res = supabase.table("expedientes_maestros").insert(datos_nube).execute()
+                                
+                                if res.data:
+                                    st.info("☁️ Expediente sincronizado con la nube exitosamente.")
+                                
+                            except Exception as e:
+                                st.error(f"❌ Error de conexión con la nube: {e}")
+                            # --- 3. FORJA Y GUARDADO ---
+                            st.session_state["bandeja_descargas"] = []
+                            archivos_creados = 0
+                            
+                            for plantilla in plantillas_elegidas:
+                                ruta_exacta = f"plantillas_maestras/{plantilla}"
+                                buffer = generar_documento_word(ruta_exacta, diccionario_datos)
+                                
+                                if buffer:
+                                    nombre_limpio = plantilla.split('/')[-1]
+                                    nombre_final_word = f"{organo_ji}_{nombre_limpio}"
+                                    ruta_guardado_word = os.path.join(ruta_fisica, nombre_final_word)
+                                    
+                                    with open(ruta_guardado_word, "wb") as f:
+                                        f.write(buffer.getvalue())
+                                        
+                                    st.session_state["bandeja_descargas"].append({
+                                        "nombre": nombre_final_word,
+                                        "buffer": buffer
+                                    })
+                                    archivos_creados += 1
+                            
+                            # --- 4. CONEXIÓN CON EL ARCHIVO DIGITAL ---
+                            if archivos_creados > 0:
+                                archivo_memoria = "memoria_expedientes.json"
+                                memoria = {}
+                                if os.path.exists(archivo_memoria):
+                                    with open(archivo_memoria, "r") as f:
+                                        memoria = json.load(f)
+                                
+                                memoria[exp_limpio] = {
+                                    "carpeta_relativa": nombre_carpeta,
+                                    "organo": organo_ji,
+                                    "cliente": cli_limpio
+                                }
+                                
+                                with open(archivo_memoria, "w") as f:
+                                    json.dump(memoria, f, indent=4)
+                                    
+                                st.success(f"✅ ¡Éxito Total! Se forjaron {archivos_creados} documentos y se guardaron en la bóveda local bajo: {nombre_carpeta}")
+                            else:
+                                st.error("❌ Ocurrió un error al forjar los documentos. Verifique las plantillas.")
+                                
+                        except Exception as e:
+                            st.error(f"❌ Error crítico al fabricar: {e}")
     # ==========================================
     # 6. MANTENIMIENTO CON PIN (RECUPERADO)
     # ==========================================
     st.write("---")
     with st.expander("🛠️ ADMINISTRAR ARCHIVOS DE PLANTILLAS"):
-        pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_p_auto")
-        PIN_SECRETO = "0681"
-        
-        if pin_ingresado == PIN_SECRETO:
+            pin_ingresado = st.text_input("🔑 PIN de Seguridad:", type="password", key="pin_p_auto")
+            PIN_SECRETO = "0681"
+
+    if pin_ingresado == PIN_SECRETO:
             maint_col1, maint_col2 = st.columns(2)
             import os
             
             with maint_col1:
                 st.markdown("**📥 Subir Nuevo Modelo**")
-                destino = st.radio("Carpeta Destino:", ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"])
+                destino = st.selectbox("Carpeta Destino:", ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_tribunales_de_tierras"])
                 archivo_subido = st.file_uploader("Elija el archivo .docx", type=["docx"])
                 
                 if st.button("💾 Guardar Plantilla"):
                     if archivo_subido:
                         os.makedirs(f"plantillas_maestras/{destino}", exist_ok=True)
-                        with open(f"plantillas_maestras/{destino}/{archivo_subido.name}", "wb") as f:
+                        ruta_guardado = f"plantillas_maestras/{destino}/{archivo_subido.name}"
+                        with open(ruta_guardado, "wb") as f:
                             f.write(archivo_subido.getbuffer())
                         st.success(f"✅ Documento guardado en {destino}. ¡Ya puede usarlo arriba!")
-                        
+            
             with maint_col2:
                 st.markdown("**🗑️ Borrar Modelo Existente**")
-                carpeta_borrar = st.selectbox("Buscar en Carpeta:", ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"], key="del_f")
+                carpeta_borrar = st.selectbox("Buscar en Carpeta:", ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_tribunales_de_tierras"])
                 ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
                 archivos = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
                 
-                archivo_a_borrar = st.selectbox("Archivo a eliminar:", ["Seleccione..."] + archivos)
-                
-                if st.button("🗑️ ELIMINAR PERMANENTE"):
-                    if archivo_a_borrar and archivo_a_borrar != "Seleccione...":
-                        os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
-                        st.warning("🗑️ Archivo eliminado.")
-                        st.rerun()
-                        # ==========================================
-# ... aquí termina su código de la Fábrica (probablemente en st.rerun() o similar) ...
-
+                if archivos:
+                    archivo_a_borrar = st.selectbox("Seleccione el archivo a eliminar:", archivos)
+                    if st.button("🗑️ Eliminar Plantilla"):
+                        try:
+                            os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
+                            st.success(f"✅ Archivo {archivo_a_borrar} eliminado.")
+                        except Exception as e:
+                            st.error(f"Error al eliminar: {e}")
+                else:
+                    st.info("Carpeta vacía. No hay modelos para borrar.")
 
 
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
@@ -1571,19 +1530,77 @@ def vista_mando_central():
         st.write("")
         st.info("📌 Recuerde: Mantener su Archivo Digital actualizado garantiza la agilidad de los procesos en la Jurisdicción Inmobiliaria de Santiago y el resto del país.")
 def vista_registro_maestro():
+    import datetime
+    
     st.title("👤 Registro Maestro de Expedientes")
     st.subheader("Control de Casos Legales y Técnicos | AboAgrim")
     st.divider()
 
-    # --- 1. DATOS GENERALES DEL CLIENTE ---
-    with st.expander("📝 Información Básica del Propietario/Cliente", expanded=True):
+    # --- MOTOR DE NUMERACIÓN SECUENCIAL ---
+    # Obtenemos el año actual
+    ano_actual = datetime.datetime.now().year
+    
+    # Memoria temporal para el número secuencial (luego lo conectaremos a la lectura real de Supabase)
+    if "contador_expedientes" not in st.session_state:
+        st.session_state["contador_expedientes"] = 1
+        
+    # Generamos el formato 2026-0001
+    num_expediente = f"{ano_actual}-{st.session_state['contador_expedientes']:04d}"
+
+    st.markdown(f"### 📝 **Nuevo Expediente: {num_expediente}**")
+
+    # Utilizamos un solo formulario para que el botón "Guardar" envíe todo junto
+    with st.form("form_registro_maestro"):
+        
+        # --- 1. DATOS GENERALES DEL CLIENTE ---
+        st.markdown("#### 📄 1. Información Básica")
         col1, col2 = st.columns(2)
         with col1:
             nombre_cliente = st.text_input("Nombre Completo / Razón Social:")
             identificacion = st.text_input("Cédula o RNC:", placeholder="001-0000000-0")
-        with col2:
             telefono = st.text_input("Teléfono de Contacto:")
-            domicilio = st.text_area("Dirección / Domicilio:", height=68)
+        with col2:
+            domicilio = st.text_area("Dirección / Domicilio:", height=110)
+
+        # --- 2. DATOS TÉCNICOS Y JURÍDICOS ---
+        st.markdown("#### ⚖️ 2. Detalles del Trámite")
+        col3, col4, col5 = st.columns(3)
+        with col3:
+            tipo_tramite = st.selectbox("Tipo de Trámite", 
+                ["Deslinde", "Saneamiento", "Litis sobre Derechos Registrados", "Transferencia", "Subdivisión", "Determinación de Herederos"])
+        with col4:
+            organo_jurisdiccional = st.selectbox("Órgano Jurisdiccional", 
+                ["Mensuras Catastrales", "Registro de Títulos", "Tribunal de Tierras"])
+        with col5:
+            estatus_inicial = st.selectbox("Estado del Trámite", 
+                ["En Preparación", "Depositado", "En Calificación", "Observado", "Aprobado", "En Audiencia"])
+        
+        col6, col7 = st.columns(2)
+        with col6:
+            designacion_catastral = st.text_input("Designación Catastral / Matrícula")
+        with col7:
+            coordenadas_gps = st.text_input("Coordenadas del Inmueble (Opcional)", placeholder="Ej: 19.456, -70.697")
+
+        # --- 3. ACTORES Y PLAZOS ---
+        st.markdown("#### ⏳ 3. Actores y Alertas Legales")
+        col8, col9 = st.columns(2)
+        with col8:
+            notario_actuante = st.text_input("Notario Actuante")
+            representante_legal = st.text_input("Representante / Apoderado")
+        with col9:
+            # Aquí vinculamos la alerta directamente al número de expediente
+            fecha_alerta = st.date_input(f"Vencimiento / Alerta para el {num_expediente}")
+            motivo_alerta = st.text_input("Motivo del Plazo", placeholder="Ej: Depósito de Réplica, Fecha de Mensura")
+
+        st.divider()
+        # Botón de guardado que abarca todo el ancho
+        submitted = st.form_submit_button("💾 Crear Expediente Oficial", use_container_width=True)
+
+        if submitted:
+            # Al guardar, el sistema avisará y sumará 1 al contador (2026-0002, etc.)
+            st.session_state["contador_expedientes"] += 1
+            st.success(f"✅ ¡El expediente **{num_expediente}** para el cliente **{nombre_cliente}** ha sido forjado exitosamente!")
+            st.info("Nota: Los datos están listos para ser enviados a Supabase y al Gestor de Plantillas.")
 
     # --- 2. DEPARTAMENTO DE AGRIMENSURA (DATOS TÉCNICOS) ---
     st.markdown("### 🗺️ Módulo de Agrimensura y Catastro")
@@ -1629,7 +1646,7 @@ def vista_registro_maestro():
     if st.button("🚀 REGISTRAR EXPEDIENTE MAESTRO", type="primary", use_container_width=True):
         if nombre_cliente and parcela:
             # Generamos código único
-            codigo_generado = f"AA-{datetime.now().strftime('%y%m%d%H%M')}"
+            codigo_generado = num_expediente
             
             data_insert = {
                 "expediente": codigo_generado,
@@ -1640,7 +1657,7 @@ def vista_registro_maestro():
                 "provincia": provincia,
                 "estatus": estatus_t,
                 "jurisdiccion": jurisdiccion,
-                "fecha_creacion": str(datetime.now())
+                "fecha_creacion": str(datetime.datetime.now())
             }
             
             try:
@@ -1703,7 +1720,7 @@ if menu == "🏠 Mando Central":
     vista_mando_central()
 elif menu == "👤 Registro Maestro":
     vista_registro_maestro()
-elif menu == "📂 Archivo Digital":
+elif menu == "📁 Archivo Digital":
     vista_archivo_digital()
 elif menu == "📄 Plantillas Auto":
     vista_plantillas_auto()
