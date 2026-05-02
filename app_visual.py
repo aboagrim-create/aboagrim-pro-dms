@@ -1358,21 +1358,21 @@ with st.form("formulario_fabricacion"):
                                                 st.success(f"✅ Documento guardado en {destino}. ¡Ya puede usarlo arriba!")
         
                         with maint_col2:
-                        st.markdown("**🗑️ Borrar Modelo Existente**")
-                        carpeta_borrar = st.selectbox("Buscar en Carpeta:", ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_tribunales_de_tierras"])
-                        ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
-                        archivos = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
-                        
-                        if archivos:
-                        archivo_a_borrar = st.selectbox("Seleccione el archivo a eliminar:", archivos)
-                        if st.button("🗑️ Eliminar Plantilla"):
-                        try:
-                        os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
-                        st.success(f"✅ Archivo {archivo_a_borrar} eliminado.")
-                        except Exception as e:
-                        st.error(f"Error al eliminar: {e}")
-                        else:
-                        st.info("Carpeta vacía. No hay modelos para borrar.")
+                                st.markdown("**🗑️ Borrar Modelo Existente**")
+                                carpeta_borrar = st.selectbox("Buscar en Carpeta:", ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_tribunales_de_tierras"])
+                                ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
+                                archivos = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
+                                
+                                if archivos:
+                                archivo_a_borrar = st.selectbox("Seleccione el archivo a eliminar:", archivos)
+                                if st.button("🗑️ Eliminar Plantilla"):
+                                        try:
+                                                os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
+                                                st.success(f"✅ Archivo {archivo_a_borrar} eliminado.")
+                                                except Exception as e:
+                                                st.error(f"Error al eliminar: {e}")
+                                                else:
+                                                st.info("Carpeta vacía. No hay modelos para borrar.")
 
 
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
