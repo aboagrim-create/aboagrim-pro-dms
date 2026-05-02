@@ -1271,15 +1271,14 @@ for plantilla in plantillas_elegidas:
     if archivos:
         archivo_a_borrar = st.selectbox("Seleccione el archivo a eliminar:", archivos)
         if st.button("🗑️ Eliminar Plantilla"):
-        try:
-            os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
-            st.success(f"✅ Archivo {archivo_a_borrar} eliminado.")
-            st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Error al eliminar: {e}")
-                        else:
-                            st.info("ℹ️ Carpeta vacía. No hay modelos para borrar.")
-               
+            try:
+                os.remove(f"{ruta_limpieza}/{archivo_a_borrar}")
+                st.success(f"✅ Archivo {archivo_a_borrar} eliminado.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Error al eliminar: {e}")
+    else:
+        st.info("ℹ️ Carpeta vacía. No hay modelos para borrar.")
 
 # Aquí sigue def generar_documento_word(nombre_plantilla, diccionario_datos):
 # Aquí debajo empieza su def generar_documento_word...
