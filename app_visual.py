@@ -1112,9 +1112,56 @@ def vista_archivo_digital():
 
     except Exception as e:
         st.error(f"Detalle técnico del error general: {e}")
-def vista_plantillas_auto():
-    st.title("📄 Fábrica de Documentos AboAgrim Pro")
-    st.subheader("Módulo de Control Técnico y Legal JI")
+def vista_plantillas():
+    st.title("📄 Generador de Plantillas Automatizado")
+    st.markdown("### *AboAgrim Pro: Documentación Dinámica*")
+    
+    import os
+    carpetas_base = ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"]
+    
+    # Crear estructura física
+    if not os.path.exists("plantillas_maestras"):
+        os.makedirs("plantillas_maestras")
+    for c in carpetas_base:
+        ruta = os.path.join("plantillas_maestras", c)
+        if not os.path.exists(ruta):
+            os.makedirs(ruta)
+
+    # --- CARGA DIRIGIDA ---
+    st.subheader("📤 Cargar Nuevos Modelos (.docx)")
+    col_up1, col_up2 = st.columns([2, 3])
+    with col_up1:
+        destino = st.selectbox("Seleccione Órgano de destino:", carpetas_base)
+    with col_up2:
+        archivos_subidos = st.file_uploader("Arrastre sus plantillas aquí", type=["docx"], accept_multiple_files=True, key="up_final")
+
+    if archivos_subidos:
+        for archivo in archivos_subidos:
+            ruta_final = os.path.join("plantillas_maestras", destino, archivo.name)
+            with open(ruta_final, "wb") as f:
+                f.write(archivo.getbuffer())
+        st.success(f"✅ {len(archivos_subidos)} plantilla(s) guardada(s) en {destino}.")
+        st.rerun()
+
+    st.write("---")
+
+    # --- ADMINISTRADOR DE BÓVEDA ---
+    st.subheader("🗑️ Administrar Bóveda y Modelos")
+    col_adm1, col_adm2 = st.columns([2, 2])
+    with col_adm1:
+        cat_ver = st.selectbox("Revisar categoría:", carpetas_base, key="cat_admin")
+        ruta_ver = os.path.join("plantillas_maestras", cat_ver)
+        archivos_en_cat = [f for f in os.listdir(ruta_ver) if f.endswith(".docx")]
+    
+    with col_adm2:
+        if archivos_en_cat:
+            archivo_borrar = st.selectbox("Seleccione archivo para borrar:", archivos_en_cat)
+            st.write("") # Espacio
+            if st.button("🔥 Confirmar Eliminación", use_container_width=True):
+                os.remove(os.path.join(ruta_ver, archivo_borrar))
+                st.rerun()
+        else:
+            st.info("ℹ️ Categoría vacía.")
 
     # --- INICIALIZACIÓN DE MEMORIA DINÁMICA ---
     if 'cant_extras' not in st.session_state: st.session_state.cant_extras = 0
