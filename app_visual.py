@@ -324,6 +324,43 @@ def vista_archivo():
 def vista_plantillas():
     st.title("📄 Generador de Plantillas Automatizado")
     st.markdown("### *AboAgrim Pro: Documentación Dinámica*")
+    
+    # --- PARTE 1: SUBIR NUEVAS PLANTILLAS ---
+    st.subheader("📤 Cargar Nuevos Modelos (.docx)")
+    archivos_subidos = st.file_uploader("Arrastre aquí sus plantillas", type=["docx"], accept_multiple_files=True)
+    
+    if archivos_subidos:
+        for archivo in archivos_subidos:
+            ruta_destino = os.path.join("plantillas_maestras", archivo.name)
+            with open(ruta_destino, "wb") as f:
+                f.write(archivo.getbuffer())
+        st.success(f"✅ {len(archivos_subidos)} plantilla(s) cargada(s) correctamente.")
+        st.rerun()
+
+    st.write("---")
+
+    # --- PARTE 2: GESTIÓN DE PLANTILLAS EXISTENTES ---
+    st.subheader("🗑️ Administrar Bóveda de Plantillas")
+    
+    # Escaneamos las carpetas para mostrar qué hay
+    carpetas_base = ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"]
+    carpeta_sel = st.selectbox("Seleccione Carpeta para revisar/limpiar:", carpetas_base)
+    
+    ruta_limpieza = f"plantillas_maestras/{carpeta_sel}"
+    if os.path.exists(ruta_limpieza):
+        archivos = [f for f in os.listdir(ruta_limpieza) if f.endswith(".docx")]
+        
+        if archivos:
+            archivo_a_borrar = st.selectbox("Seleccione el archivo a eliminar:", archivos)
+            if st.button("🗑️ Eliminar Plantilla Seleccionada"):
+                try:
+                    os.remove(os.path.join(ruta_limpieza, archivo_a_borrar))
+                    st.success(f"🔥 Archivo '{archivo_a_borrar}' eliminado de la bóveda.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Error al eliminar: {e}")
+        else:
+            st.info("ℹ️ No hay archivos en esta categoría.")
 
 
 # =====================================================================
