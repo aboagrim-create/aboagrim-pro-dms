@@ -9,7 +9,7 @@ from docxtpl import DocxTemplate
 import os
 import shutil
 # --- OCULTAR ICONOS Y MENÚ DE STREAMLIT PARA UN DISEÑO LIMPIO ---
-    ocultar_iconos = """
+ocultar_iconos = """
         <style>
         #MainMenu {visibility: hidden;}
         header {visibility: hidden;}
