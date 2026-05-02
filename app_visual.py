@@ -1594,6 +1594,17 @@ def vista_plantillas():
     st.title("📄 Motor de Redacción y Plantillas")
     st.markdown("### *AboAgrim Pro: Sistema Experto de Forja Documental*")
 
+    # --- 0. INICIALIZACIÓN DE MEMORIA DINÁMICA (Para agregar/borrar) ---
+    for rol in ["cant_ab", "cant_ag", "cant_no", "cant_al"]:
+        if rol not in st.session_state:
+            st.session_state[rol] = 1
+
+    def mod_cant(rol, operacion):
+        if operacion == "add":
+            st.session_state[rol] += 1
+        elif operacion == "del" and st.session_state[rol] > 0:
+            st.session_state[rol] -= 1
+
     carpetas_base = ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"]
     if not os.path.exists("plantillas_maestras"):
         os.makedirs("plantillas_maestras")
@@ -1626,17 +1637,75 @@ def vista_plantillas():
                 apoderado_cedula = st.text_input("Cédula del Representante:")
                 apoderado_calidad = st.text_input("Calidad (Ej. Poder Especial):")
 
-        # 2. PROFESIONALES
-        with st.expander("⚖️ Profesionales Actuantes (Agrimensor, Notario, Alguacil)", expanded=False):
-            c_prof1, c_prof2 = st.columns(2)
-            with c_prof1:
-                agrimensor_nombre = st.text_input("Agrimensor / CODIA:")
-                abogado_nombre = st.text_input("Abogado Apoderado / CARD:")
-                notario_nombre = st.text_input("Notario Público / Matrícula:")
-            with c_prof2:
-                alguacil_nombre = st.text_input("Nombre del Alguacil:")
-                alguacil_cedula = st.text_input("Cédula del Alguacil:")
-                alguacil_tribunal = st.text_input("Tribunal al que pertenece:")
+        # 2. PROFESIONALES (¡AQUÍ ESTÁ LA NUEVA MAGIA DINÁMICA!)
+        with st.expander("⚖️ Profesionales Actuantes (Agregar / Borrar)", expanded=False):
+            st.info("💡 Utilice los botones para agregar más de un profesional si el caso lo requiere.")
+            
+            t_abo, t_agr, t_not, t_alg = st.tabs(["💼 Abogados", "📐 Agrimensores", "✒️ Notarios", "⚖️ Alguaciles"])
+
+            # --- A. ABOGADOS ---
+            with t_abo:
+                c_btn1, c_btn2 = st.columns([1, 4])
+                c_btn1.button("➕ Agregar Abogado", on_click=mod_cant, args=("cant_ab", "add"), key="add_ab")
+                c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_ab", "del"), key="del_ab")
+                
+                lista_abogados = []
+                for i in range(st.session_state["cant_ab"]):
+                    st.markdown(f"**Abogado {i+1}**")
+                    c1, c2 = st.columns(2)
+                    n = c1.text_input("Nombre Completo:", key=f"ab_n_{i}")
+                    c = c2.text_input("Cédula:", key=f"ab_c_{i}")
+                    m = c1.text_input("Matrícula CARD:", key=f"ab_m_{i}")
+                    d = c2.text_input("Estudio/Domicilio Profesional:", key=f"ab_d_{i}")
+                    if n: lista_abogados.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d})
+
+            # --- B. AGRIMENSORES ---
+            with t_agr:
+                c_btn1, c_btn2 = st.columns([1, 4])
+                c_btn1.button("➕ Agregar Agrimensor", on_click=mod_cant, args=("cant_ag", "add"), key="add_ag")
+                c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_ag", "del"), key="del_ag")
+                
+                lista_agrimensores = []
+                for i in range(st.session_state["cant_ag"]):
+                    st.markdown(f"**Agrimensor {i+1}**")
+                    c1, c2 = st.columns(2)
+                    n = c1.text_input("Nombre Completo:", key=f"ag_n_{i}")
+                    c = c2.text_input("Cédula:", key=f"ag_c_{i}")
+                    m = c1.text_input("CODIA:", key=f"ag_m_{i}")
+                    d = c2.text_input("Estudio/Domicilio Profesional:", key=f"ag_d_{i}")
+                    if n: lista_agrimensores.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d})
+
+            # --- C. NOTARIOS ---
+            with t_not:
+                c_btn1, c_btn2 = st.columns([1, 4])
+                c_btn1.button("➕ Agregar Notario", on_click=mod_cant, args=("cant_no", "add"), key="add_no")
+                c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_no", "del"), key="del_no")
+                
+                lista_notarios = []
+                for i in range(st.session_state["cant_no"]):
+                    st.markdown(f"**Notario {i+1}**")
+                    c1, c2 = st.columns(2)
+                    n = c1.text_input("Nombre Completo:", key=f"no_n_{i}")
+                    c = c2.text_input("Cédula:", key=f"no_c_{i}")
+                    m = c1.text_input("Matrícula Notarial:", key=f"no_m_{i}")
+                    d = c2.text_input("Municipio / Jurisdicción:", key=f"no_d_{i}")
+                    if n: lista_notarios.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d})
+
+            # --- D. ALGUACILES ---
+            with t_alg:
+                c_btn1, c_btn2 = st.columns([1, 4])
+                c_btn1.button("➕ Agregar Alguacil", on_click=mod_cant, args=("cant_al", "add"), key="add_al")
+                c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_al", "del"), key="del_al")
+                
+                lista_alguaciles = []
+                for i in range(st.session_state["cant_al"]):
+                    st.markdown(f"**Alguacil {i+1}**")
+                    c1, c2 = st.columns(2)
+                    n = c1.text_input("Nombre Completo:", key=f"al_n_{i}")
+                    c = c2.text_input("Cédula:", key=f"al_c_{i}")
+                    m = c1.text_input("Tribunal asignado:", key=f"al_m_{i}")
+                    d = c2.text_input("Domicilio del Alguacil:", key=f"al_d_{i}")
+                    if n: lista_alguaciles.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d})
 
         # 3. INMUEBLE
         with st.expander("📍 Inmueble y Documentos Base", expanded=False):
@@ -1644,7 +1713,6 @@ def vista_plantillas():
             inmueble_parcela = c_inm1.text_input("Parcela/Solar:")
             inmueble_dc = c_inm2.text_input("DC / Municipio:")
             inmueble_provincia = c_inm3.text_input("Provincia:")
-            
             c_doc1, c_doc2 = st.columns(2)
             tipo_doc_base = c_doc1.selectbox("Tipo de Documento Base:", ["Ninguno", "Certificado de Título Definitivo", "Constancia Anotada", "Acto de Venta", "Promesa de Venta", "Acta de Hitos"])
             doc_base_numero = c_doc2.text_input("Número (Matrícula, Libro, Folio o Acto):")
@@ -1657,31 +1725,20 @@ def vista_plantillas():
             forma_pago = c_tran2.text_input("Forma de pago:")
             testigos = st.text_input("Testigos Instrumentales (Nombres y Cédulas):")
 
-        # 5. REQUISITOS JI Y TRAMITANTE (¡NUEVO!)
+        # 5. REQUISITOS JI
         with st.expander("📝 Depositante, Impuestos y Requisitos (JI)", expanded=False):
-            st.info("Ideal para forjar Instancias de Solicitud y Cartas de Depósito.")
             c_tram1, c_tram2 = st.columns(2)
             with c_tram1:
                 tramitante_nombre = st.text_input("Nombre del Tramitante / Depositante:")
                 tramitante_cedula = st.text_input("Cédula del Depositante:")
             with c_tram2:
-                tramitante_calidad = st.text_input("Calidad del Depositante (Ej. Gestor, Paralegal, Asistente):")
-            
-            st.markdown("**Inventario de Depósito**")
-            impuestos_pagados = st.multiselect("Impuestos, Tasas y Sellos Anexos:", [
-                "Recibo de Ley 108-05 (Jurisdicción Inmobiliaria)", 
-                "Sello de Ley 33-91 (Colegio de Abogados)", 
-                "Recibo de Aportes CODIA", 
-                "Impuesto de Transferencia (DGII)", 
-                "Recibo de Ley 196 (Fondo de Pensiones)",
-                "Poder Legalizado por la PGR"
-            ])
-            
-            inventario_anexos = st.text_area("Lista de Documentos Físicos Anexos (Planos, Actos, Copias de Cédula):", height=100)
+                tramitante_calidad = st.text_input("Calidad del Depositante:")
+            impuestos_pagados = st.multiselect("Impuestos, Tasas y Sellos:", ["Recibo de Ley 108-05 (JI)", "Sello de Ley 33-91 (CARD)", "Recibo CODIA", "Impuesto DGII", "Recibo Ley 196", "Poder Legalizado PGR"])
+            inventario_anexos = st.text_area("Lista de Anexos Físicos:", height=100)
 
         st.write("---")
         
-        # --- MOTOR DE FABRICACIÓN ---
+        # --- MOTOR DE COMPILACIÓN Y FABRICACIÓN ---
         mapping_carpetas = {"Mensuras Catastrales": "1_mensuras_catastrales", "Jurisdicción Original": "2_jurisdiccion_original", "Registro de Títulos": "3_registro_titulos"}
         ruta_carpeta = os.path.join("plantillas_maestras", mapping_carpetas[organo_ji])
         
@@ -1691,22 +1748,45 @@ def vista_plantillas():
             
             if st.button("🚀 FORJAR DOCUMENTO AHORA", type="primary", use_container_width=True):
                 if plantillas_elegidas:
-                    # Convertimos la lista de impuestos en texto separado por comas para el Word
+                    
+                    # --- COMPILADORES DE PÁRRAFOS LEGALES AUTOMÁTICOS ---
+                    # Abogados
+                    ab_nombres = " y ".join([a['nombre'] for a in lista_abogados]) if lista_abogados else "N/A"
+                    ab_generales = "; y ".join([f"{a['nombre']}, dominicano(a), mayor de edad, portador(a) de la cédula No. {a['cedula']}, matriculado(a) en el CARD bajo el No. {a['matricula']}, con estudio abierto en {a['domicilio']}" for a in lista_abogados]) if lista_abogados else "N/A"
+                    
+                    # Agrimensores
+                    ag_nombres = " y ".join([a['nombre'] for a in lista_agrimensores]) if lista_agrimensores else "N/A"
+                    ag_generales = "; y ".join([f"{a['nombre']}, dominicano(a), mayor de edad, portador(a) de la cédula No. {a['cedula']}, CODIA No. {a['matricula']}, con oficina en {a['domicilio']}" for a in lista_agrimensores]) if lista_agrimensores else "N/A"
+                    
+                    # Notarios
+                    no_nombres = " y ".join([a['nombre'] for a in lista_notarios]) if lista_notarios else "N/A"
+                    no_generales = "; y ".join([f"{a['nombre']}, Notario Público de los del número de {a['domicilio']}, matrícula No. {a['matricula']}, portador(a) de la cédula No. {a['cedula']}" for a in lista_notarios]) if lista_notarios else "N/A"
+                    
+                    # Alguaciles
+                    al_nombres = " y ".join([a['nombre'] for a in lista_alguaciles]) if lista_alguaciles else "N/A"
+                    al_generales = "; y ".join([f"{a['nombre']}, dominicano(a), mayor de edad, portador(a) de la cédula No. {a['cedula']}, Alguacil ordinario/estrado del {a['matricula']}, domiciliado(a) en {a['domicilio']}" for a in lista_alguaciles]) if lista_alguaciles else "N/A"
+
                     impuestos_str = ", ".join(impuestos_pagados) if impuestos_pagados else "N/A"
                     
+                    # MEGA DICCIONARIO ACTUALIZADO
                     datos_para_word = {
                         "expediente": exp_seleccionado, "fecha_hoy": datetime.now().strftime("%d de %B del %Y"),
                         "cliente_nombre": cliente_nombre, "cliente_cedula": cliente_cedula, "cliente_domicilio": cliente_domicilio,
                         "apoderado_nombre": apoderado_nombre, "apoderado_cedula": apoderado_cedula, "apoderado_calidad": apoderado_calidad,
-                        "agrimensor": agrimensor_nombre, "abogado": abogado_nombre, "notario": notario_nombre,
-                        "alguacil_nombre": alguacil_nombre, "alguacil_cedula": alguacil_cedula, "alguacil_tribunal": alguacil_tribunal,
+                        
+                        # LAS LLAVES MÁGICAS PARA PROFESIONALES
+                        "abogados_nombres": ab_nombres, "abogados_generales": ab_generales,
+                        "agrimensores_nombres": ag_nombres, "agrimensores_generales": ag_generales,
+                        "notarios_nombres": no_nombres, "notarios_generales": no_generales,
+                        "alguaciles_nombres": al_nombres, "alguaciles_generales": al_generales,
+                        
                         "parcela": inmueble_parcela, "dc": inmueble_dc, "provincia": inmueble_provincia,
                         "tipo_doc_base": tipo_doc_base, "doc_base_numero": doc_base_numero, "doc_base_fecha": doc_base_fecha,
                         "monto_venta": monto_venta, "forma_pago": forma_pago, "testigos": testigos,
-                        # Nuevas llaves para la JI
                         "tramitante_nombre": tramitante_nombre, "tramitante_cedula": tramitante_cedula, "tramitante_calidad": tramitante_calidad,
                         "impuestos_pagados": impuestos_str, "inventario_anexos": inventario_anexos
                     }
+                    
                     archivos_generados = 0
                     for p in plantillas_elegidas:
                         buffer = generar_documento_word(os.path.join(ruta_carpeta, p), datos_para_word)
@@ -1715,7 +1795,7 @@ def vista_plantillas():
                             st.download_button(label=f"⬇️ Descargar: {p}", data=buffer, file_name=f"{prefijo}_{p}")
                             archivos_generados += 1
                     if archivos_generados > 0:
-                        st.success(f"⚖️ Se redactaron {archivos_generados} documentos.")
+                        st.success(f"⚖️ Se redactaron {archivos_generados} documentos con generales completas.")
 
     with tab_boveda:
         st.subheader("Gestión de Archivos Maestros (.docx)")
