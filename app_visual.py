@@ -16,9 +16,7 @@ from docxtpl import DocxTemplate
 ocultar_iconos = """
         <style>
         #MainMenu {visibility: hidden;}
-        header {visibility: hidden;}
         footer {visibility: hidden;}
-        .stDeployButton {display:none;}
         </style>
         """
 st.markdown(ocultar_iconos, unsafe_allow_html=True)
