@@ -328,37 +328,68 @@ def vista_archivo():
 def vista_plantillas():
     st.title("📄 Generador de Plantillas Automatizado")
     st.markdown("### *AboAgrim Pro: Documentación Dinámica*")
-
-    # --- 1. SUBIDA DE PLANTILLAS ---
-    st.subheader("📤 Cargar Nuevos Modelos (.docx)")
-    archivos_subidos = st.file_uploader("Arrastre sus plantillas aquí", type=["docx"], accept_multiple_files=True, key="uploader_final_v3")
     
+    # --- 1. CONFIGURACIÓN DE ÓRGANOS ---
+    carpetas_base = ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"]
+    
+    # Asegurar que la estructura física existe en el servidor
+    import os
+    if not os.path.exists("plantillas_maestras"):
+        os.makedirs("plantillas_maestras")
+    for c in carpetas_base:
+        ruta = os.path.join("plantillas_maestras", c)
+        if not os.path.exists(ruta):
+            os.makedirs(ruta)
+
+    # --- 2. RESUMEN DE BÓVEDA (Lo que le faltaba) ---
+    st.subheader("📊 Resumen de Modelos Disponibles")
+    cols_res = st.columns(3)
+    for i, cat in enumerate(carpetas_base):
+        ruta_cat = os.path.join("plantillas_maestras", cat)
+        conteo = len([f for f in os.listdir(ruta_cat) if f.endswith(".docx")])
+        label_cat = cat.replace("_", " ").title()[2:] # Limpia el nombre para mostrar
+        cols_res[i].metric(label_cat, f"{conteo} archivos")
+
+    st.write("---")
+
+    # --- 3. CARGA INTELIGENTE POR CATEGORÍA ---
+    st.subheader("📤 Cargar Nuevos Modelos (.docx)")
+    col_up1, col_up2 = st.columns([2, 3])
+    
+    with col_up1:
+        destino = st.selectbox("Seleccione Órgano de destino:", carpetas_base, help="Indique en qué carpeta se guardará el modelo.")
+    
+    with col_up2:
+        archivos_subidos = st.file_uploader("Arrastre sus plantillas aquí", type=["docx"], accept_multiple_files=True, key="uploader_full_v4")
+
     if archivos_subidos:
-        if not os.path.exists("plantillas_maestras"):
-            os.makedirs("plantillas_maestras")
         for archivo in archivos_subidos:
-            with open(os.path.join("plantillas_maestras", archivo.name), "wb") as f:
+            ruta_final = os.path.join("plantillas_maestras", destino, archivo.name)
+            with open(ruta_final, "wb") as f:
                 f.write(archivo.getbuffer())
-        st.success(f"✅ {len(archivos_subidos)} archivos cargados.")
+        st.success(f"✅ {len(archivos_subidos)} plantilla(s) guardada(s) en {destino}.")
         st.rerun()
 
     st.write("---")
 
-    # --- 2. GESTIÓN / BORRADO ---
+    # --- 4. ADMINISTRADOR DE ELIMINACIÓN ---
     st.subheader("🗑️ Administrar Bóveda")
-    if os.path.exists("plantillas_maestras"):
-        archivos_locales = [f for f in os.listdir("plantillas_maestras") if f.endswith(".docx")]
-        if archivos_locales:
-            col_del1, col_del2 = st.columns([3, 1])
-            with col_del1:
-                archivo_a_borrar = st.selectbox("Seleccione para eliminar:", archivos_locales, key="sb_del_v3")
-            with col_del2:
-                st.write("") # Espacio
-                if st.button("🔥 Borrar", use_container_width=True):
-                    os.remove(os.path.join("plantillas_maestras", archivo_a_borrar))
-                    st.rerun()
+    col_adm1, col_adm2 = st.columns([2, 2])
+    
+    with col_adm1:
+        cat_ver = st.selectbox("Revisar categoría:", carpetas_base, key="cat_ver_admin")
+        ruta_ver = os.path.join("plantillas_maestras", cat_ver)
+        archivos_en_cat = [f for f in os.listdir(ruta_ver) if f.endswith(".docx")]
+    
+    with col_adm2:
+        if archivos_en_cat:
+            archivo_borrar = st.selectbox("Seleccione archivo para borrar:", archivos_en_cat)
+            if st.button("🔥 Confirmar Eliminación", use_container_width=True):
+                os.remove(os.path.join(ruta_ver, archivo_borrar))
+                st.success("Archivo eliminado.")
+                st.rerun()
         else:
-            st.info("La bóveda está limpia.")
+            st.info("No hay archivos en esta categoría para mostrar.")
 
 # =====================================================================
 # MÓDULO 5: ALERTAS Y PLAZOS
