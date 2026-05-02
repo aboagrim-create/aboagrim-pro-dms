@@ -17,7 +17,7 @@ ocultar_iconos = """
         .stDeployButton {display:none;}
         </style>
         """
-    st.markdown(ocultar_iconos, unsafe_allow_html=True)
+st.markdown(ocultar_iconos, unsafe_allow_html=True)
 # === DATOS MAESTROS DE LA FIRMA ABOAGRIM ===
 PRESIDENTE_FIRMA = "Lic. Jhonny Matos, M.A."
 DIRECCION_FIRMA = "Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Centro Ciudad, Santiago."
