@@ -1594,7 +1594,7 @@ def vista_alertas_plazos():
     st.title("⏱️ Sistema Integrado de Plazos (SIP)")
     st.markdown("### Motor Lógico de Caducidad y Rutas Críticas")
 
-    # --- 1. CATÁLOGO LEGAL (Extraído de su app.js original) ---
+    # --- 1. CATÁLOGO LEGAL ---
     catalogo_acciones = {
         # MENSURAS CATASTRALES
         'Vigencia Autorización de Mensura': {
@@ -1763,7 +1763,6 @@ def vista_alertas_plazos():
         
         datos_accion = catalogo_acciones[accion_sel]
 
-        # Lógica de Fechas
         fecha_ref = None
         if datos_accion['tipo'] != 'imprescriptible':
             if accion_sel == 'Plazo Aviso de Mensura (Colindantes)':
@@ -1785,9 +1784,8 @@ def vista_alertas_plazos():
         texto_tiempo = ""
         limite_ley = "No aplica"
 
-        # CÁLCULOS (Replicando la lógica de su app.js)
         if datos_accion['tipo'] == 'imprescriptible':
-            color_badge = "#007bff" # Azul
+            color_badge = "#007bff"
             titulo_alerta = "🔵 ACCIÓN DE ORDEN PÚBLICO (IMPRESCRIPTIBLE)"
             texto_tiempo = "N/A"
             diag_final = datos_accion['diagnosticoAprobado']
@@ -1813,15 +1811,15 @@ def vista_alertas_plazos():
                 texto_tiempo = f"{dias_transcurridos} días transcurridos"
 
             if esta_prescrita:
-                color_badge = "#dc3545" # Rojo
+                color_badge = "#dc3545"
                 titulo_alerta = "🔴 PLAZO VENCIDO / CADUCIDAD"
                 diag_final = datos_accion['diagnosticoRechazado']
             else:
-                color_badge = "#28a745" # Verde
+                color_badge = "#28a745"
                 titulo_alerta = "🟢 DENTRO DEL PLAZO LEGAL / ACTIVO"
                 diag_final = datos_accion['diagnosticoAprobado']
 
-        # --- 4. RENDERIZADO DEL DICTAMEN (Como su index.html) ---
+        # --- 4. RENDERIZADO DEL DICTAMEN ---
         with st.container(border=True):
             st.markdown(f"<h2 style='text-align: center; color: #0d253f; font-family: serif;'>DICTAMEN TÉCNICO-LEGAL</h2>", unsafe_allow_html=True)
             st.markdown(f"<p style='text-align: center; color: gray; font-size: 0.85rem;'>Expedido vía plataforma automatizada • {hoy.strftime('%d de %B de %Y')}</p>", unsafe_allow_html=True)
@@ -1857,11 +1855,17 @@ def vista_alertas_plazos():
             st.markdown(f"""
             <div style="margin-top: 20px; text-align: right; font-size: 0.95rem; color: #333;">
                 <div style="font-family: serif; font-size: 1.4rem; color: #c5a059; font-weight: bold; margin-bottom: 5px;">ABOAGRIM</div>
-                <strong>{PRESIDENTE_FIRMA}</strong><br>
+                <strong>Lic. Jhonny Matos, M.A.</strong><br>
                 <span style="color: #0d253f; font-weight: 600;">Presidente | Abogado y Agrimensor</span><br>
-                <span style="color: gray; font-size: 0.85rem;">Tel: {TELEFONOS_FIRMA}</span>
+                <span style="color: gray; font-size: 0.85rem;">Tel: 829-826-5888</span>
             </div>
             """, unsafe_allow_html=True)
+
+        # --- 5. BOTÓN DE EXPORTACIÓN (Instrucción visual) ---
+        st.write("")
+        if st.button("🖨️ Exportar Dictamen a PDF", use_container_width=True):
+            st.toast("⌨️ Presione Ctrl + P en su teclado para abrir el menú de impresión o guardado PDF.", icon="🖨️")
+            st.success("💡 **Instrucción para el equipo:** Presione **`Ctrl + P`** (o `Cmd + P` en Mac) y seleccione **Guardar como PDF** en la ventana que aparecerá en su navegador.")
 def vista_plantillas():
     import streamlit as st
     import os
