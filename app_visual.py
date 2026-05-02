@@ -1612,52 +1612,96 @@ def vista_honorarios():
 def vista_configuracion():
     import streamlit as st
     
-    st.title("⚙️ Configuración del Sistema")
-    st.markdown("### 👥 Panel de Gestión de Usuarios")
+    st.title("⚙️ Configuración Maestra del Sistema")
+    st.markdown("### 🎛️ Centro de Mando: Personalización y Seguridad")
     
     if st.session_state.get("rol_actual") != "Administrador":
         st.error("⛔ Acceso Denegado. Área exclusiva de la Presidencia.")
         return
 
-    db = st.session_state["db_usuarios"]
+    # Inicializar variables de marca si no existen
+    if "color_primario" not in st.session_state: st.session_state["color_primario"] = "#1E3A8A"
+    if "color_fondo" not in st.session_state: st.session_state["color_fondo"] = "#0E1117"
+    if "tipo_letra" not in st.session_state: st.session_state["tipo_letra"] = "sans-serif"
+    if "nombre_oficina" not in st.session_state: st.session_state["nombre_oficina"] = "OFICINA PRINCIPAL"
+    if "dir_oficina" not in st.session_state: st.session_state["dir_oficina"] = "Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Centro Ciudad, Santiago."
+    if "tel_oficina" not in st.session_state: st.session_state["tel_oficina"] = "829-826-5888 / 809-691-3333"
 
-    with st.container(border=True):
-        st.subheader("Usuarios Activos")
+    # Dividimos la pantalla en 3 pestañas profesionales
+    tab_usuarios, tab_apariencia, tab_oficina = st.tabs(["👥 Usuarios y Accesos", "🎨 Diseño y Marca", "🏢 Datos de la Firma"])
+    
+    with tab_usuarios:
+        db = st.session_state["db_usuarios"]
+        st.subheader("📋 Directorio de Usuarios Activos")
         for usr, datos in db.items():
             col1, col2, col3, col4 = st.columns([2, 3, 2, 2])
             col1.write(f"**ID:** {usr}")
             col2.write(f"**Nombre:** {datos['nombre']}")
             col3.write(f"**Rol:** {datos['rol']}")
-            
             with col4:
                 if usr.lower() == "jmatos":
                     st.info("👑 Admin Principal")
                 else:
-                    if st.button("🗑️ Borrar", key=f"del_{usr}", use_container_width=True):
+                    if st.button("🗑️ Borrar", key=f"del_{usr}"):
                         del st.session_state["db_usuarios"][usr]
                         st.rerun()
+        st.write("---")
+        c_izq, c_der = st.columns(2)
+        with c_izq:
+            st.markdown("**➕ Agregar Personal**")
+            nuevo_usr = st.text_input("ID de Usuario (Ej. asistente2):")
+            nuevo_pass = st.text_input("Contraseña Temporal:", type="password")
+            nuevo_nombre = st.text_input("Nombre Completo:")
+            nuevo_rol = st.selectbox("Nivel de Acceso:", ["Usuario", "Administrador"])
+            if st.button("💾 Inscribir", type="primary"):
+                if nuevo_usr and nuevo_pass:
+                    st.session_state["db_usuarios"][nuevo_usr] = {"pass": nuevo_pass, "rol": nuevo_rol, "nombre": nuevo_nombre}
+                    st.success("✅ Usuario agregado.")
+                    st.rerun()
+        with c_der:
+            st.markdown("**🔑 Cambiar Contraseñas**")
+            usr_modificar = st.selectbox("Seleccione la cuenta:", list(db.keys()))
+            nueva_clave = st.text_input("Escriba la Nueva Contraseña:", type="password")
+            if st.button("🔄 Actualizar", type="primary"):
+                if nueva_clave:
+                    st.session_state["db_usuarios"][usr_modificar]["pass"] = nueva_clave
+                    st.success("✅ Contraseña cambiada.")
 
-    st.write("---")
-
-    with st.container(border=True):
-        st.subheader("➕ Agregar Nuevo Empleado / Usuario")
-        with st.form("form_nuevo_usuario", clear_on_submit=True):
-            c1, c2 = st.columns(2)
-            nuevo_usr = c1.text_input("ID de Usuario:")
-            nuevo_pass = c2.text_input("Contraseña:", type="password")
-            nuevo_nombre = c1.text_input("Nombre Completo:")
-            nuevo_rol = c2.selectbox("Nivel de Acceso:", ["Usuario", "Administrador"])
+    with tab_apariencia:
+        st.subheader("🎨 Personalización Visual del Sistema")
+        st.info("💡 Cambie los colores corporativos y la tipografía. Para ver los cambios, haga clic en Aplicar Diseño.")
+        
+        c_color1, c_color2 = st.columns(2)
+        with c_color1:
+            nuevo_primario = st.color_picker("Color Principal (Botones y Títulos):", st.session_state["color_primario"])
+            nuevo_fondo = st.color_picker("Color de Fondo (Pantalla):", st.session_state["color_fondo"])
+        with c_color2:
+            nueva_letra = st.selectbox("Tipografía (Letra):", ["sans-serif", "serif", "monospace", "Arial", "Courier New", "Georgia"])
+            logo_subido = st.file_uploader("Subir Logo de la Firma (PNG/JPG):", type=["png", "jpg", "jpeg"])
             
-            if st.form_submit_button("💾 Crear Usuario", type="primary"):
-                if nuevo_usr and nuevo_pass and nuevo_nombre:
-                    if nuevo_usr in db:
-                        st.error("❌ Ese ID de usuario ya existe.")
-                    else:
-                        st.session_state["db_usuarios"][nuevo_usr] = {"pass": nuevo_pass, "rol": nuevo_rol, "nombre": nuevo_nombre}
-                        st.success(f"✅ Usuario creado con éxito.")
-                        st.rerun()
-                else:
-                    st.warning("⚠️ Complete todos los campos.")
+        if st.button("💾 Aplicar y Guardar Diseño", type="primary", use_container_width=True):
+            st.session_state["color_primario"] = nuevo_primario
+            st.session_state["color_fondo"] = nuevo_fondo
+            st.session_state["tipo_letra"] = nueva_letra
+            if logo_subido:
+                st.session_state["logo_firma"] = logo_subido.getvalue()
+            st.success("✅ Diseño actualizado. El sistema adoptará su marca ahora mismo.")
+            st.rerun()
+
+    with tab_oficina:
+        st.subheader("🏢 Datos Oficiales de la Firma")
+        st.markdown("Estos datos alimentarán automáticamente la barra lateral de su sistema.")
+        
+        nuevo_n_oficina = st.text_input("Nombre de la Firma / Oficina:", st.session_state["nombre_oficina"])
+        nueva_dir = st.text_input("Dirección Principal:", st.session_state["dir_oficina"])
+        nuevo_tel = st.text_input("Teléfonos de Contacto:", st.session_state["tel_oficina"])
+        
+        if st.button("💾 Guardar Datos Corporativos", type="primary", use_container_width=True):
+            st.session_state["nombre_oficina"] = nuevo_n_oficina
+            st.session_state["dir_oficina"] = nueva_dir
+            st.session_state["tel_oficina"] = nuevo_tel
+            st.success("✅ Datos corporativos actualizados.")
+            st.rerun()
 
 # ==========================================
 # 🔒 SISTEMA DE SEGURIDAD Y LOGIN DINÁMICO
@@ -1696,9 +1740,35 @@ if st.session_state["usuario_actual"] is None:
     st.stop()
 
 # ==========================================
-# 📱 MENÚ LATERAL AUTORIZADO
+# 🎨 APLICADOR DE DISEÑO GLOBAL
+# ==========================================
+if "color_primario" in st.session_state:
+    st.markdown(f"""
+        <style>
+        .stApp {{
+            background-color: {st.session_state["color_fondo"]};
+            font-family: {st.session_state["tipo_letra"]};
+        }}
+        .stButton>button[kind="primary"] {{
+            background-color: {st.session_state["color_primario"]};
+            border-color: {st.session_state["color_primario"]};
+        }}
+        h1, h2, h3 {{
+            color: {st.session_state["color_primario"]} !important;
+            font-family: {st.session_state["tipo_letra"]};
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+
+# ==========================================
+# 📱 MENÚ LATERAL AUTORIZADO Y PERFIL
 # ==========================================
 with st.sidebar:
+    # Si subió un logo en configuración, lo mostramos en todo lo alto del menú
+    if st.session_state.get("logo_firma"):
+        st.image(st.session_state["logo_firma"], use_container_width=True)
+        st.divider()
+
     st.markdown(f"### 🧑‍💼 {st.session_state['nombre_usuario']}")
     st.caption(f"🛡️ Nivel de acceso: **{st.session_state['rol_actual']}**")
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
@@ -1715,6 +1785,14 @@ with st.sidebar:
         opciones_menu.extend(["💳 Gestión de Honorarios", "⚙️ Configuración"])
         
     menu = st.radio("Módulos", opciones_menu, label_visibility="collapsed")
+
+    st.write("---")
+    
+    # Datos de la firma extraídos de la configuración en tiempo real
+    st.markdown(f"### 🏢 {st.session_state.get('nombre_oficina', 'OFICINA PRINCIPAL')}")
+    st.markdown(f"📍 {st.session_state.get('dir_oficina', 'Santiago')}")
+    st.markdown(f"📞 {st.session_state.get('tel_oficina', '829-826-5888 / 809-691-3333')}")
+    st.markdown("**Lic. Jhonny Matos. M.A.**\n*(Presidente-Fundador)*")
 
 # ==========================================
 # 🚀 EJECUCIÓN DE MÓDULOS
