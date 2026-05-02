@@ -1201,8 +1201,8 @@ diccionario_datos = {
 try:
     import datetime
                                 
-        # Datos listos para su tabla "Maestros de Expedientes"
-        datos_nube = {
+    # Datos listos para su tabla "Maestros de Expedientes"
+    datos_nube = {
             "expediente_ji": expediente_num,
             "nombre_propietario": cliente_nombre,
             "tramite_tipo": tramite_nombre,
