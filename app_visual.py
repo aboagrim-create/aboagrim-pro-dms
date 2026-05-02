@@ -1263,8 +1263,6 @@ for plantilla in plantillas_elegidas:
     else:
         st.error("❌ Ocurrió un error al forjar los documentos. Verifique las plantillas.")
                                 
-                        except Exception as e:
-                                    st.error(f"❌ Error crítico al fabricar: {e}")
 
                 ruta_limpieza = f"plantillas_maestras/{carpeta_borrar}"
                 archivos = os.listdir(ruta_limpieza) if os.path.exists(ruta_limpieza) else []
