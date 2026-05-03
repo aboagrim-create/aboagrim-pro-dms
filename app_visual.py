@@ -20,6 +20,19 @@ PRESIDENTE_FIRMA = "Lic. Jhonny Matos, M.A."
 DIRECCION_FIRMA = "Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Centro Ciudad, Santiago."
 TELEFONOS_FIRMA = "829-826-5888 / 809-691-3333"
 CORREO_FIRMA = "aboagrim@gmail.com"
+# ☁️ SINCRONIZACIÓN MAESTRA CON LA NUBE (SUPABASE) ☁️
+# Este bloque alimenta automáticamente a todos los módulos (Mando Central, Alertas, etc.)
+try:
+    respuesta_global = supabase.table("expedientes").select("*").execute()
+    if respuesta_global.data:
+        # Traducimos los datos de la nube al formato de diccionario que usa el Mando Central
+        st.session_state["db_expedientes"] = {fila["id_expediente"]: fila for fila in respuesta_global.data}
+    else:
+        st.session_state["db_expedientes"] = {}
+except Exception as e:
+    # Si hay un micro-corte de internet, creamos una memoria vacía de emergencia para que no colapse
+    if "db_expedientes" not in st.session_state:
+        st.session_state["db_expedientes"] = {}
 
 # --- INICIALIZACIÓN DE MEMORIA DEL SISTEMA ---
 if "bandeja_descargas" not in st.session_state:
