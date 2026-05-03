@@ -1820,6 +1820,17 @@ if "color_primario" in st.session_state:
             color: {st.session_state["color_primario"]} !important;
             font-family: {st.session_state["tipo_letra"]};
         }}
+        
+        /* 📱 MAGIA PARA EL CELULAR: Resalta la flecha (>) del menú lateral */
+        [data-testid="collapsedControl"] {{
+            color: {st.session_state["color_primario"]} !important;
+            background-color: transparent !important;
+        }}
+        [data-testid="collapsedControl"] svg {{
+            fill: {st.session_state["color_primario"]} !important;
+            width: 2rem;
+            height: 2rem;
+        }}
         </style>
     """, unsafe_allow_html=True)
 
