@@ -1788,14 +1788,19 @@ if st.session_state["usuario_actual"] is None:
 if "color_primario" in st.session_state:
     st.markdown(f"""
         <style>
+        /* Pintamos el fondo y las letras generales */
         .stApp {{
             background-color: {st.session_state["color_fondo"]};
             font-family: {st.session_state["tipo_letra"]};
         }}
+        
+        /* Pintamos los botones principales */
         .stButton>button[kind="primary"] {{
             background-color: {st.session_state["color_primario"]};
             border-color: {st.session_state["color_primario"]};
         }}
+        
+        /* Pintamos los títulos */
         h1, h2, h3 {{
             color: {st.session_state["color_primario"]} !important;
             font-family: {st.session_state["tipo_letra"]};
@@ -1804,7 +1809,9 @@ if "color_primario" in st.session_state:
         /* 📱 MAGIA PARA EL CELULAR: Resalta la flecha (>) del menú lateral */
         [data-testid="collapsedControl"] {{
             color: {st.session_state["color_primario"]} !important;
-            background-color: transparent !important;
+            background-color: {st.session_state["color_fondo"]} !important;
+            border-radius: 5px;
+            box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
         }}
         [data-testid="collapsedControl"] svg {{
             fill: {st.session_state["color_primario"]} !important;
@@ -1813,7 +1820,6 @@ if "color_primario" in st.session_state:
         }}
         </style>
     """, unsafe_allow_html=True)
-
 # ==========================================
 # 📱 MENÚ LATERAL AUTORIZADO Y PERFIL
 # ==========================================
