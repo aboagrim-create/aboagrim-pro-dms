@@ -1,7 +1,7 @@
-# =====================================================================
+# ====================================================================
 # INTERFAZ GRÁFICA Y SISTEMA EXPERTO LEGAL JI (EDICIÓN PREMIUM FULL)
-# Sistema: AboAgrim Pro DMS 
-# =====================================================================
+# Sistema: AboAgrim Pro DMS
+# ====================================================================
 from database import db as supabase
 import streamlit as st
 import zipfile
@@ -11,26 +11,16 @@ import io
 import json
 from datetime import datetime, timedelta
 from docxtpl import DocxTemplate
-st.set_page_config(page_title="AboAgrim Pro", page_icon="🏛️", layout="centered", initial_sidebar_state="expanded")
-# from fpdf import FPDF  <-- Agréguela aquí si usa la parte de facturación
 
-        visibility: visible !important;
-        display: flex !important;
-    }
-    [data-testid="collapsedControl"] svg {
-        fill: #1E3A8A !important; 
-        width: 2rem;
-        height: 2rem;
-    }
-</style>
-"""
-st.markdown(ocultar_iconos, unsafe_allow_html=True)
-st.markdown(ocultar_iconos, unsafe_allow_html=True)
+# --- CONFIGURACIÓN MAESTRA (DEBE SER EL PRIMER COMANDO) ---
+st.set_page_config(page_title="AboAgrim Pro", page_icon="🏛️", layout="centered", initial_sidebar_state="expanded")
+
 # === DATOS MAESTROS DE LA FIRMA ABOAGRIM ===
 PRESIDENTE_FIRMA = "Lic. Jhonny Matos, M.A."
 DIRECCION_FIRMA = "Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Centro Ciudad, Santiago."
 TELEFONOS_FIRMA = "829-826-5888 / 809-691-3333"
 CORREO_FIRMA = "aboagrim@gmail.com"
+
 # --- INICIALIZACIÓN DE MEMORIA DEL SISTEMA ---
 if "bandeja_descargas" not in st.session_state:
     st.session_state["bandeja_descargas"] = []
