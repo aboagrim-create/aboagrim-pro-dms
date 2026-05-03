@@ -1788,71 +1788,41 @@ if st.session_state["usuario_actual"] is None:
 if "color_primario" in st.session_state:
     st.markdown(f"""
         <style>
-        /* Pintamos el fondo y las letras generales */
         .stApp {{
             background-color: {st.session_state["color_fondo"]};
             font-family: {st.session_state["tipo_letra"]};
         }}
-        
-        /* Pintamos los botones principales */
         .stButton>button[kind="primary"] {{
             background-color: {st.session_state["color_primario"]};
             border-color: {st.session_state["color_primario"]};
         }}
-        
-        /* Pintamos los títulos */
         h1, h2, h3 {{
             color: {st.session_state["color_primario"]} !important;
             font-family: {st.session_state["tipo_letra"]};
         }}
         
-        /* 📱 MAGIA PARA EL CELULAR: Resalta la flecha (>) del menú lateral */
-        [data-testid="collapsedControl"] {{
-            color: {st.session_state["color_primario"]} !important;
-            background-color: {st.session_state["color_fondo"]} !important;
-            border-radius: 5px;
-            box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
+        /* 📱 MAGIA PARA EL CELULAR: Forzar el botón del menú (Cubre versiones nuevas y viejas) */
+        [data-testid="collapsedControl"],
+        [data-testid="stSidebarCollapsedControl"] {{
+            display: flex !important;
+            background-color: {st.session_state["color_primario"]} !important;
+            border-radius: 8px !important;
+            padding: 5px !important;
+            margin-top: 10px !important;
+            margin-left: 10px !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            z-index: 999999 !important; /* Esto asegura que NADA lo tape */
         }}
-        [data-testid="collapsedControl"] svg {{
-            fill: {st.session_state["color_primario"]} !important;
-            width: 2rem;
-            height: 2rem;
+        
+        [data-testid="collapsedControl"] svg,
+        [data-testid="stSidebarCollapsedControl"] svg {{
+            fill: #FFFFFF !important; /* Pinta la flecha de blanco para que resalte */
+            width: 25px !important;
+            height: 25px !important;
         }}
         </style>
     """, unsafe_allow_html=True)
-# ==========================================
-# 📱 MENÚ LATERAL AUTORIZADO Y PERFIL
-# ==========================================
-with st.sidebar:
-    # Si subió un logo en configuración, lo mostramos en todo lo alto del menú
-    if st.session_state.get("logo_firma"):
-        st.image(st.session_state["logo_firma"], use_container_width=True)
-        st.divider()
-
-    st.markdown(f"### 🧑‍💼 {st.session_state['nombre_usuario']}")
-    st.caption(f"🛡️ Nivel de acceso: **{st.session_state['rol_actual']}**")
-    if st.button("🚪 Cerrar Sesión", use_container_width=True):
-        st.session_state["usuario_actual"] = None
-        st.session_state["rol_actual"] = None
-        st.rerun()
-    
-    st.write("---")
-    st.markdown("**Navegación:**")
-    
-    opciones_menu = ["🏠 Mando Central", "👤 Registro Maestro", "📁 Archivo Digital", "📄 Plantillas Auto", "⏱️ Alertas y Plazos"]
-    
-    if st.session_state["rol_actual"] == "Administrador":
-        opciones_menu.extend(["💳 Gestión de Honorarios", "⚙️ Configuración"])
-        
-    menu = st.radio("Módulos", opciones_menu, label_visibility="collapsed")
-
-    st.write("---")
-    
-    # Datos de la firma extraídos de la configuración en tiempo real
-    st.markdown(f"### 🏢 {st.session_state.get('nombre_oficina', 'OFICINA PRINCIPAL')}")
-    st.markdown(f"📍 {st.session_state.get('dir_oficina', 'Santiago')}")
-    st.markdown(f"📞 {st.session_state.get('tel_oficina', '829-826-5888 / 809-691-3333')}")
-    st.markdown("**Lic. Jhonny Matos. M.A.**\n*(Presidente-Fundador)*")
 
 # ==========================================
 # 🚀 EJECUCIÓN DE MÓDULOS
