@@ -255,31 +255,12 @@ def vista_mando():
     st.write("---")
     st.subheader("💾 Copia de Seguridad y Respaldo")
     
-    if st.session_state.get("rol_actual") == "Administrador":
-        st.markdown("Descargue un archivo de respaldo con **todos sus expedientes y usuarios**. Guárdelo en su computadora para evitar pérdida de datos antes de conectar a la nube definitiva.")
-        
-        # Empaquetar la base de datos entera
-        backup_data = {
-            "fecha_respaldo": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "usuarios": st.session_state.get("db_usuarios", {}),
-            "expedientes": st.session_state.get("db_expedientes", {})
-        }
-        
-        # Convertir a texto JSON
-        json_str = json.dumps(backup_data, indent=4, ensure_ascii=False)
-        
-        c_down1, c_down2 = st.columns([1, 2])
-        c_down1.download_button(
-            label="⬇️ Descargar Backup (.json)",
-            data=json_str,
-            file_name=f"AboAgrim_Backup_{datetime.now().strftime('%d_%m_%Y')}.json",
-            mime="application/json",
-            type="primary",
-            use_container_width=True
-        )
-        c_down2.caption("🔒 *El archivo JSON es encriptado y solo puede ser leído por el sistema.*")
+    # 🔒 Solo el Presidente Jmatos puede descargar la data de la firma
+    if st.session_state.get("usuario_actual") == "Jmatos":
+        # ... (aquí va el código del botón de descarga que ya tiene)
+        st.download_button(...) 
     else:
-        st.info("El administrador es el único autorizado para descargar copias de seguridad de la firma.")
+        st.info("🔒 La generación de copias de seguridad es una función reservada exclusivamente para la Presidencia.")
 
 # =====================================================================
 # MÓDULO 2: REGISTRO MAESTRO (CON PESTAÑAS Y 7 ROLES)
