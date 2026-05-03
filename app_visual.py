@@ -1771,27 +1771,6 @@ if "color_primario" in st.session_state:
             color: {st.session_state["color_primario"]} !important;
             font-family: {st.session_state["tipo_letra"]};
         }}
-        
-        /* 📱 MAGIA PARA EL CELULAR: Forzar el botón del menú (Cubre versiones nuevas y viejas) */
-        [data-testid="collapsedControl"],
-        [data-testid="stSidebarCollapsedControl"] {{
-            display: flex !important;
-            background-color: {st.session_state["color_primario"]} !important;
-            border-radius: 8px !important;
-            padding: 5px !important;
-            margin-top: 10px !important;
-            margin-left: 10px !important;
-            opacity: 1 !important;
-            visibility: visible !important;
-            z-index: 999999 !important; /* Esto asegura que NADA lo tape */
-        }}
-        
-        [data-testid="collapsedControl"] svg,
-        [data-testid="stSidebarCollapsedControl"] svg {{
-            fill: #FFFFFF !important; /* Pinta la flecha de blanco para que resalte */
-            width: 25px !important;
-            height: 25px !important;
-        }}
         </style>
     """, unsafe_allow_html=True)
     # ==========================================
