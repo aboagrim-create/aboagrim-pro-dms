@@ -189,11 +189,10 @@ def vista_mando():
     import json
     from datetime import datetime
 
-    # --- ENCABEZADO CORPORATIVO DE ABOAGRIM ---
+    # --- ENCABEZADO CORPORATIVO ---
     col_logo, col_titulo = st.columns([1, 4])
     
     with col_logo:
-        # Si hay un logo cargado en configuración, lo mostramos. Si no, un pilar jurídico.
         if st.session_state.get("logo_firma"):
             st.image(st.session_state["logo_firma"], use_container_width=True)
         else:
@@ -202,66 +201,66 @@ def vista_mando():
     with col_titulo:
         st.title(st.session_state.get("nombre_oficina", "AboAgrim Pro"))
         st.markdown("##### *Sistema Integrado de Gestión Legal y Topográfica*")
-        # Datos de contacto dinámicos basados en la configuración, con sus datos base por defecto
-        st.caption(f"📍 {st.session_state.get('dir_oficina', 'Santiago, Rep. Dom.')} | 📞 {st.session_state.get('tel_oficina', '829-826-5888')}")
+        st.caption(f"📍 {st.session_state.get('dir_oficina', 'Santiago')} | 📞 {st.session_state.get('tel_oficina', '829-826-5888')}")
         st.caption("**Lic. Jhonny Matos. M.A.** - *Presidente Fundador*")
 
     st.write("---")
     
-    # --- 1. LECTURA DE DATOS PARA MÉTRICAS ---
-    st.markdown("### 📊 Panel de Control y Estadísticas")
+    # --- 1. MÉTRICAS DEL SISTEMA ---
     exps = st.session_state.get("db_expedientes", {})
     total_exps = len(exps)
-    
-    # Contar clientes e inmuebles totales navegando por los expedientes
     total_clientes = sum(len(e.get("clientes", [])) for e in exps.values())
     total_inmuebles = sum(len(e.get("inmuebles", [])) for e in exps.values())
 
-    # --- 2. TARJETAS DE INDICADORES ---
+    st.markdown("### 📊 Panel de Control y Estadísticas")
     col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        with st.container(border=True):
-            st.metric(label="📁 Expedientes Activos", value=total_exps)
-    with col2:
-        with st.container(border=True):
-            st.metric(label="👤 Clientes Registrados", value=total_clientes)
-    with col3:
-        with st.container(border=True):
-            st.metric(label="📍 Inmuebles / Parcelas", value=total_inmuebles)
+    col1.metric("📁 Expedientes", total_exps)
+    col2.metric("👤 Clientes", total_clientes)
+    col3.metric("📍 Inmuebles", total_inmuebles)
 
     st.write("---")
 
-    # --- 3. VISTA DIVIDIDA: ÚLTIMOS CASOS Y ACCIONES ---
+    # --- 2. RECIENTES Y ACCESOS ---
     c_izq, c_der = st.columns([2, 1])
-    
     with c_izq:
-        st.subheader("⏱️ Expedientes Recientes")
+        st.subheader("⏱️ Últimos Casos")
         if total_exps > 0:
-            # Mostrar los últimos 5 expedientes guardados
-            ultimos = list(exps.items())[-5:]
-            for num, datos in reversed(ultimos):
-                st.info(f"**{num}** | {datos['asunto']} *(Iniciado: {datos.get('fecha_creacion', 'N/A')})*")
+            for num, datos in reversed(list(exps.items())[-5:]):
+                st.info(f"**{num}** | {datos['asunto']}")
         else:
-            st.warning("Aún no hay expedientes en el Registro Maestro.")
+            st.warning("No hay expedientes registrados aún.")
 
     with c_der:
         st.subheader("⚡ Acciones Rápidas")
-        st.button("➕ Crear Expediente", use_container_width=True, disabled=True, help="Vaya al menú 'Registro Maestro'")
-        st.button("📄 Forjar Instancia", use_container_width=True, disabled=True, help="Vaya al menú 'Plantillas Auto'")
-        st.button("💰 Cobrar Honorarios", use_container_width=True, disabled=True, help="Vaya al menú 'Gestión de Honorarios'")
+        st.button("➕ Nuevo Caso", use_container_width=True, disabled=True)
+        st.button("📄 Forjar Doc", use_container_width=True, disabled=True)
 
-    # --- 4. BÓVEDA DE RESPALDO (BACKUP) ---
+    # --- 3. BÓVEDA DE RESPALDO (SOLO PRESIDENTE) ---
     st.write("---")
     st.subheader("💾 Copia de Seguridad y Respaldo")
     
-    # 🔒 Solo el Presidente Jmatos puede descargar la data de la firma
     if st.session_state.get("usuario_actual") == "Jmatos":
-        # ... (aquí va el código del botón de descarga que ya tiene)
-        st.download_button(...) 
+        st.markdown("Descargue el respaldo maestro de toda la oficina.")
+        
+        # Preparamos los datos para la descarga
+        backup_data = {
+            "fecha_respaldo": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "usuarios": st.session_state.get("db_usuarios", {}),
+            "expedientes": exps
+        }
+        json_str = json.dumps(backup_data, indent=4, ensure_ascii=False)
+        
+        # El botón corregido, sin los tres puntos
+        st.download_button(
+            label="⬇️ Descargar Backup Maestro (.json)",
+            data=json_str,
+            file_name=f"Respaldo_AboAgrim_{datetime.now().strftime('%d_%m_%Y')}.json",
+            mime="application/json",
+            type="primary",
+            use_container_width=True
+        )
     else:
-        st.info("🔒 La generación de copias de seguridad es una función reservada exclusivamente para la Presidencia.")
-
+        st.info("🔒 Función reservada exclusivamente para el Presidente de la Firma.")
 # =====================================================================
 # MÓDULO 2: REGISTRO MAESTRO (CON PESTAÑAS Y 7 ROLES)
 # =====================================================================
