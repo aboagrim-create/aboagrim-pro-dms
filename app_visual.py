@@ -11,15 +11,27 @@ import io
 import json
 from datetime import datetime, timedelta
 from docxtpl import DocxTemplate
+st.set_page_config(page_title="AboAgrim Pro", page_icon="🏛️", layout="wide", initial_sidebar_state="expanded")
 # from fpdf import FPDF  <-- Agréguela aquí si usa la parte de facturación
-# --- OCULTAR ICONOS Y MENÚ DE STREAMLIT PARA UN DISEÑO LIMPIO ---
 ocultar_iconos = """
-    <style>
-    /* Oculta las herramientas de programador (Deploy, GitHub), pero mantiene el menú ☰ del celular */
+<style>
+    /* Oculta las herramientas de desarrollador arriba a la derecha */
     [data-testid="stToolbar"] {visibility: hidden !important;}
     footer {visibility: hidden !important;}
-    </style>
-    """
+    
+    /* 🚨 RESCATE DEL BOTÓN DE LA BARRA LATERAL 🚨 */
+    [data-testid="collapsedControl"] {
+        visibility: visible !important;
+        display: flex !important;
+    }
+    [data-testid="collapsedControl"] svg {
+        fill: #1E3A8A !important; 
+        width: 2rem;
+        height: 2rem;
+    }
+</style>
+"""
+st.markdown(ocultar_iconos, unsafe_allow_html=True)
 st.markdown(ocultar_iconos, unsafe_allow_html=True)
 # === DATOS MAESTROS DE LA FIRMA ABOAGRIM ===
 PRESIDENTE_FIRMA = "Lic. Jhonny Matos, M.A."
