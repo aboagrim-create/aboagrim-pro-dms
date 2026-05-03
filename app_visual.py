@@ -317,15 +317,17 @@ def vista_registro_maestro():
             c_btn1.button("➕ Agregar Cliente", on_click=mod_cant_rm, args=("cant_cl_rm", "add"), key="rm_add_cl")
             c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_cl_rm", "del"), key="rm_del_cl")
             lista_clientes = []
+            clientes_data = expediente_actual.get("clientes", [])
             for i in range(st.session_state["cant_cl_rm"]):
+                cd = clientes_data[i] if i < len(clientes_data) else {}
                 st.markdown(f"**Cliente {i+1}**")
                 c1, c2, c3 = st.columns(3)
-                n = c1.text_input("Nombre / Razón Social:", key=f"rm_cl_n_{i}")
-                c = c2.text_input("Cédula / RNC:", key=f"rm_cl_c_{i}")
-                t = c3.text_input("Teléfono(s):", key=f"rm_cl_t_{i}")
+                n = c1.text_input("Nombre / Razón Social:", value=cd.get("nombre", ""), key=f"rm_cl_n_{i}")
+                c = c2.text_input("Cédula / RNC:", value=cd.get("cedula", ""), key=f"rm_cl_c_{i}")
+                t = c3.text_input("Teléfono(s):", value=cd.get("telefono", ""), key=f"rm_cl_t_{i}")
                 c4, c5 = st.columns([2, 1])
-                d = c4.text_input("Domicilio Exacto:", key=f"rm_cl_d_{i}")
-                e = c5.text_input("Correo Electrónico:", key=f"rm_cl_e_{i}")
+                d = c4.text_input("Domicilio Exacto:", value=cd.get("domicilio", ""), key=f"rm_cl_d_{i}")
+                e = c5.text_input("Correo Electrónico:", value=cd.get("email", ""), key=f"rm_cl_e_{i}")
                 if n: lista_clientes.append({"nombre": n, "cedula": c, "telefono": t, "domicilio": d, "email": e})
 
         with t_apo:
@@ -333,15 +335,17 @@ def vista_registro_maestro():
             c_btn1.button("➕ Agregar Apoderado", on_click=mod_cant_rm, args=("cant_ap_rm", "add"), key="rm_add_ap")
             c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_ap_rm", "del"), key="rm_del_ap")
             lista_apoderados = []
+            apoderados_data = expediente_actual.get("apoderados", [])
             for i in range(st.session_state["cant_ap_rm"]):
+                ad = apoderados_data[i] if i < len(apoderados_data) else {}
                 st.markdown(f"**Apoderado {i+1}**")
                 c1, c2, c3 = st.columns(3)
-                n = c1.text_input("Nombre Completo:", key=f"rm_ap_n_{i}")
-                c = c2.text_input("Cédula:", key=f"rm_ap_c_{i}")
-                q = c3.text_input("Calidad (Ej. Poder Especial):", key=f"rm_ap_q_{i}")
+                n = c1.text_input("Nombre Completo:", value=ad.get("nombre", ""), key=f"rm_ap_n_{i}")
+                c = c2.text_input("Cédula:", value=ad.get("cedula", ""), key=f"rm_ap_c_{i}")
+                q = c3.text_input("Calidad (Ej. Poder Especial):", value=ad.get("calidad", ""), key=f"rm_ap_q_{i}")
                 c4, c5 = st.columns([2, 1])
-                d = c4.text_input("Domicilio:", key=f"rm_ap_d_{i}")
-                te = c5.text_input("Teléfono / Email:", key=f"rm_ap_te_{i}")
+                d = c4.text_input("Domicilio:", value=ad.get("domicilio", ""), key=f"rm_ap_d_{i}")
+                te = c5.text_input("Teléfono / Email:", value=ad.get("contacto", ""), key=f"rm_ap_te_{i}")
                 if n: lista_apoderados.append({"nombre": n, "cedula": c, "calidad": q, "domicilio": d, "contacto": te})
 
     # --- 2. PROFESIONALES ---
@@ -353,15 +357,17 @@ def vista_registro_maestro():
             c_btn1.button("➕ Agregar Abogado", on_click=mod_cant_rm, args=("cant_ab_rm", "add"), key="rm_add_ab")
             c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_ab_rm", "del"), key="rm_del_ab")
             lista_abogados = []
+            abogados_data = expediente_actual.get("abogados", [])
             for i in range(st.session_state["cant_ab_rm"]):
+                abd = abogados_data[i] if i < len(abogados_data) else {}
                 c1, c2, c3 = st.columns(3)
-                n = c1.text_input("Nombre:", key=f"rm_ab_n_{i}")
-                c = c2.text_input("Cédula:", key=f"rm_ab_c_{i}")
-                m = c3.text_input("CARD:", key=f"rm_ab_m_{i}")
+                n = c1.text_input("Nombre:", value=abd.get("nombre", ""), key=f"rm_ab_n_{i}")
+                c = c2.text_input("Cédula:", value=abd.get("cedula", ""), key=f"rm_ab_c_{i}")
+                m = c3.text_input("CARD:", value=abd.get("matricula", ""), key=f"rm_ab_m_{i}")
                 c4, c5, c6 = st.columns(3)
-                d = c4.text_input("Estudio/Domicilio:", key=f"rm_ab_d_{i}")
-                t = c5.text_input("Teléfono:", key=f"rm_ab_t_{i}")
-                e = c6.text_input("Email:", key=f"rm_ab_e_{i}")
+                d = c4.text_input("Estudio/Domicilio:", value=abd.get("domicilio", ""), key=f"rm_ab_d_{i}")
+                t = c5.text_input("Teléfono:", value=abd.get("telefono", ""), key=f"rm_ab_t_{i}")
+                e = c6.text_input("Email:", value=abd.get("email", ""), key=f"rm_ab_e_{i}")
                 if n: lista_abogados.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d, "telefono": t, "email": e})
 
         with t_agr:
@@ -369,15 +375,17 @@ def vista_registro_maestro():
             c_btn1.button("➕ Agregar Agrimensor", on_click=mod_cant_rm, args=("cant_ag_rm", "add"), key="rm_add_ag")
             c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_ag_rm", "del"), key="rm_del_ag")
             lista_agrimensores = []
+            agrimensores_data = expediente_actual.get("agrimensores", [])
             for i in range(st.session_state["cant_ag_rm"]):
+                agd = agrimensores_data[i] if i < len(agrimensores_data) else {}
                 c1, c2, c3 = st.columns(3)
-                n = c1.text_input("Nombre:", key=f"rm_ag_n_{i}")
-                c = c2.text_input("Cédula:", key=f"rm_ag_c_{i}")
-                m = c3.text_input("CODIA:", key=f"rm_ag_m_{i}")
+                n = c1.text_input("Nombre:", value=agd.get("nombre", ""), key=f"rm_ag_n_{i}")
+                c = c2.text_input("Cédula:", value=agd.get("cedula", ""), key=f"rm_ag_c_{i}")
+                m = c3.text_input("CODIA:", value=agd.get("matricula", ""), key=f"rm_ag_m_{i}")
                 c4, c5, c6 = st.columns(3)
-                d = c4.text_input("Oficina:", key=f"rm_ag_d_{i}")
-                t = c5.text_input("Teléfono:", key=f"rm_ag_t_{i}")
-                e = c6.text_input("Email:", key=f"rm_ag_e_{i}")
+                d = c4.text_input("Oficina:", value=agd.get("domicilio", ""), key=f"rm_ag_d_{i}")
+                t = c5.text_input("Teléfono:", value=agd.get("telefono", ""), key=f"rm_ag_t_{i}")
+                e = c6.text_input("Email:", value=agd.get("email", ""), key=f"rm_ag_e_{i}")
                 if n: lista_agrimensores.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d, "telefono": t, "email": e})
         
         with t_not:
@@ -385,11 +393,13 @@ def vista_registro_maestro():
             c_btn1.button("➕ Agregar Notario", on_click=mod_cant_rm, args=("cant_no_rm", "add"), key="rm_add_no")
             c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_no_rm", "del"), key="rm_del_no")
             lista_notarios = []
+            notarios_data = expediente_actual.get("notarios", [])
             for i in range(st.session_state["cant_no_rm"]):
+                nd = notarios_data[i] if i < len(notarios_data) else {}
                 c1, c2, c3 = st.columns(3)
-                n = c1.text_input("Nombre:", key=f"rm_no_n_{i}")
-                c = c2.text_input("Cédula:", key=f"rm_no_c_{i}")
-                m = c3.text_input("Matrícula Notarial:", key=f"rm_no_m_{i}")
+                n = c1.text_input("Nombre:", value=nd.get("nombre", ""), key=f"rm_no_n_{i}")
+                c = c2.text_input("Cédula:", value=nd.get("cedula", ""), key=f"rm_no_c_{i}")
+                m = c3.text_input("Matrícula Notarial:", value=nd.get("matricula", ""), key=f"rm_no_m_{i}")
                 if n: lista_notarios.append({"nombre": n, "cedula": c, "matricula": m})
 
         with t_alg:
@@ -397,11 +407,13 @@ def vista_registro_maestro():
             c_btn1.button("➕ Agregar Alguacil", on_click=mod_cant_rm, args=("cant_al_rm", "add"), key="rm_add_al")
             c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_al_rm", "del"), key="rm_del_al")
             lista_alguaciles = []
+            alguaciles_data = expediente_actual.get("alguaciles", [])
             for i in range(st.session_state["cant_al_rm"]):
+                ald = alguaciles_data[i] if i < len(alguaciles_data) else {}
                 c1, c2, c3 = st.columns(3)
-                n = c1.text_input("Nombre:", key=f"rm_al_n_{i}")
-                c = c2.text_input("Cédula:", key=f"rm_al_c_{i}")
-                m = c3.text_input("Tribunal:", key=f"rm_al_m_{i}")
+                n = c1.text_input("Nombre:", value=ald.get("nombre", ""), key=f"rm_al_n_{i}")
+                c = c2.text_input("Cédula:", value=ald.get("cedula", ""), key=f"rm_al_c_{i}")
+                m = c3.text_input("Tribunal:", value=ald.get("matricula", ""), key=f"rm_al_m_{i}")
                 if n: lista_alguaciles.append({"nombre": n, "cedula": c, "matricula": m})
 
     # --- 3. INMUEBLES Y TÍTULOS ---
@@ -411,23 +423,29 @@ def vista_registro_maestro():
         c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_in_rm", "del"), key="rm_del_in")
         
         lista_inmuebles = []
+        inmuebles_data = expediente_actual.get("inmuebles", [])
         for i in range(st.session_state["cant_in_rm"]):
+            ind = inmuebles_data[i] if i < len(inmuebles_data) else {}
             st.markdown(f"**Inmueble / Parcela {i+1}**")
             c1, c2, c3 = st.columns(3)
-            p = c1.text_input("Parcela/Solar:", key=f"rm_in_p_{i}")
-            dc = c2.text_input("DC / Municipio:", key=f"rm_in_dc_{i}")
-            prov = c3.text_input("Provincia:", key=f"rm_in_prov_{i}")
+            p = c1.text_input("Parcela/Solar:", value=ind.get("parcela", ""), key=f"rm_in_p_{i}")
+            dc = c2.text_input("DC / Municipio:", value=ind.get("dc", ""), key=f"rm_in_dc_{i}")
+            prov = c3.text_input("Provincia:", value=ind.get("provincia", ""), key=f"rm_in_prov_{i}")
             
             c4, c5, c6 = st.columns(3)
-            coord = c4.text_input("Coordenadas (UTM/Geo):", key=f"rm_in_co_{i}")
-            sup = c5.text_input("Superficie:", key=f"rm_in_sup_{i}")
-            tdoc = c6.selectbox("Tipo de Documento:", ["Certificado de Título", "Constancia Anotada", "Acto de Venta", "Otro"], key=f"rm_in_td_{i}")
+            coord = c4.text_input("Coordenadas (UTM/Geo):", value=ind.get("coordenadas", ""), key=f"rm_in_co_{i}")
+            sup = c5.text_input("Superficie:", value=ind.get("superficie", ""), key=f"rm_in_sup_{i}")
+            
+            opciones_tdoc = ["Certificado de Título", "Constancia Anotada", "Acto de Venta", "Otro"]
+            tdoc_guardado = ind.get("tipo_doc", "Certificado de Título")
+            tdoc_idx = opciones_tdoc.index(tdoc_guardado) if tdoc_guardado in opciones_tdoc else 0
+            tdoc = c6.selectbox("Tipo de Documento:", opciones_tdoc, index=tdoc_idx, key=f"rm_in_td_{i}")
             
             c7, c8, c9, c10 = st.columns(4)
-            num = c7.text_input("Matrícula/No.:", key=f"rm_in_n_{i}")
-            lib = c8.text_input("Libro:", key=f"rm_in_l_{i}")
-            fol = c9.text_input("Folio:", key=f"rm_in_f_{i}")
-            f_ins = c10.text_input("Fecha de Inscripción:", key=f"rm_in_fi_{i}")
+            num = c7.text_input("Matrícula/No.:", value=ind.get("numero", ""), key=f"rm_in_n_{i}")
+            lib = c8.text_input("Libro:", value=ind.get("libro", ""), key=f"rm_in_l_{i}")
+            fol = c9.text_input("Folio:", value=ind.get("folio", ""), key=f"rm_in_f_{i}")
+            f_ins = c10.text_input("Fecha de Inscripción:", value=ind.get("fecha_ins", ""), key=f"rm_in_fi_{i}")
             
             if p: lista_inmuebles.append({"parcela": p, "dc": dc, "provincia": prov, "coordenadas": coord, "superficie": sup, "tipo_doc": tdoc, "numero": num, "libro": lib, "folio": fol, "fecha_ins": f_ins})
 
@@ -438,12 +456,32 @@ def vista_registro_maestro():
         c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_do_rm", "del"), key="rm_del_do")
         
         lista_documentos = []
+        docs_data = expediente_actual.get("documentos", [])
         for i in range(st.session_state["cant_do_rm"]):
+            dod = docs_data[i] if i < len(docs_data) else {}
             c1, c2, c3, c4 = st.columns([2, 3, 2, 2])
-            tipo_d = c1.selectbox("Clasificación:", ["Acto", "Acta", "Instancia", "Solicitud", "Informe", "Demanda", "Carta", "Notificación", "Otro"], key=f"rm_do_t_{i}")
-            desc_d = c2.text_input("Descripción:", key=f"rm_do_d_{i}")
-            fecha_d = c3.date_input("Fecha:", key=f"rm_do_f_{i}")
-            estado_d = c4.selectbox("Estado:", ["Redactado", "Depositado", "Notificado", "Aprobado", "Rechazado"], key=f"rm_do_e_{i}")
+            
+            opciones_clasif = ["Acto", "Acta", "Instancia", "Solicitud", "Informe", "Demanda", "Carta", "Notificación", "Otro"]
+            clasif_guardada = dod.get("tipo", "Acto")
+            clasif_idx = opciones_clasif.index(clasif_guardada) if clasif_guardada in opciones_clasif else 0
+            tipo_d = c1.selectbox("Clasificación:", opciones_clasif, index=clasif_idx, key=f"rm_do_t_{i}")
+            
+            desc_d = c2.text_input("Descripción:", value=dod.get("descripcion", ""), key=f"rm_do_d_{i}")
+            
+            # Formato de fecha
+            from datetime import datetime
+            fecha_guardada = dod.get("fecha", "")
+            try:
+                fecha_obj = datetime.strptime(fecha_guardada, "%Y-%m-%d").date() if fecha_guardada else datetime.today().date()
+            except ValueError:
+                fecha_obj = datetime.today().date()
+                
+            fecha_d = c3.date_input("Fecha:", value=fecha_obj, key=f"rm_do_f_{i}")
+            
+            opciones_estado = ["Redactado", "Depositado", "Notificado", "Aprobado", "Rechazado"]
+            estado_guardado = dod.get("estado", "Redactado")
+            estado_idx = opciones_estado.index(estado_guardado) if estado_guardado in opciones_estado else 0
+            estado_d = c4.selectbox("Estado:", opciones_estado, index=estado_idx, key=f"rm_do_e_{i}")
             
             if desc_d: lista_documentos.append({"tipo": tipo_d, "descripcion": desc_d, "fecha": str(fecha_d), "estado": estado_d})
 
