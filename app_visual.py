@@ -1242,8 +1242,8 @@ def vista_alertas_plazos():
             st.success("🎉 ¡El radar está despejado para esta selección, Licenciado!")
         else:
             df_alertas = pd.DataFrame(alertas_filtradas)
-            df_alertas['Vencimiento_DT'] = pd.to_datetime(df_alertas['Vencimiento']).dt.date
-            hoy = datetime.now().date()
+            df_alertas['Vencimiento_DT'] = pd.to_datetime(df_alertas['Vencimiento'])
+            hoy = pd.to_datetime(datetime.now().date())
             df_alertas['Días Restantes'] = (df_alertas['Vencimiento_DT'] - hoy).dt.days
 
             def obtener_semaforo(dias):
