@@ -1014,7 +1014,9 @@ rol_usuario = st.session_state.get("rol", "Pasante")
 
 def vista_alertas_plazos():
     import streamlit as st
-    from datetime import date
+    from datetime import date, datetime
+    import pandas as pd
+    from database import db as supabase
 
     st.title("⏱️ Sistema Integrado de Plazos (SIP)")
     st.markdown("### Motor Lógico de Caducidad y Rutas Críticas")
@@ -1171,126 +1173,225 @@ def vista_alertas_plazos():
             'procedimientos': ["1. Preparar el plano de levantamiento o replanteo.", "2. Incoar la demanda en Reivindicación (o Deslinde) ante J.O.", "3. Probar la titularidad y la ocupación ilegal en audiencia."]
         }
     }
+# ==========================================
+    # 🗂️ SISTEMA DE PESTAÑAS (FUSIÓN MAESTRA)
+    # ==========================================
+    tab_radar, tab_calculadora = st.tabs([
+        "🚦 Radar Automático (Expedientes AboAgrim)",
+        "🧮 Depuración Manual (Calculadora SIP)"
+    ])
 
-    # --- 2. INTERFAZ DE USUARIO ---
-    with st.container(border=True):
-        st.markdown("#### Depuración y Operaciones")
-        
-        c_cat, c_acc = st.columns(2)
-        with c_cat:
-            categoria_sel = st.selectbox("1. Categoría de la Actuación:", 
-                                         ["Mensuras Catastrales", "Registro de Títulos", "Tribunales (Litis e Incidentes)", "Altas Cortes y Recursos", "Acciones Imprescriptibles"])
-        
-        acciones_filtradas = [k for k, v in catalogo_acciones.items() if v['cat'] == categoria_sel]
-        
-        with c_acc:
-            accion_sel = st.selectbox("2. Actuación Legal o Técnica:", acciones_filtradas)
-        
-        datos_accion = catalogo_acciones[accion_sel]
+    with tab_radar:
+        try:
+            respuesta = supabase.table("expedientes").select("id_expediente, alertas").execute()
+            todos_los_expedientes = respuesta.data
+        except Exception as e:
+            st.error(f"Error conectando a la base de datos: {e}")
+            todos_los_expedientes = []
 
-        fecha_ref = None
-        if datos_accion['tipo'] != 'imprescriptible':
-            if accion_sel == 'Plazo Aviso de Mensura (Colindantes)':
-                label_f = "Fecha proyectada para los trabajos de terreno:"
-            elif accion_sel == 'Solicitud Fuerza Pública (Abogado del Estado)':
-                label_f = "Fecha en que se notificó la intimación a desocupar:"
-            else:
-                label_f = "Fecha de inicio del cómputo (Depósito, Notificación o Título):"
+        todas_las_alertas = []
+        lista_expedientes = ["-- Todos los Expedientes --"]
+        
+        def clasificar_categoria(texto):
+            t = str(texto).lower()
+            if "mensura" in t or "saneamiento" in t: return "Mensuras Catastrales"
+            if "venta" in t or "dgii" in t or "transferencia" in t: return "Registro de Títulos"
+            if "litis" in t or "octava" in t or "audiencia" in t: return "Tribunales (Litis e Incidentes)"
+            if "recurso" in t or "revisión" in t: return "Altas Cortes y Recursos"
+            return "Otras Actuaciones"
+
+        if todos_los_expedientes:
+            for exp in todos_los_expedientes:
+                id_exp = exp.get("id_expediente")
+                alertas = exp.get("alertas")
                 
-            fecha_ref = st.date_input(label_f, value=date.today())
-            st.info("⚠️ **Atención:** Para plazos procesales, el cálculo excluye fines de semana si la norma indica 'días hábiles' o francos. El sistema calcula en días calendario base.")
+                if alertas and isinstance(alertas, list):
+                    tiene_pendientes = False
+                    for alerta in alertas:
+                        if alerta.get("estado") != "Completado":
+                            tiene_pendientes = True
+                            cat_detectada = clasificar_categoria(alerta.get("documento_origen", "") + " " + alerta.get("descripcion", ""))
+                            
+                            todas_las_alertas.append({
+                                "Expediente": id_exp,
+                                "Categoría": cat_detectada,
+                                "Vencimiento": alerta.get("fecha_vencimiento"),
+                                "Actuación / Tarea": alerta.get("descripcion"),
+                                "Doc. Vinculado": alerta.get("documento_origen"),
+                            })
+                    
+                    if tiene_pendientes and id_exp not in lista_expedientes:
+                        lista_expedientes.append(id_exp)
 
-    # --- 3. MOTOR DE CÁLCULO Y RESULTADOS ---
-    if st.button("🚀 Generar Ruta Crítica y Diagnóstico", type="primary", use_container_width=True):
+        st.markdown("### 🔍 Panel Automático de Vencimientos")
+        col_f1, col_f2 = st.columns(2)
+        filtro_exp = col_f1.selectbox("1. Filtrar por Expediente:", lista_expedientes)
+        
+        categorias_disp = ["-- Todas las Categorías --", "Mensuras Catastrales", "Registro de Títulos", "Tribunales (Litis e Incidentes)", "Altas Cortes y Recursos", "Otras Actuaciones"]
+        filtro_cat = col_f2.selectbox("2. Filtrar por Categoría:", categorias_disp)
+
+        alertas_filtradas = todas_las_alertas
+        if filtro_exp != "-- Todos los Expedientes --":
+            alertas_filtradas = [a for a in alertas_filtradas if a["Expediente"] == filtro_exp]
+        if filtro_cat != "-- Todas las Categorías --":
+            alertas_filtradas = [a for a in alertas_filtradas if a["Categoría"] == filtro_cat]
+
         st.write("---")
-        
-        hoy = date.today()
-        esta_prescrita = False
-        texto_tiempo = ""
-        limite_ley = "No aplica"
 
-        if datos_accion['tipo'] == 'imprescriptible':
-            color_badge = "#007bff"
-            titulo_alerta = "🔵 ACCIÓN DE ORDEN PÚBLICO (IMPRESCRIPTIBLE)"
-            texto_tiempo = "N/A"
-            diag_final = datos_accion['diagnosticoAprobado']
+        if not alertas_filtradas:
+            st.success("🎉 ¡El radar está despejado para esta selección, Licenciado!")
         else:
-            limite_ley = f"{datos_accion['plazo']} {datos_accion['unidad']}"
+            df_alertas = pd.DataFrame(alertas_filtradas)
+            df_alertas['Vencimiento_DT'] = pd.to_datetime(df_alertas['Vencimiento']).dt.date
+            hoy = datetime.now().date()
+            df_alertas['Días Restantes'] = (df_alertas['Vencimiento_DT'] - hoy).dt.days
+
+            def obtener_semaforo(dias):
+                if dias < 0: return "🔴 Vencido"
+                elif dias <= 15: return "🟡 Urgente"
+                else: return "🟢 A tiempo"
+                
+            df_alertas['Estado'] = df_alertas['Días Restantes'].apply(obtener_semaforo)
+            df_alertas = df_alertas.sort_values(by='Días Restantes')
+
+            col1, col2, col3 = st.columns(3)
+            vencidos = df_alertas[df_alertas['Días Restantes'] < 0]
+            urgentes = df_alertas[(df_alertas['Días Restantes'] >= 0) & (df_alertas['Días Restantes'] <= 15)]
+            a_tiempo = df_alertas[df_alertas['Días Restantes'] > 15]
             
-            if datos_accion['tipo'] == 'plazo_inverso':
-                if fecha_ref < hoy:
-                    st.error("❌ Error: Para avisos y desalojos, la fecha objetivo debe ser futura.")
-                    st.stop()
-                dias_faltantes = (fecha_ref - hoy).days
-                esta_prescrita = dias_faltantes < datos_accion['plazo']
-                texto_tiempo = f"Faltan {dias_faltantes} días para el evento"
-                
-            elif datos_accion['unidad'] == 'anos':
-                anios_transcurridos = hoy.year - fecha_ref.year - ((hoy.month, hoy.day) < (fecha_ref.month, fecha_ref.day))
-                esta_prescrita = anios_transcurridos >= datos_accion['plazo']
-                texto_tiempo = f"{anios_transcurridos} años completos"
-                
-            elif datos_accion['unidad'] == 'dias':
-                dias_transcurridos = (hoy - fecha_ref).days
-                esta_prescrita = dias_transcurridos > datos_accion['plazo']
-                texto_tiempo = f"{dias_transcurridos} días transcurridos"
+            col1.error(f"🔴 Vencidos: {len(vencidos)}")
+            col2.warning(f"🟡 Urgentes: {len(urgentes)}")
+            col3.success(f"🟢 A tiempo: {len(a_tiempo)}")
 
-            if esta_prescrita:
-                color_badge = "#dc3545"
-                titulo_alerta = "🔴 PLAZO VENCIDO / CADUCIDAD"
-                diag_final = datos_accion['diagnosticoRechazado']
-            else:
-                color_badge = "#28a745"
-                titulo_alerta = "🟢 DENTRO DEL PLAZO LEGAL / ACTIVO"
-                diag_final = datos_accion['diagnosticoAprobado']
+            st.write("---")
+            df_mostrar = df_alertas[['Expediente', 'Categoría', 'Estado', 'Días Restantes', 'Vencimiento', 'Actuación / Tarea', 'Doc. Vinculado']]
+            st.dataframe(
+                df_mostrar,
+                column_config={"Días Restantes": st.column_config.NumberColumn("Faltan (Días)")},
+                hide_index=True,
+                use_container_width=True
+            )
 
-        # --- 4. RENDERIZADO DEL DICTAMEN ---
+    with tab_calculadora:
+        # --- 2. INTERFAZ DE USUARIO ---
         with st.container(border=True):
-            st.markdown(f"<h2 style='text-align: center; color: #0d253f; font-family: serif;'>DICTAMEN TÉCNICO-LEGAL</h2>", unsafe_allow_html=True)
-            st.markdown(f"<p style='text-align: center; color: gray; font-size: 0.85rem;'>Expedido vía plataforma automatizada • {hoy.strftime('%d de %B de %Y')}</p>", unsafe_allow_html=True)
+            st.markdown("#### Depuración y Operaciones")
             
-            st.markdown(f"""
-            <div style='background-color: {color_badge}20; color: {color_badge}; border: 1px solid {color_badge}; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; font-size: 1.1rem; margin-bottom: 20px;'>
-                {titulo_alerta}
-            </div>
-            """, unsafe_allow_html=True)
-
+            c_cat, c_acc = st.columns(2)
+            with c_cat:
+                categoria_sel = st.selectbox("1. Categoría de la Actuación:", 
+                                             ["Mensuras Catastrales", "Registro de Títulos", "Tribunales (Litis e Incidentes)", "Altas Cortes y Recursos", "Acciones Imprescriptibles"])
+            
+            acciones_filtradas = [k for k, v in catalogo_acciones.items() if v['cat'] == categoria_sel]
+            
+            with c_acc:
+                accion_sel = st.selectbox("2. Actuación Legal o Técnica:", acciones_filtradas)
+            
+            datos_accion = catalogo_acciones[accion_sel]
+    
+            fecha_ref = None
             if datos_accion['tipo'] != 'imprescriptible':
-                st.markdown(f"**Tiempo medido:** {texto_tiempo}")
-                st.markdown(f"**Límite normativo:** {limite_ley}")
-            
-            st.markdown(f"**Diagnóstico:** <span style='color: #0d253f; font-size: 1.1rem; font-weight: bold;'>{diag_final}</span>", unsafe_allow_html=True)
-            st.markdown(f"**Acción a tomar:** {datos_accion['estrategia']}")
-            
+                if accion_sel == 'Plazo Aviso de Mensura (Colindantes)':
+                    label_f = "Fecha proyectada para los trabajos de terreno:"
+                elif accion_sel == 'Solicitud Fuerza Pública (Abogado del Estado)':
+                    label_f = "Fecha en que se notificó la intimación a desocupar:"
+                else:
+                    label_f = "Fecha de inicio del cómputo (Depósito, Notificación o Título):"
+                    
+                fecha_ref = st.date_input(label_f, value=date.today())
+                st.info("⚠️ **Atención:** Para plazos procesales, el cálculo excluye fines de semana si la norma indica 'días hábiles' o francos. El sistema calcula en días calendario base.")
+    
+        # --- 3. MOTOR DE CÁLCULO Y RESULTADOS ---
+        if st.button("🚀 Generar Ruta Crítica y Diagnóstico", type="primary", use_container_width=True):
             st.write("---")
             
-            c_req, c_proc = st.columns(2)
-            with c_req:
-                st.markdown("#### 📌 Requisitos Documentales")
-                for req in datos_accion['requisitos']:
-                    st.markdown(f"- {req}")
-            with c_proc:
-                st.markdown("#### ⚙️ Procedimiento (Ruta Crítica)")
-                for proc in datos_accion['procedimientos']:
-                    st.markdown(f"{proc}")
-            
-            st.write("---")
-            st.info(f"**⚖️ Normativa Legal:** {datos_accion['baseLegal']}\n\n**🏛️ Jurisprudencia:** {datos_accion['jurisprudencia']}")
-            
-            st.markdown(f"""
-            <div style="margin-top: 20px; text-align: right; font-size: 0.95rem; color: #333;">
-                <div style="font-family: serif; font-size: 1.4rem; color: #c5a059; font-weight: bold; margin-bottom: 5px;">ABOAGRIM</div>
-                <strong>Lic. Jhonny Matos, M.A.</strong><br>
-                <span style="color: #0d253f; font-weight: 600;">Presidente | Abogado y Agrimensor</span><br>
-                <span style="color: gray; font-size: 0.85rem;">Tel: 829-826-5888</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-        # --- 5. BOTÓN DE EXPORTACIÓN (Instrucción visual) ---
-        st.write("")
-        if st.button("🖨️ Exportar Dictamen a PDF", use_container_width=True):
-            st.toast("⌨️ Presione Ctrl + P en su teclado para abrir el menú de impresión o guardado PDF.", icon="🖨️")
-            st.success("💡 **Instrucción para el equipo:** Presione **`Ctrl + P`** (o `Cmd + P` en Mac) y seleccione **Guardar como PDF** en la ventana que aparecerá en su navegador.")
+            hoy = date.today()
+            esta_prescrita = False
+            texto_tiempo = ""
+            limite_ley = "No aplica"
+    
+            if datos_accion['tipo'] == 'imprescriptible':
+                color_badge = "#007bff"
+                titulo_alerta = "🔵 ACCIÓN DE ORDEN PÚBLICO (IMPRESCRIPTIBLE)"
+                texto_tiempo = "N/A"
+                diag_final = datos_accion['diagnosticoAprobado']
+            else:
+                limite_ley = f"{datos_accion['plazo']} {datos_accion['unidad']}"
+                
+                if datos_accion['tipo'] == 'plazo_inverso':
+                    if fecha_ref < hoy:
+                        st.error("❌ Error: Para avisos y desalojos, la fecha objetivo debe ser futura.")
+                        st.stop()
+                    dias_faltantes = (fecha_ref - hoy).days
+                    esta_prescrita = dias_faltantes < datos_accion['plazo']
+                    texto_tiempo = f"Faltan {dias_faltantes} días para el evento"
+                    
+                elif datos_accion['unidad'] == 'anos':
+                    anios_transcurridos = hoy.year - fecha_ref.year - ((hoy.month, hoy.day) < (fecha_ref.month, fecha_ref.day))
+                    esta_prescrita = anios_transcurridos >= datos_accion['plazo']
+                    texto_tiempo = f"{anios_transcurridos} años completos"
+                    
+                elif datos_accion['unidad'] == 'dias':
+                    dias_transcurridos = (hoy - fecha_ref).days
+                    esta_prescrita = dias_transcurridos > datos_accion['plazo']
+                    texto_tiempo = f"{dias_transcurridos} días transcurridos"
+    
+                if esta_prescrita:
+                    color_badge = "#dc3545"
+                    titulo_alerta = "🔴 PLAZO VENCIDO / CADUCIDAD"
+                    diag_final = datos_accion['diagnosticoRechazado']
+                else:
+                    color_badge = "#28a745"
+                    titulo_alerta = "🟢 DENTRO DEL PLAZO LEGAL / ACTIVO"
+                    diag_final = datos_accion['diagnosticoAprobado']
+    
+            # --- 4. RENDERIZADO DEL DICTAMEN ---
+            with st.container(border=True):
+                st.markdown(f"<h2 style='text-align: center; color: #0d253f; font-family: serif;'>DICTAMEN TÉCNICO-LEGAL</h2>", unsafe_allow_html=True)
+                st.markdown(f"<p style='text-align: center; color: gray; font-size: 0.85rem;'>Expedido vía plataforma automatizada • {hoy.strftime('%d de %B de %Y')}</p>", unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                <div style='background-color: {color_badge}20; color: {color_badge}; border: 1px solid {color_badge}; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; font-size: 1.1rem; margin-bottom: 20px;'>
+                    {titulo_alerta}
+                </div>
+                """, unsafe_allow_html=True)
+    
+                if datos_accion['tipo'] != 'imprescriptible':
+                    st.markdown(f"**Tiempo medido:** {texto_tiempo}")
+                    st.markdown(f"**Límite normativo:** {limite_ley}")
+                
+                st.markdown(f"**Diagnóstico:** <span style='color: #0d253f; font-size: 1.1rem; font-weight: bold;'>{diag_final}</span>", unsafe_allow_html=True)
+                st.markdown(f"**Acción a tomar:** {datos_accion['estrategia']}")
+                
+                st.write("---")
+                
+                c_req, c_proc = st.columns(2)
+                with c_req:
+                    st.markdown("#### 📌 Requisitos Documentales")
+                    for req in datos_accion['requisitos']:
+                        st.markdown(f"- {req}")
+                with c_proc:
+                    st.markdown("#### ⚙️ Procedimiento (Ruta Crítica)")
+                    for proc in datos_accion['procedimientos']:
+                        st.markdown(f"{proc}")
+                
+                st.write("---")
+                st.info(f"**⚖️ Normativa Legal:** {datos_accion['baseLegal']}\n\n**🏛️ Jurisprudencia:** {datos_accion['jurisprudencia']}")
+                
+                st.markdown(f"""
+                <div style="margin-top: 20px; text-align: right; font-size: 0.95rem; color: #333;">
+                    <div style="font-family: serif; font-size: 1.4rem; color: #c5a059; font-weight: bold; margin-bottom: 5px;">ABOAGRIM</div>
+                    <strong>Lic. Jhonny Matos, M.A.</strong><br>
+                    <span style="color: #0d253f; font-weight: 600;">Presidente | Abogado y Agrimensor</span><br>
+                    <span style="color: gray; font-size: 0.85rem;">Tel: 829-826-5888</span>
+                </div>
+                """, unsafe_allow_html=True)
+    
+            # --- 5. BOTÓN DE EXPORTACIÓN (Instrucción visual) ---
+            st.write("")
+            if st.button("🖨️ Exportar Dictamen a PDF", use_container_width=True):
+                st.toast("⌨️ Presione Ctrl + P en su teclado para abrir el menú de impresión o guardado PDF.", icon="🖨️")
+                st.success("💡 **Instrucción para el equipo:** Presione **`Ctrl + P`** (o `Cmd + P` en Mac) y seleccione **Guardar como PDF** en la ventana que aparecerá en su navegador.")
 def vista_plantillas():
     import streamlit as st
     import os
