@@ -445,7 +445,8 @@ def vista_registro_maestro():
         datos_nube = respuesta_db.data
         
         if datos_nube:
-            for exp_data in datos_nube:
+            # 🛡️ VACUNA APLICADA: Usamos 'enumerate' para generar un índice único (idx)
+            for idx, exp_data in enumerate(datos_nube):
                 exp_num = exp_data.get('id_expediente', 'Sin ID')
                 with st.expander(f"📁 Expediente: {exp_num} - {exp_data.get('asunto', '')}"):
                     col_d1, col_d2, col_d3 = st.columns(3)
@@ -457,7 +458,8 @@ def vista_registro_maestro():
                     
                     col_d3.write(f"**Actuaciones/Docs:** {len(exp_data.get('documentos', []))}")
                     
-                    if st.button("🗑️ Eliminar de la Nube", key=f"del_exp_{exp_num}"):
+                    # 🛡️ Le sumamos el '_{idx}' a la llave del botón para que NUNCA se repita
+                    if st.button("🗑️ Eliminar de la Nube", key=f"del_exp_{exp_num}_{idx}"):
                         supabase.table("expedientes").delete().eq("id_expediente", exp_num).execute()
                         st.rerun()
         else:
