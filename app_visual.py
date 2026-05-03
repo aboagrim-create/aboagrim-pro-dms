@@ -1184,6 +1184,7 @@ def vista_plantillas():
     import streamlit as st
     import os
     from datetime import datetime
+    from database import db as supabase  # ☁️ Conexión maestra a la nube
 
     st.title("📄 Motor de Redacción y Plantillas")
     st.markdown("### *AboAgrim Pro: Sistema Experto de Forja Documental*")
@@ -1210,7 +1211,14 @@ def vista_plantillas():
     tab_redaccion, tab_boveda = st.tabs(["⚙️ Taller de Redacción (Generar)", "📂 Bóveda de Modelos (Administrar)"])
 
     with tab_redaccion:
-        lista_exps = ["-- Expediente Independiente --"] + list(st.session_state.get("db_expedientes", {}).keys())
+        # 🚀 1. DESCARGAMOS LOS EXPEDIENTES DE LA NUBE
+        try:
+            respuesta = supabase.table("expedientes").select("*").execute()
+            db_expedientes_cloud = {row['id_expediente']: row for row in respuesta.data}
+        except Exception:
+            db_expedientes_cloud = {}
+
+        lista_exps = ["-- Expediente Independiente (Manual) --"] + list(db_expedientes_cloud.keys())
             
         col_sel1, col_sel2 = st.columns([1, 2])
         with col_sel1:
@@ -1220,179 +1228,193 @@ def vista_plantillas():
 
         st.write("---")
         
-        # --- 1. PARTES Y REPRESENTANTES (DINÁMICO) ---
-        with st.expander("👥 1. Partes, Clientes y Representantes", expanded=True):
-            t_cli, t_apo = st.tabs(["👤 Clientes / Propietarios", "🤝 Apoderados / Representantes"])
+        # 🧠 2. LÓGICA INTELIGENTE DE CARGA DE DATOS
+        if exp_seleccionado != "-- Expediente Independiente (Manual) --":
+            st.success(f"🔗 **Conectado al Expediente {exp_seleccionado}.** Los datos de partes, profesionales e inmuebles se han cargado desde Supabase automáticamente.")
             
-            with t_cli:
-                c_btn1, c_btn2 = st.columns([1, 4])
-                c_btn1.button("➕ Agregar Cliente", on_click=mod_cant, args=("cant_cl", "add"), key="add_cl")
-                c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_cl", "del"), key="del_cl")
-                
-                lista_clientes = []
-                for i in range(st.session_state["cant_cl"]):
-                    st.markdown(f"**Cliente {i+1}**")
-                    c1, c2, c3 = st.columns(3)
-                    n = c1.text_input("Nombre / Razón Social:", key=f"cl_n_{i}")
-                    c = c2.text_input("Cédula / RNC:", key=f"cl_c_{i}")
-                    t = c3.text_input("Teléfono(s):", key=f"cl_t_{i}")
-                    c4, c5 = st.columns([2, 1])
-                    d = c4.text_input("Domicilio Exacto:", key=f"cl_d_{i}")
-                    e = c5.text_input("Correo Electrónico:", key=f"cl_e_{i}")
-                    if n: lista_clientes.append({"nombre": n, "cedula": c, "telefono": t, "domicilio": d, "email": e})
-
-            with t_apo:
-                c_btn1, c_btn2 = st.columns([1, 4])
-                c_btn1.button("➕ Agregar Apoderado", on_click=mod_cant, args=("cant_ap", "add"), key="add_ap")
-                c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_ap", "del"), key="del_ap")
-                
-                lista_apoderados = []
-                for i in range(st.session_state["cant_ap"]):
-                    st.markdown(f"**Apoderado {i+1}**")
-                    c1, c2, c3 = st.columns(3)
-                    n = c1.text_input("Nombre Completo:", key=f"ap_n_{i}")
-                    c = c2.text_input("Cédula:", key=f"ap_c_{i}")
-                    q = c3.text_input("Calidad (Ej. Poder Especial):", key=f"ap_q_{i}")
-                    c4, c5 = st.columns([2, 1])
-                    d = c4.text_input("Domicilio:", key=f"ap_d_{i}")
-                    t = c5.text_input("Teléfono / Email:", key=f"ap_te_{i}")
-                    if n: lista_apoderados.append({"nombre": n, "cedula": c, "calidad": q, "domicilio": d, "contacto": t})
-
-        # --- 2. PROFESIONALES (DINÁMICO CON TELÉFONOS/EMAIL) ---
-        with st.expander("⚖️ 2. Profesionales Actuantes", expanded=False):
-            t_abo, t_agr, t_not, t_alg = st.tabs(["💼 Abogados", "📐 Agrimensores", "✒️ Notarios", "⚖️ Alguaciles"])
-
-            with t_abo:
-                c_btn1, c_btn2 = st.columns([1, 4])
-                c_btn1.button("➕ Agregar Abogado", on_click=mod_cant, args=("cant_ab", "add"), key="add_ab")
-                c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_ab", "del"), key="del_ab")
-                lista_abogados = []
-                for i in range(st.session_state["cant_ab"]):
-                    c1, c2, c3 = st.columns(3)
-                    n = c1.text_input("Nombre:", key=f"ab_n_{i}")
-                    c = c2.text_input("Cédula:", key=f"ab_c_{i}")
-                    m = c3.text_input("CARD:", key=f"ab_m_{i}")
-                    c4, c5, c6 = st.columns(3)
-                    d = c4.text_input("Estudio/Domicilio:", key=f"ab_d_{i}")
-                    t = c5.text_input("Teléfono:", key=f"ab_t_{i}")
-                    e = c6.text_input("Email:", key=f"ab_e_{i}")
-                    if n: lista_abogados.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d, "telefono": t, "email": e})
-
-            with t_agr:
-                c_btn1, c_btn2 = st.columns([1, 4])
-                c_btn1.button("➕ Agregar Agrimensor", on_click=mod_cant, args=("cant_ag", "add"), key="add_ag")
-                c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_ag", "del"), key="del_ag")
-                lista_agrimensores = []
-                for i in range(st.session_state["cant_ag"]):
-                    c1, c2, c3 = st.columns(3)
-                    n = c1.text_input("Nombre:", key=f"ag_n_{i}")
-                    c = c2.text_input("Cédula:", key=f"ag_c_{i}")
-                    m = c3.text_input("CODIA:", key=f"ag_m_{i}")
-                    c4, c5, c6 = st.columns(3)
-                    d = c4.text_input("Oficina:", key=f"ag_d_{i}")
-                    t = c5.text_input("Teléfono:", key=f"ag_t_{i}")
-                    e = c6.text_input("Email:", key=f"ag_e_{i}")
-                    if n: lista_agrimensores.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d, "telefono": t, "email": e})
-
-            with t_not:
-                c_btn1, c_btn2 = st.columns([1, 4])
-                c_btn1.button("➕ Agregar Notario", on_click=mod_cant, args=("cant_no", "add"), key="add_no")
-                c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_no", "del"), key="del_no")
-                lista_notarios = []
-                for i in range(st.session_state["cant_no"]):
-                    c1, c2, c3 = st.columns(3)
-                    n = c1.text_input("Nombre:", key=f"no_n_{i}")
-                    c = c2.text_input("Cédula:", key=f"no_c_{i}")
-                    m = c3.text_input("Matrícula:", key=f"no_m_{i}")
-                    c4, c5, c6 = st.columns(3)
-                    d = c4.text_input("Jurisdicción:", key=f"no_d_{i}")
-                    t = c5.text_input("Teléfono:", key=f"no_t_{i}")
-                    e = c6.text_input("Email:", key=f"no_e_{i}")
-                    if n: lista_notarios.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d, "telefono": t, "email": e})
-
-            with t_alg:
-                c_btn1, c_btn2 = st.columns([1, 4])
-                c_btn1.button("➕ Agregar Alguacil", on_click=mod_cant, args=("cant_al", "add"), key="add_al")
-                c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_al", "del"), key="del_al")
-                lista_alguaciles = []
-                for i in range(st.session_state["cant_al"]):
-                    c1, c2, c3 = st.columns(3)
-                    n = c1.text_input("Nombre:", key=f"al_n_{i}")
-                    c = c2.text_input("Cédula:", key=f"al_c_{i}")
-                    m = c3.text_input("Tribunal:", key=f"al_m_{i}")
-                    c4, c5 = st.columns([2, 1])
-                    d = c4.text_input("Domicilio:", key=f"al_d_{i}")
-                    t = c5.text_input("Teléfono:", key=f"al_t_{i}")
-                    if n: lista_alguaciles.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d, "telefono": t})
-
-        # --- 3. INMUEBLES (DINÁMICO CON LIBROS, FOLIOS, COORDENADAS) ---
-        with st.expander("📍 3. Inmuebles y Sustentos Legales", expanded=False):
-            c_btn1, c_btn2 = st.columns([1, 4])
-            c_btn1.button("➕ Agregar Inmueble", on_click=mod_cant, args=("cant_in", "add"), key="add_in")
-            c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_in", "del"), key="del_in")
+            # Extraemos los datos de la nube
+            exp_data = db_expedientes_cloud[exp_seleccionado]
+            lista_clientes = exp_data.get("clientes", [])
+            lista_apoderados = exp_data.get("apoderados", [])
+            lista_abogados = exp_data.get("abogados", [])
+            lista_agrimensores = exp_data.get("agrimensores", [])
+            lista_notarios = exp_data.get("notarios", [])
+            lista_alguaciles = exp_data.get("alguaciles", [])
+            lista_inmuebles = exp_data.get("inmuebles", [])
             
-            lista_inmuebles = []
-            for i in range(st.session_state["cant_in"]):
-                st.markdown(f"**Inmueble / Parcela {i+1}**")
-                c1, c2, c3 = st.columns(3)
-                p = c1.text_input("Parcela/Solar:", key=f"in_p_{i}")
-                dc = c2.text_input("DC / Municipio:", key=f"in_dc_{i}")
-                prov = c3.text_input("Provincia:", key=f"in_prov_{i}")
+            with st.expander("👁️ Ver resumen de datos maestros cargados", expanded=False):
+                st.info("Estos datos se inyectarán en su documento de Word:")
+                st.write(f"- 👤 **Clientes:** {len(lista_clientes)} | 🤝 **Apoderados:** {len(lista_apoderados)}")
+                st.write(f"- ⚖️ **Profesionales:** {len(lista_abogados)} Abogados, {len(lista_agrimensores)} Agrimensores")
+                st.write(f"- 📍 **Inmuebles:** {len(lista_inmuebles)}")
                 
-                c4, c5, c6 = st.columns(3)
-                coord = c4.text_input("Coordenadas (UTM/Geográficas):", key=f"in_co_{i}")
-                sup = c5.text_input("Superficie:", key=f"in_sup_{i}")
-                tdoc = c6.selectbox("Tipo de Documento Base:", ["Certificado de Título", "Constancia Anotada", "Acto de Venta", "Otro"], key=f"in_td_{i}")
+        else:
+            st.info("📝 **Modo Manual:** Complete los datos a continuación para forjar un documento sin vincularlo a la base de datos.")
+            
+            # --- FORMULARIOS MANUALES (Solo se ven si es Expediente Independiente) ---
+            with st.expander("👥 1. Partes, Clientes y Representantes", expanded=True):
+                t_cli, t_apo = st.tabs(["👤 Clientes / Propietarios", "🤝 Apoderados / Representantes"])
                 
-                c7, c8, c9, c10 = st.columns(4)
-                num = c7.text_input("Matrícula/Número:", key=f"in_n_{i}")
-                lib = c8.text_input("Libro:", key=f"in_l_{i}")
-                fol = c9.text_input("Folio:", key=f"in_f_{i}")
-                f_ins = c10.text_input("Fecha Inscripción:", key=f"in_fi_{i}")
-                
-                if p: lista_inmuebles.append({"parcela": p, "dc": dc, "provincia": prov, "coord": coord, "superficie": sup, "tipo_doc": tdoc, "numero": num, "libro": lib, "folio": fol, "fecha_ins": f_ins})
+                with t_cli:
+                    c_btn1, c_btn2 = st.columns([1, 4])
+                    c_btn1.button("➕ Agregar Cliente", on_click=mod_cant, args=("cant_cl", "add"), key="add_cl")
+                    c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_cl", "del"), key="del_cl")
+                    
+                    lista_clientes = []
+                    for i in range(st.session_state["cant_cl"]):
+                        c1, c2, c3 = st.columns(3)
+                        n = c1.text_input("Nombre / Razón Social:", key=f"cl_n_{i}")
+                        c = c2.text_input("Cédula / RNC:", key=f"cl_c_{i}")
+                        t = c3.text_input("Teléfono(s):", key=f"cl_t_{i}")
+                        c4, c5 = st.columns([2, 1])
+                        d = c4.text_input("Domicilio Exacto:", key=f"cl_d_{i}")
+                        e = c5.text_input("Correo Electrónico:", key=f"cl_e_{i}")
+                        if n: lista_clientes.append({"nombre": n, "cedula": c, "telefono": t, "domicilio": d, "email": e})
 
-        # --- 4. TRANSACCIONES (DINÁMICO) ---
-        with st.expander("💰 4. Datos Transaccionales y Testigos", expanded=False):
+                with t_apo:
+                    c_btn1, c_btn2 = st.columns([1, 4])
+                    c_btn1.button("➕ Agregar Apoderado", on_click=mod_cant, args=("cant_ap", "add"), key="add_ap")
+                    c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_ap", "del"), key="del_ap")
+                    
+                    lista_apoderados = []
+                    for i in range(st.session_state["cant_ap"]):
+                        c1, c2, c3 = st.columns(3)
+                        n = c1.text_input("Nombre Completo:", key=f"ap_n_{i}")
+                        c = c2.text_input("Cédula:", key=f"ap_c_{i}")
+                        q = c3.text_input("Calidad:", key=f"ap_q_{i}")
+                        c4, c5 = st.columns([2, 1])
+                        d = c4.text_input("Domicilio:", key=f"ap_d_{i}")
+                        te = c5.text_input("Teléfono / Email:", key=f"ap_te_{i}")
+                        if n: lista_apoderados.append({"nombre": n, "cedula": c, "calidad": q, "domicilio": d, "contacto": te})
+
+            with st.expander("⚖️ 2. Profesionales Actuantes", expanded=False):
+                t_abo, t_agr, t_not, t_alg = st.tabs(["💼 Abogados", "📐 Agrimensores", "✒️ Notarios", "⚖️ Alguaciles"])
+
+                with t_abo:
+                    c_btn1, c_btn2 = st.columns([1, 4])
+                    c_btn1.button("➕ Abogado", on_click=mod_cant, args=("cant_ab", "add"), key="add_ab")
+                    c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_ab", "del"), key="del_ab")
+                    lista_abogados = []
+                    for i in range(st.session_state["cant_ab"]):
+                        c1, c2, c3 = st.columns(3)
+                        n = c1.text_input("Nombre:", key=f"ab_n_{i}")
+                        c = c2.text_input("Cédula:", key=f"ab_c_{i}")
+                        m = c3.text_input("CARD:", key=f"ab_m_{i}")
+                        c4, c5, c6 = st.columns(3)
+                        d = c4.text_input("Estudio/Domicilio:", key=f"ab_d_{i}")
+                        t = c5.text_input("Teléfono:", key=f"ab_t_{i}")
+                        e = c6.text_input("Email:", key=f"ab_e_{i}")
+                        if n: lista_abogados.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d, "telefono": t, "email": e})
+
+                with t_agr:
+                    c_btn1, c_btn2 = st.columns([1, 4])
+                    c_btn1.button("➕ Agrimensor", on_click=mod_cant, args=("cant_ag", "add"), key="add_ag")
+                    c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_ag", "del"), key="del_ag")
+                    lista_agrimensores = []
+                    for i in range(st.session_state["cant_ag"]):
+                        c1, c2, c3 = st.columns(3)
+                        n = c1.text_input("Nombre:", key=f"ag_n_{i}")
+                        c = c2.text_input("Cédula:", key=f"ag_c_{i}")
+                        m = c3.text_input("CODIA:", key=f"ag_m_{i}")
+                        c4, c5, c6 = st.columns(3)
+                        d = c4.text_input("Oficina:", key=f"ag_d_{i}")
+                        t = c5.text_input("Teléfono:", key=f"ag_t_{i}")
+                        e = c6.text_input("Email:", key=f"ag_e_{i}")
+                        if n: lista_agrimensores.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d, "telefono": t, "email": e})
+
+                with t_not:
+                    c_btn1, c_btn2 = st.columns([1, 4])
+                    c_btn1.button("➕ Notario", on_click=mod_cant, args=("cant_no", "add"), key="add_no")
+                    c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_no", "del"), key="del_no")
+                    lista_notarios = []
+                    for i in range(st.session_state["cant_no"]):
+                        c1, c2, c3 = st.columns(3)
+                        n = c1.text_input("Nombre:", key=f"no_n_{i}")
+                        c = c2.text_input("Cédula:", key=f"no_c_{i}")
+                        m = c3.text_input("Matrícula:", key=f"no_m_{i}")
+                        c4, c5, c6 = st.columns(3)
+                        d = c4.text_input("Jurisdicción:", key=f"no_d_{i}")
+                        t = c5.text_input("Teléfono:", key=f"no_t_{i}")
+                        e = c6.text_input("Email:", key=f"no_e_{i}")
+                        if n: lista_notarios.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d, "telefono": t, "email": e})
+
+                with t_alg:
+                    c_btn1, c_btn2 = st.columns([1, 4])
+                    c_btn1.button("➕ Alguacil", on_click=mod_cant, args=("cant_al", "add"), key="add_al")
+                    c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_al", "del"), key="del_al")
+                    lista_alguaciles = []
+                    for i in range(st.session_state["cant_al"]):
+                        c1, c2, c3 = st.columns(3)
+                        n = c1.text_input("Nombre:", key=f"al_n_{i}")
+                        c = c2.text_input("Cédula:", key=f"al_c_{i}")
+                        m = c3.text_input("Tribunal:", key=f"al_m_{i}")
+                        c4, c5 = st.columns([2, 1])
+                        d = c4.text_input("Domicilio:", key=f"al_d_{i}")
+                        t = c5.text_input("Teléfono:", key=f"al_t_{i}")
+                        if n: lista_alguaciles.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d, "telefono": t})
+
+            with st.expander("📍 3. Inmuebles y Sustentos Legales", expanded=False):
+                c_btn1, c_btn2 = st.columns([1, 4])
+                c_btn1.button("➕ Agregar Inmueble", on_click=mod_cant, args=("cant_in", "add"), key="add_in")
+                c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_in", "del"), key="del_in")
+                
+                lista_inmuebles = []
+                for i in range(st.session_state["cant_in"]):
+                    c1, c2, c3 = st.columns(3)
+                    p = c1.text_input("Parcela/Solar:", key=f"in_p_{i}")
+                    dc = c2.text_input("DC / Municipio:", key=f"in_dc_{i}")
+                    prov = c3.text_input("Provincia:", key=f"in_prov_{i}")
+                    c4, c5, c6 = st.columns(3)
+                    coord = c4.text_input("Coordenadas:", key=f"in_co_{i}")
+                    sup = c5.text_input("Superficie:", key=f"in_sup_{i}")
+                    tdoc = c6.selectbox("Tipo Documento:", ["Certificado de Título", "Constancia Anotada", "Acto de Venta", "Otro"], key=f"in_td_{i}")
+                    c7, c8, c9, c10 = st.columns(4)
+                    num = c7.text_input("No.:", key=f"in_n_{i}")
+                    lib = c8.text_input("Libro:", key=f"in_l_{i}")
+                    fol = c9.text_input("Folio:", key=f"in_f_{i}")
+                    f_ins = c10.text_input("Fecha Inscripción:", key=f"in_fi_{i}")
+                    if p: lista_inmuebles.append({"parcela": p, "dc": dc, "provincia": prov, "coord": coord, "superficie": sup, "tipo_doc": tdoc, "numero": num, "libro": lib, "folio": fol, "fecha_ins": f_ins})
+
+        # --- 3. SECCIONES SIEMPRE VISIBLES (Transacciones y Anexos varían por documento) ---
+        with st.expander("💰 4. Datos Transaccionales y Testigos (Específico del Doc.)", expanded=False):
             c_btn1, c_btn2 = st.columns([1, 4])
-            c_btn1.button("➕ Agregar Pago/Transacción", on_click=mod_cant, args=("cant_pg", "add"), key="add_pg")
+            c_btn1.button("➕ Agregar Pago", on_click=mod_cant, args=("cant_pg", "add"), key="add_pg")
             c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_pg", "del"), key="del_pg")
             
             lista_pagos = []
             for i in range(st.session_state["cant_pg"]):
                 c1, c2, c3 = st.columns(3)
                 m = c1.text_input("Monto / Precio:", key=f"pg_m_{i}")
-                f = c2.text_input("Forma de Pago (Cheque, Transferencia):", key=f"pg_f_{i}")
+                f = c2.text_input("Forma de Pago:", key=f"pg_f_{i}")
                 b = c3.text_input("Banco o Detalle:", key=f"pg_b_{i}")
                 if m: lista_pagos.append({"monto": m, "forma": f, "banco": b})
             
             st.write("---")
-            testigos = st.text_area("Testigos Instrumentales (Nombres, Cédulas y Domicilios separados por comas):", height=68)
+            testigos = st.text_area("Testigos Instrumentales (Nombres y Cédulas):", height=68)
 
-        # --- 5. DEPOSITANTES Y REQUISITOS (DINÁMICO) ---
-        with st.expander("📝 5. Depositantes, Impuestos y Requisitos (JI)", expanded=False):
+        with st.expander("📝 5. Tramitantes, Impuestos y Requisitos", expanded=False):
             c_btn1, c_btn2 = st.columns([1, 4])
-            c_btn1.button("➕ Agregar Tramitante", on_click=mod_cant, args=("cant_de", "add"), key="add_de")
+            c_btn1.button("➕ Tramitante", on_click=mod_cant, args=("cant_de", "add"), key="add_de")
             c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_de", "del"), key="del_de")
             
             lista_depositantes = []
             for i in range(st.session_state["cant_de"]):
                 c1, c2, c3 = st.columns(3)
-                n = c1.text_input("Nombre del Tramitante:", key=f"de_n_{i}")
+                n = c1.text_input("Nombre Tramitante:", key=f"de_n_{i}")
                 c = c2.text_input("Cédula:", key=f"de_c_{i}")
-                q = c3.text_input("Calidad (Gestor, etc.):", key=f"de_q_{i}")
+                q = c3.text_input("Calidad:", key=f"de_q_{i}")
                 c4, c5 = st.columns(2)
                 t = c4.text_input("Teléfono:", key=f"de_t_{i}")
                 e = c5.text_input("Email:", key=f"de_e_{i}")
                 if n: lista_depositantes.append({"nombre": n, "cedula": c, "calidad": q, "telefono": t, "email": e})
             
             st.write("---")
-            impuestos_pagados = st.multiselect("Impuestos, Tasas y Sellos:", ["Recibo de Ley 108-05 (JI)", "Sello de Ley 33-91 (CARD)", "Recibo CODIA", "Impuesto DGII", "Recibo Ley 196", "Poder Legalizado PGR"])
+            impuestos_pagados = st.multiselect("Impuestos/Recibos:", ["Recibo de Ley 108-05 (JI)", "Sello de Ley 33-91 (CARD)", "Recibo CODIA", "Impuesto DGII", "Recibo Ley 196", "Poder Legalizado PGR"])
             inventario_anexos = st.text_area("Lista de Anexos Físicos:", height=100)
 
         st.write("---")
         
-        # --- MOTOR DE COMPILACIÓN Y FABRICACIÓN ---
+        # --- 🚀 MOTOR DE COMPILACIÓN BLINDADO (.get) 🚀 ---
         mapping_carpetas = {"Mensuras Catastrales": "1_mensuras_catastrales", "Jurisdicción Original": "2_jurisdiccion_original", "Registro de Títulos": "3_registro_titulos"}
         ruta_carpeta = os.path.join("plantillas_maestras", mapping_carpetas[organo_ji])
         
@@ -1403,31 +1425,32 @@ def vista_plantillas():
             if st.button("🚀 FORJAR DOCUMENTO AHORA", type="primary", use_container_width=True):
                 if plantillas_elegidas:
                     
-                    # === GENERADORES DE PÁRRAFOS AUTOMÁTICOS ===
-                    cl_nombres = " y ".join([c['nombre'] for c in lista_clientes]) if lista_clientes else "N/A"
-                    cl_generales = "; y ".join([f"{c['nombre']}, dominicano(a), mayor de edad, portador(a) de la cédula No. {c['cedula']}, domiciliado(a) en {c['domicilio']}, Tel: {c['telefono']}, Email: {c['email']}" for c in lista_clientes]) if lista_clientes else "N/A"
+                    # Generadores blindados: Usamos .get() para evitar caídas si falta un dato en Supabase
+                    cl_nombres = " y ".join([c.get('nombre', '') for c in lista_clientes]) if lista_clientes else "N/A"
+                    cl_generales = "; y ".join([f"{c.get('nombre', '')}, dominicano(a), mayor de edad, portador(a) de la cédula No. {c.get('cedula', '')}, domiciliado(a) en {c.get('domicilio', '')}, Tel: {c.get('telefono', '')}" for c in lista_clientes]) if lista_clientes else "N/A"
                     
-                    ap_nombres = " y ".join([a['nombre'] for a in lista_apoderados]) if lista_apoderados else "N/A"
-                    ap_generales = "; y ".join([f"{a['nombre']}, dominicano(a), mayor de edad, portador(a) de la cédula No. {a['cedula']}, actuando en calidad de {a['calidad']}, con domicilio en {a['domicilio']}, Contacto: {a['contacto']}" for a in lista_apoderados]) if lista_apoderados else "N/A"
+                    ap_nombres = " y ".join([a.get('nombre', '') for a in lista_apoderados]) if lista_apoderados else "N/A"
+                    ap_generales = "; y ".join([f"{a.get('nombre', '')}, cédula No. {a.get('cedula', '')}, actuando como {a.get('calidad', '')}, domicilio en {a.get('domicilio', '')}, Contacto: {a.get('contacto', a.get('telefono', ''))}" for a in lista_apoderados]) if lista_apoderados else "N/A"
 
-                    ab_nombres = " y ".join([a['nombre'] for a in lista_abogados]) if lista_abogados else "N/A"
-                    ab_generales = "; y ".join([f"{a['nombre']}, portador(a) de la cédula No. {a['cedula']}, CARD {a['matricula']}, estudio en {a['domicilio']}, Tel: {a['telefono']}, Email: {a['email']}" for a in lista_abogados]) if lista_abogados else "N/A"
+                    ab_nombres = " y ".join([a.get('nombre', '') for a in lista_abogados]) if lista_abogados else "N/A"
+                    ab_generales = "; y ".join([f"{a.get('nombre', '')}, cédula No. {a.get('cedula', '')}, CARD {a.get('matricula', '')}, estudio en {a.get('domicilio', '')}, Tel: {a.get('telefono', '')}" for a in lista_abogados]) if lista_abogados else "N/A"
                     
-                    ag_nombres = " y ".join([a['nombre'] for a in lista_agrimensores]) if lista_agrimensores else "N/A"
-                    ag_generales = "; y ".join([f"{a['nombre']}, cédula No. {a['cedula']}, CODIA {a['matricula']}, oficina en {a['domicilio']}, Tel: {a['telefono']}, Email: {a['email']}" for a in lista_agrimensores]) if lista_agrimensores else "N/A"
+                    ag_nombres = " y ".join([a.get('nombre', '') for a in lista_agrimensores]) if lista_agrimensores else "N/A"
+                    ag_generales = "; y ".join([f"{a.get('nombre', '')}, cédula No. {a.get('cedula', '')}, CODIA {a.get('matricula', '')}, oficina en {a.get('domicilio', '')}, Tel: {a.get('telefono', '')}" for a in lista_agrimensores]) if lista_agrimensores else "N/A"
                     
-                    no_nombres = " y ".join([a['nombre'] for a in lista_notarios]) if lista_notarios else "N/A"
-                    no_generales = "; y ".join([f"{a['nombre']}, Notario de {a['domicilio']}, Matrícula {a['matricula']}, cédula No. {a['cedula']}, Tel: {a['telefono']}" for a in lista_notarios]) if lista_notarios else "N/A"
+                    no_nombres = " y ".join([a.get('nombre', '') for a in lista_notarios]) if lista_notarios else "N/A"
+                    no_generales = "; y ".join([f"{a.get('nombre', '')}, Notario, Matrícula {a.get('matricula', '')}, cédula No. {a.get('cedula', '')}" for a in lista_notarios]) if lista_notarios else "N/A"
                     
-                    al_nombres = " y ".join([a['nombre'] for a in lista_alguaciles]) if lista_alguaciles else "N/A"
-                    al_generales = "; y ".join([f"{a['nombre']}, cédula No. {a['cedula']}, Alguacil del {a['matricula']}, Tel: {a['telefono']}" for a in lista_alguaciles]) if lista_alguaciles else "N/A"
+                    al_nombres = " y ".join([a.get('nombre', '') for a in lista_alguaciles]) if lista_alguaciles else "N/A"
+                    al_generales = "; y ".join([f"{a.get('nombre', '')}, cédula No. {a.get('cedula', '')}, Alguacil del {a.get('matricula', '')}, Tel: {a.get('telefono', '')}" for a in lista_alguaciles]) if lista_alguaciles else "N/A"
 
-                    in_descripciones = "\n".join([f"Parcela {i['parcela']}, DC {i['dc']}, {i['provincia']}. Superficie: {i['superficie']}. Coordenadas: {i['coord']}. Sustentado en {i['tipo_doc']} No. {i['numero']}, Libro {i['libro']}, Folio {i['folio']}, inscrito en fecha {i['fecha_ins']}." for i in lista_inmuebles]) if lista_inmuebles else "N/A"
+                    # Blindaje especial para coordenadas (Soporta 'coord' y 'coordenadas')
+                    in_descripciones = "\n".join([f"Parcela {i.get('parcela', '')}, DC {i.get('dc', '')}, {i.get('provincia', '')}. Superficie: {i.get('superficie', '')}. Coordenadas: {i.get('coordenadas', i.get('coord', ''))}. Sustentado en {i.get('tipo_doc', '')} No. {i.get('numero', '')}, Libro {i.get('libro', '')}, Folio {i.get('folio', '')}." for i in lista_inmuebles]) if lista_inmuebles else "N/A"
 
-                    pg_detalles = "\n".join([f"Monto de {p['monto']} pagadero mediante {p['forma']} ({p['banco']})." for p in lista_pagos]) if lista_pagos else "N/A"
+                    pg_detalles = "\n".join([f"Monto de {p.get('monto', '')} pagadero mediante {p.get('forma', '')} ({p.get('banco', '')})." for p in lista_pagos]) if lista_pagos else "N/A"
                     
-                    de_nombres = " y ".join([d['nombre'] for d in lista_depositantes]) if lista_depositantes else "N/A"
-                    de_generales = "; y ".join([f"{d['nombre']}, portador(a) de la cédula No. {d['cedula']}, en calidad de {d['calidad']}, Tel: {d['telefono']}, Email: {d['email']}" for d in lista_depositantes]) if lista_depositantes else "N/A"
+                    de_nombres = " y ".join([d.get('nombre', '') for d in lista_depositantes]) if lista_depositantes else "N/A"
+                    de_generales = "; y ".join([f"{d.get('nombre', '')}, cédula No. {d.get('cedula', '')}, calidad: {d.get('calidad', '')}, Tel: {d.get('telefono', '')}" for d in lista_depositantes]) if lista_depositantes else "N/A"
 
                     impuestos_str = ", ".join(impuestos_pagados) if impuestos_pagados else "N/A"
                     
@@ -1449,16 +1472,16 @@ def vista_plantillas():
                     for p in plantillas_elegidas:
                         buffer = generar_documento_word(os.path.join(ruta_carpeta, p), datos_para_word)
                         if buffer:
-                            prefijo = exp_seleccionado if exp_seleccionado != "-- Expediente Independiente --" else "Doc"
+                            prefijo = exp_seleccionado if exp_seleccionado != "-- Expediente Independiente (Manual) --" else "Doc"
                             st.download_button(label=f"⬇️ Descargar: {p}", data=buffer, file_name=f"{prefijo}_{p}")
                             archivos_generados += 1
                     if archivos_generados > 0:
-                        st.success(f"⚖️ ¡Impecable! Se redactaron {archivos_generados} documentos.")
+                        st.success(f"⚖️ ¡Impecable! Se redactaron {archivos_generados} documentos listos para impresión.")
 
     with tab_boveda:
         st.subheader("Gestión de Archivos Maestros (.docx)")
         
-        # 🔒 BLOQUEO PRESIDENCIAL: Solo Jmatos puede alterar la bóveda
+        # 🔒 BLOQUEO PRESIDENCIAL: Tal como lo ordenó, solo Jmatos puede alterar la bóveda
         if st.session_state.get("usuario_actual") == "Jmatos":
             col_up1, col_up2 = st.columns([2, 3])
             with col_up1:
@@ -1487,7 +1510,7 @@ def vista_plantillas():
                         st.rerun()
         else:
             st.error("⛔ Acceso Restringido")
-            st.warning("Usted no tiene permisos para subir o borrar plantillas. Esta función es exclusiva del Lic. Jhonny Matos.")
+            st.warning("Usted no tiene permisos para subir o borrar plantillas. Esta función es exclusiva del Presidente de la firma.")
 
 def vista_honorarios():
     import streamlit as st
