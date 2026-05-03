@@ -1743,7 +1743,9 @@ def vista_alertas():
     import streamlit as st
     from datetime import datetime
     import pandas as pd
-    from database import db as supabase
+
+    # Dependiendo de cómo importó Supabase, ajuste esta línea si es necesario
+    from database import db as supabase 
 
     st.title("⏰ Radar de Alertas y Plazos de Ley")
     st.markdown("### Control de Vencimientos Judiciales y Registrales")
@@ -1758,59 +1760,89 @@ def vista_alertas():
         return
 
     todas_las_alertas = []
+    lista_expedientes_con_alertas = ["-- Todos los Expedientes --"]
     
+    # Extraemos y organizamos los datos
     for exp in todos_los_expedientes:
         id_exp = exp.get("id_expediente")
         alertas = exp.get("alertas")
         
-        if alertas:
+        if alertas and isinstance(alertas, list):
+            tiene_pendientes = False
             for alerta in alertas:
                 if alerta.get("estado") != "Completado":
+                    tiene_pendientes = True
                     alerta_limpia = {
                         "Expediente": id_exp,
                         "Vencimiento": alerta.get("fecha_vencimiento"),
-                        "Tarea / Descripción": alerta.get("descripcion"),
-                        "Doc. Origen": alerta.get("documento_origen")
+                        "Actuación / Tarea": alerta.get("descripcion"),
+                        "Doc. Vinculado": alerta.get("documento_origen"),
                     }
                     todas_las_alertas.append(alerta_limpia)
+            
+            # Solo agregamos al menú desplegable los expedientes que tienen plazos vivos
+            if tiene_pendientes and id_exp not in lista_expedientes_con_alertas:
+                lista_expedientes_con_alertas.append(id_exp)
+
+    # 🔍 NUEVO: Buscador / Filtro Desplegable
+    st.markdown("### 🔍 Filtrar Plazos")
+    filtro_exp = st.selectbox("Seleccione un expediente para aislar sus plazos específicos:", lista_expedientes_con_alertas)
+
+    # Lógica de filtrado
+    if filtro_exp != "-- Todos los Expedientes --":
+        todas_las_alertas = [a for a in todas_las_alertas if a["Expediente"] == filtro_exp]
+
+    st.write("---")
 
     if not todas_las_alertas:
-        st.success("🎉 ¡Excelente, Licenciado! No hay plazos pendientes ni alertas activas. El radar está despejado.")
+        st.success("🎉 ¡Excelente, Presidente! No hay plazos pendientes ni alertas activas para esta vista.")
     else:
         df_alertas = pd.DataFrame(todas_las_alertas)
         
-        df_alertas['Vencimiento'] = pd.to_datetime(df_alertas['Vencimiento']).dt.date
+        # Matemáticas para los plazos
+        df_alertas['Vencimiento_DT'] = pd.to_datetime(df_alertas['Vencimiento']).dt.date
         hoy = datetime.now().date()
-        df_alertas['Días Restantes'] = (df_alertas['Vencimiento'] - hoy).dt.days
+        df_alertas['Días Restantes'] = (df_alertas['Vencimiento_DT'] - hoy).dt.days
 
+        # 🚦 NUEVO: Lógica del Semáforo inyectada directamente en la tabla
+        def obtener_semaforo(dias):
+            if dias < 0: return "🔴 Vencido"
+            elif dias <= 15: return "🟡 Urgente"
+            else: return "🟢 A tiempo"
+            
+        df_alertas['Estado'] = df_alertas['Días Restantes'].apply(obtener_semaforo)
+        
+        # Ordenar desde el más urgente
         df_alertas = df_alertas.sort_values(by='Días Restantes')
 
-        st.markdown("### 📊 Estado de Situación de la Firma")
-        
+        # --- PANELES SUPERIORES (SEMÁFORO GENERAL) ---
+        st.markdown("### 📊 Estado de Situación")
         col1, col2, col3 = st.columns(3)
         
         vencidos = df_alertas[df_alertas['Días Restantes'] < 0]
-        urgentes = df_alertas[(df_alertas['Días Restantes'] >= 0) & (df_alertas['Días Restantes'] <= 7)]
-        a_tiempo = df_alertas[df_alertas['Días Restantes'] > 7]
+        urgentes = df_alertas[(df_alertas['Días Restantes'] >= 0) & (df_alertas['Días Restantes'] <= 15)]
+        a_tiempo = df_alertas[df_alertas['Días Restantes'] > 15]
         
-        col1.error(f"🔴 Vencidos o Críticos: {len(vencidos)}")
-        col2.warning(f"🟡 Vencen en < 7 días: {len(urgentes)}")
+        col1.error(f"🔴 Vencidos: {len(vencidos)}")
+        col2.warning(f"🟡 Urgentes: {len(urgentes)}")
         col3.success(f"🟢 A tiempo: {len(a_tiempo)}")
 
         st.write("---")
-        st.markdown("### 📋 Detalle de Tareas Pendientes")
+        st.markdown("### 📋 Actuaciones Vinculadas y Vencimientos")
 
+        # Reorganizamos las columnas para la vista perfecta
+        df_mostrar = df_alertas[['Expediente', 'Estado', 'Días Restantes', 'Vencimiento', 'Actuación / Tarea', 'Doc. Vinculado']]
+
+        # Delineamos la tabla para que sea impecable a la vista
         st.dataframe(
-            df_alertas,
+            df_mostrar,
             column_config={
-                "Expediente": st.column_config.TextColumn("Nº Caso", width="medium"),
-                "Días Restantes": st.column_config.ProgressColumn(
-                    "Estado (Días Restantes)",
-                    help="Días que faltan para el vencimiento",
-                    format="%d días",
-                    min_value=0,
-                    max_value=60,
-                ),
+                "Expediente": st.column_config.TextColumn("Nº Caso", width="small"),
+                "Estado": st.column_config.TextColumn("Semáforo", width="small"),
+                "Días Restantes": st.column_config.NumberColumn("Faltan (Días)", width="small"),
+                "Vencimiento": st.column_config.TextColumn("Fecha Límite", width="small"),
+                "Actuación / Tarea": st.column_config.TextColumn("Actuación de Ley", width="large"),
+                "Doc. Vinculado": st.column_config.TextColumn("Doc. Generado", width="medium"),
             },
             hide_index=True,
             use_container_width=True
