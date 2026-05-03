@@ -1503,8 +1503,8 @@ def vista_plantillas():
     with tab_boveda:
         st.subheader("Gestión de Archivos Maestros (.docx)")
         
-        # 🛡️ VERIFICACIÓN DE SEGURIDAD (SOLO ADMIN PUEDE SUBIR)
-        if st.session_state.get("rol_actual") == "Administrador":
+        # 🔒 BLOQUEO PRESIDENCIAL: Solo Jmatos puede alterar la bóveda
+        if st.session_state.get("usuario_actual") == "Jmatos":
             col_up1, col_up2 = st.columns([2, 3])
             with col_up1:
                 destino = st.selectbox("Cargar en:", carpetas_base)
@@ -1519,20 +1519,20 @@ def vista_plantillas():
                 st.rerun()
 
             st.divider()
-            st.write("**Borrar Plantillas Existentes**")
-            cat_ver = st.selectbox("Revisar categoría:", carpetas_base)
+            st.write("**⚠️ Zona de Eliminación (Solo Presidente)**")
+            cat_ver = st.selectbox("Revisar categoría para borrar:", carpetas_base)
             ruta_ver = os.path.join("plantillas_maestras", cat_ver)
             if os.path.exists(ruta_ver):
                 archivos_en_cat = [f for f in os.listdir(ruta_ver) if f.endswith(".docx")]
                 if archivos_en_cat:
                     c_del1, c_del2 = st.columns([3, 1])
                     archivo_borrar = c_del1.selectbox("Seleccione para eliminar:", archivos_en_cat)
-                    if c_del2.button("🔥 Eliminar Modelo"):
+                    if c_del2.button("🔥 Eliminar Modelo Definitivamente"):
                         os.remove(os.path.join(ruta_ver, archivo_borrar))
                         st.rerun()
         else:
-            st.error("⛔ Acceso Denegado: Nivel de autorización insuficiente.")
-            st.warning("Solo el Administrador General (Lic. Jhonny Matos) tiene permisos para alterar las plantillas estratégicas.")
+            st.error("⛔ Acceso Restringido")
+            st.warning("Usted no tiene permisos para subir o borrar plantillas. Esta función es exclusiva del Lic. Jhonny Matos.")
 
 def vista_honorarios():
     import streamlit as st
