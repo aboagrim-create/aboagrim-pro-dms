@@ -1278,6 +1278,7 @@ def vista_alertas_plazos():
 def vista_plantillas():
     import streamlit as st
     import os
+    import io
     from datetime import datetime
     from database import db as supabase  # ☁️ Conexión maestra a la nube
 
@@ -1296,12 +1297,14 @@ def vista_plantillas():
         elif operacion == "del" and st.session_state[rol] > 0:
             st.session_state[rol] -= 1
 
-    carpetas_base = ["1_mensuras_catastrales", "2_jurisdiccion_original", "3_registro_titulos"]
-    if not os.path.exists("plantillas_maestras"):
-        os.makedirs("plantillas_maestras")
-    for c in carpetas_base:
-        if not os.path.exists(os.path.join("plantillas_maestras", c)):
-            os.makedirs(os.path.join("plantillas_maestras", c))
+    # 🗂️ ACTUALIZADO CON SUS 5 CARPETAS MAESTRAS
+    carpetas_base = [
+        "1_mensuras_catastrales", 
+        "2_jurisdiccion_original", 
+        "3_registro_titulos",
+        "4_otros",
+        "5_tribunal_superior_de_tierras"
+    ]
 
     tab_redaccion, tab_boveda = st.tabs(["⚙️ Taller de Redacción (Generar)", "📂 Bóveda de Modelos (Administrar)"])
 
@@ -1319,15 +1322,20 @@ def vista_plantillas():
         with col_sel1:
             exp_seleccionado = st.selectbox("Vincular a Expediente:", lista_exps)
         with col_sel2:
-            organo_ji = st.selectbox("Órgano Destino (Buscar Plantilla en):", ["Mensuras Catastrales", "Jurisdicción Original", "Registro de Títulos"])
+            organo_ji = st.selectbox("Órgano Destino (Buscar Plantilla en):", [
+                "Mensuras Catastrales", 
+                "Jurisdicción Original", 
+                "Registro de Títulos",
+                "Tribunal Superior de Tierras",
+                "Otros Documentos"
+            ])
 
         st.write("---")
         
         # 🧠 2. LÓGICA INTELIGENTE DE CARGA DE DATOS
         if exp_seleccionado != "-- Expediente Independiente (Manual) --":
-            st.success(f"🔗 **Conectado al Expediente {exp_seleccionado}.** Los datos de partes, profesionales e inmuebles se han cargado desde Supabase automáticamente.")
+            st.success(f"🔗 **Conectado al Expediente {exp_seleccionado}.** Los datos de partes, profesionales e inmuebles se han cargado desde Supabase.")
             
-            # Extraemos los datos de la nube
             exp_data = db_expedientes_cloud[exp_seleccionado]
             lista_clientes = exp_data.get("clientes", [])
             lista_apoderados = exp_data.get("apoderados", [])
@@ -1345,8 +1353,7 @@ def vista_plantillas():
                 
         else:
             st.info("📝 **Modo Manual:** Complete los datos a continuación para forjar un documento sin vincularlo a la base de datos.")
-            
-            # --- FORMULARIOS MANUALES (Solo se ven si es Expediente Independiente) ---
+            # --- FORMULARIOS MANUALES ---
             with st.expander("👥 1. Partes, Clientes y Representantes", expanded=True):
                 t_cli, t_apo = st.tabs(["👤 Clientes / Propietarios", "🤝 Apoderados / Representantes"])
                 
@@ -1354,7 +1361,6 @@ def vista_plantillas():
                     c_btn1, c_btn2 = st.columns([1, 4])
                     c_btn1.button("➕ Agregar Cliente", on_click=mod_cant, args=("cant_cl", "add"), key="add_cl")
                     c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_cl", "del"), key="del_cl")
-                    
                     lista_clientes = []
                     for i in range(st.session_state["cant_cl"]):
                         c1, c2, c3 = st.columns(3)
@@ -1370,7 +1376,6 @@ def vista_plantillas():
                     c_btn1, c_btn2 = st.columns([1, 4])
                     c_btn1.button("➕ Agregar Apoderado", on_click=mod_cant, args=("cant_ap", "add"), key="add_ap")
                     c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_ap", "del"), key="del_ap")
-                    
                     lista_apoderados = []
                     for i in range(st.session_state["cant_ap"]):
                         c1, c2, c3 = st.columns(3)
@@ -1384,7 +1389,6 @@ def vista_plantillas():
 
             with st.expander("⚖️ 2. Profesionales Actuantes", expanded=False):
                 t_abo, t_agr, t_not, t_alg = st.tabs(["💼 Abogados", "📐 Agrimensores", "✒️ Notarios", "⚖️ Alguaciles"])
-
                 with t_abo:
                     c_btn1, c_btn2 = st.columns([1, 4])
                     c_btn1.button("➕ Abogado", on_click=mod_cant, args=("cant_ab", "add"), key="add_ab")
@@ -1400,7 +1404,6 @@ def vista_plantillas():
                         t = c5.text_input("Teléfono:", key=f"ab_t_{i}")
                         e = c6.text_input("Email:", key=f"ab_e_{i}")
                         if n: lista_abogados.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d, "telefono": t, "email": e})
-
                 with t_agr:
                     c_btn1, c_btn2 = st.columns([1, 4])
                     c_btn1.button("➕ Agrimensor", on_click=mod_cant, args=("cant_ag", "add"), key="add_ag")
@@ -1416,7 +1419,6 @@ def vista_plantillas():
                         t = c5.text_input("Teléfono:", key=f"ag_t_{i}")
                         e = c6.text_input("Email:", key=f"ag_e_{i}")
                         if n: lista_agrimensores.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d, "telefono": t, "email": e})
-
                 with t_not:
                     c_btn1, c_btn2 = st.columns([1, 4])
                     c_btn1.button("➕ Notario", on_click=mod_cant, args=("cant_no", "add"), key="add_no")
@@ -1432,7 +1434,6 @@ def vista_plantillas():
                         t = c5.text_input("Teléfono:", key=f"no_t_{i}")
                         e = c6.text_input("Email:", key=f"no_e_{i}")
                         if n: lista_notarios.append({"nombre": n, "cedula": c, "matricula": m, "domicilio": d, "telefono": t, "email": e})
-
                 with t_alg:
                     c_btn1, c_btn2 = st.columns([1, 4])
                     c_btn1.button("➕ Alguacil", on_click=mod_cant, args=("cant_al", "add"), key="add_al")
@@ -1452,7 +1453,6 @@ def vista_plantillas():
                 c_btn1, c_btn2 = st.columns([1, 4])
                 c_btn1.button("➕ Agregar Inmueble", on_click=mod_cant, args=("cant_in", "add"), key="add_in")
                 c_btn2.button("➖ Quitar", on_click=mod_cant, args=("cant_in", "del"), key="del_in")
-                
                 lista_inmuebles = []
                 for i in range(st.session_state["cant_in"]):
                     c1, c2, c3 = st.columns(3)
@@ -1509,18 +1509,30 @@ def vista_plantillas():
 
         st.write("---")
         
-        # --- 🚀 MOTOR DE COMPILACIÓN BLINDADO (.get) 🚀 ---
-        mapping_carpetas = {"Mensuras Catastrales": "1_mensuras_catastrales", "Jurisdicción Original": "2_jurisdiccion_original", "Registro de Títulos": "3_registro_titulos"}
-        ruta_carpeta = os.path.join("plantillas_maestras", mapping_carpetas[organo_ji])
+        # --- 🚀 MOTOR DE COMPILACIÓN CONECTADO A SUPABASE STORAGE 🚀 ---
+        mapping_carpetas = {
+            "Mensuras Catastrales": "1_mensuras_catastrales", 
+            "Jurisdicción Original": "2_jurisdiccion_original", 
+            "Registro de Títulos": "3_registro_titulos",
+            "Tribunal Superior de Tierras": "5_tribunal_superior_de_tierras",
+            "Otros Documentos": "4_otros"
+        }
+        ruta_carpeta = mapping_carpetas[organo_ji]
         
-        if os.path.exists(ruta_carpeta):
-            opciones = [f for f in os.listdir(ruta_carpeta) if f.endswith(".docx")]
+        # Leemos las plantillas directamente desde la nube
+        try:
+            archivos_nube = supabase.storage.from_("plantillas_maestras").list(ruta_carpeta)
+            opciones = [f["name"] for f in archivos_nube if f["name"].endswith(".docx")]
+        except Exception:
+            opciones = []
+            
+        if opciones:
             plantillas_elegidas = st.multiselect("📑 Seleccione la(s) plantilla(s) a forjar:", opciones)
             
             if st.button("🚀 FORJAR DOCUMENTO AHORA", type="primary", use_container_width=True):
                 if plantillas_elegidas:
                     
-                    # Generadores blindados: Usamos .get() para evitar caídas si falta un dato en Supabase
+                    # Generadores blindados: Usamos .get()
                     cl_nombres = " y ".join([c.get('nombre', '') for c in lista_clientes]) if lista_clientes else "N/A"
                     cl_generales = "; y ".join([f"{c.get('nombre', '')}, dominicano(a), mayor de edad, portador(a) de la cédula No. {c.get('cedula', '')}, domiciliado(a) en {c.get('domicilio', '')}, Tel: {c.get('telefono', '')}" for c in lista_clientes]) if lista_clientes else "N/A"
                     
@@ -1539,7 +1551,6 @@ def vista_plantillas():
                     al_nombres = " y ".join([a.get('nombre', '') for a in lista_alguaciles]) if lista_alguaciles else "N/A"
                     al_generales = "; y ".join([f"{a.get('nombre', '')}, cédula No. {a.get('cedula', '')}, Alguacil del {a.get('matricula', '')}, Tel: {a.get('telefono', '')}" for a in lista_alguaciles]) if lista_alguaciles else "N/A"
 
-                    # Blindaje especial para coordenadas (Soporta 'coord' y 'coordenadas')
                     in_descripciones = "\n".join([f"Parcela {i.get('parcela', '')}, DC {i.get('dc', '')}, {i.get('provincia', '')}. Superficie: {i.get('superficie', '')}. Coordenadas: {i.get('coordenadas', i.get('coord', ''))}. Sustentado en {i.get('tipo_doc', '')} No. {i.get('numero', '')}, Libro {i.get('libro', '')}, Folio {i.get('folio', '')}." for i in lista_inmuebles]) if lista_inmuebles else "N/A"
 
                     pg_detalles = "\n".join([f"Monto de {p.get('monto', '')} pagadero mediante {p.get('forma', '')} ({p.get('banco', '')})." for p in lista_pagos]) if lista_pagos else "N/A"
@@ -1565,21 +1576,38 @@ def vista_plantillas():
                     
                     archivos_generados = 0
                     for p in plantillas_elegidas:
-                        buffer = generar_documento_word(os.path.join(ruta_carpeta, p), datos_para_word)
-                        if buffer:
-                            prefijo = exp_seleccionado if exp_seleccionado != "-- Expediente Independiente (Manual) --" else "Doc"
-                            st.download_button(label=f"⬇️ Descargar: {p}", data=buffer, file_name=f"{prefijo}_{p}")
-                            archivos_generados += 1
+                        try:
+                            # Descargamos temporalmente la plantilla de la nube para inyectarle los datos
+                            bytes_plantilla = supabase.storage.from_("plantillas_maestras").download(f"{ruta_carpeta}/{p}")
+                            ruta_temp = f"temp_{p}"
+                            with open(ruta_temp, "wb") as f:
+                                f.write(bytes_plantilla)
+                                
+                            # Ejecutamos el motor de rellenado
+                            buffer = generar_documento_word(ruta_temp, datos_para_word)
+                            
+                            if buffer:
+                                prefijo = exp_seleccionado if exp_seleccionado != "-- Expediente Independiente (Manual) --" else "Doc"
+                                st.download_button(label=f"⬇️ Descargar: {p}", data=buffer, file_name=f"{prefijo}_{p}")
+                                archivos_generados += 1
+                                
+                            # Borramos el temporal de la computadora virtual para no ocupar espacio
+                            if os.path.exists(ruta_temp):
+                                os.remove(ruta_temp)
+                        except Exception as e:
+                            st.error(f"❌ Falló la generación de {p}. Detalle: {e}")
+                            
                     if archivos_generados > 0:
                         st.success(f"⚖️ ¡Impecable! Se redactaron {archivos_generados} documentos listos para impresión.")
+        else:
+            st.info("📂 Esta carpeta está vacía en la nube. Suba sus plantillas en la pestaña 'Bóveda de Modelos'.")
 
     with tab_boveda:
-        st.subheader("Gestión de Archivos Maestros (.docx)")
+        st.subheader("Gestión de Archivos Maestros en la Nube (.docx)")
         
-        # 🔒 BLOQUEO PRESIDENCIAL: Solo el Presidente Jmatos puede alterar la bóveda
+        # 🔒 BLOQUEO PRESIDENCIAL
         if st.session_state.get("usuario_actual") == "Jmatos":
             
-            # --- NUEVO SISTEMA DE SUBIDA CON FORMULARIO (EVITA EL BUCLE) ---
             with st.form("form_subida_plantillas", clear_on_submit=True):
                 col_up1, col_up2 = st.columns([2, 3])
                 with col_up1:
@@ -1587,33 +1615,51 @@ def vista_plantillas():
                 with col_up2:
                     archivos_subidos = st.file_uploader("Arrastrar Plantillas Nuevas", type=["docx"], accept_multiple_files=True)
                 
-                btn_subir = st.form_submit_button("💾 Subir y Guardar en Bóveda", use_container_width=True)
+                btn_subir = st.form_submit_button("☁️ Subir y Guardar en la Nube", use_container_width=True)
 
-            # La acción solo ocurre al presionar el botón del formulario
             if btn_subir:
                 if archivos_subidos:
                     for archivo in archivos_subidos:
-                        with open(os.path.join("plantillas_maestras", destino, archivo.name), "wb") as f:
-                            f.write(archivo.getbuffer())
-                    st.success(f"✅ Se guardaron {len(archivos_subidos)} plantilla(s) exitosamente en la bóveda.")
+                        try:
+                            # Subimos el archivo a Supabase Storage
+                            supabase.storage.from_("plantillas_maestras").upload(
+                                path=f"{destino}/{archivo.name}",
+                                file=archivo.getvalue(),
+                                file_options={"upsert": "true", "content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+                            )
+                        except Exception as e:
+                            st.error(f"Error al subir {archivo.name}: {e}")
+                    st.success(f"✅ Se guardaron {len(archivos_subidos)} plantilla(s) exitosamente en la bóveda corporativa.")
+                    st.rerun() # Refrescamos para ver los cambios
                 else:
                     st.warning("⚠️ Debe arrastrar al menos un archivo (.docx) antes de guardar.")
 
             st.divider()
             st.write("**⚠️ Zona de Eliminación (Solo Presidente)**")
             cat_ver = st.selectbox("Revisar categoría para borrar:", carpetas_base)
-            ruta_ver = os.path.join("plantillas_maestras", cat_ver)
-            if os.path.exists(ruta_ver):
-                archivos_en_cat = [f for f in os.listdir(ruta_ver) if f.endswith(".docx")]
-                if archivos_en_cat:
-                    c_del1, c_del2 = st.columns([3, 1])
-                    archivo_borrar = c_del1.selectbox("Seleccione para eliminar:", archivos_en_cat)
-                    if c_del2.button("🔥 Eliminar Modelo Definitivamente"):
-                        os.remove(os.path.join(ruta_ver, archivo_borrar))
+            
+            try:
+                # Leemos qué hay en esa carpeta en la nube
+                archivos_nube_del = supabase.storage.from_("plantillas_maestras").list(cat_ver)
+                archivos_en_cat = [f["name"] for f in archivos_nube_del if f["name"].endswith(".docx")]
+            except Exception:
+                archivos_en_cat = []
+                
+            if archivos_en_cat:
+                c_del1, c_del2 = st.columns([3, 1])
+                archivo_borrar = c_del1.selectbox("Seleccione para eliminar:", archivos_en_cat)
+                if c_del2.button("🔥 Eliminar Modelo Definitivamente"):
+                    try:
+                        supabase.storage.from_("plantillas_maestras").remove([f"{cat_ver}/{archivo_borrar}"])
+                        st.success(f"🗑️ El archivo {archivo_borrar} fue eliminado permanentemente.")
                         st.rerun()
+                    except Exception as e:
+                        st.error(f"No se pudo eliminar: {e}")
+            else:
+                st.info("No hay documentos en esta carpeta de la nube para eliminar.")
         else:
             st.error("⛔ Acceso Restringido")
-            st.warning("Usted no tiene permisos para subir o borrar plantillas. Esta función es exclusiva del Presidente de la firma.")
+            st.warning("Usted no tiene permisos para subir o borrar plantillas. Esta función es exclusiva del Presidente.")
 
 def vista_honorarios():
     import streamlit as st
