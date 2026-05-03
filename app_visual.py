@@ -1610,15 +1610,62 @@ def vista_plantillas():
                                 st.download_button(label=f"⬇️ Descargar: {p}", data=buffer, file_name=nombre_doc_final)
                                 archivos_generados += 1
                                 
-                                # 💾 NUEVO: GUARDADO AUTOMÁTICO EN EL ARCHIVO DIGITAL
+                                # 💾 GUARDADO AUTOMÁTICO EN EL ARCHIVO DIGITAL
                                 if exp_seleccionado != "-- Expediente Independiente (Manual) --":
                                     ruta_anexos = f"boveda_digital/{exp_seleccionado}"
                                     if not os.path.exists(ruta_anexos):
                                         os.makedirs(ruta_anexos)
-                                    # Guardamos la copia del Word forjado en la carpeta
                                     with open(os.path.join(ruta_anexos, nombre_doc_final), "wb") as f_out:
                                         f_out.write(buffer.getvalue())
-                                
+
+                                    # ⏱️ NUEVO: DICCIONARIO LEGAL Y DISPARADOR DE PLAZOS
+                                    from datetime import datetime, timedelta
+                                    
+                                    # 1. Definimos las reglas de negocio (Ley 108-05 y reglamentos)
+                                    reglas_plazos = {
+                                        "aviso_de_mensura": (15, "Notificación a colindantes y publicidad"),
+                                        "contrato_venta": (60, "Pago de impuestos DGII (Transferencia)"),
+                                        "saneamiento": (60, "Plazo máximo para trabajos técnicos"),
+                                        "recurso_revision": (30, "Plazo de interposición desde notificación"),
+                                        "litis": (15, "Octava franca de ley para emplazamiento")
+                                    }
+                                    
+                                    nombre_minuscula = p.lower()
+                                    plazo_dias = 0
+                                    descripcion_alerta = ""
+                                    
+                                    for clave, datos_plazo in reglas_plazos.items():
+                                        if clave in nombre_minuscula:
+                                            plazo_dias = datos_plazo[0]
+                                            descripcion_alerta = datos_plazo[1]
+                                            break
+                                            
+                                    if plazo_dias > 0:
+                                        fecha_actual = datetime.now()
+                                        fecha_vencimiento = fecha_actual + timedelta(days=plazo_dias)
+                                        
+                                        try:
+                                            exp_data = supabase.table("expedientes").select("*").eq("id_expediente", exp_seleccionado).execute().data[0]
+                                            
+                                            alertas_existentes = exp_data.get("alertas", [])
+                                            if alertas_existentes is None:
+                                                alertas_existentes = []
+                                                
+                                            nueva_alerta = {
+                                                "fecha_creacion": fecha_actual.strftime("%Y-%m-%d"),
+                                                "documento_origen": p,
+                                                "descripcion": descripcion_alerta,
+                                                "fecha_vencimiento": fecha_vencimiento.strftime("%Y-%m-%d"),
+                                                "estado": "Pendiente"
+                                            }
+                                            
+                                            alertas_existentes.append(nueva_alerta)
+                                            
+                                            supabase.table("expedientes").update({"alertas": alertas_existentes}).eq("id_expediente", exp_seleccionado).execute()
+                                            st.toast(f"⏰ ¡Alerta automática generada para {exp_seleccionado}! Vence en {plazo_dias} días.")
+                                        except Exception as e:
+                                            st.error(f"Error al guardar la alerta: {e}")
+
                             # Borramos el temporal de la computadora virtual para no ocupar espacio
                             if os.path.exists(ruta_temp):
                                 os.remove(ruta_temp)
@@ -1692,7 +1739,82 @@ def vista_plantillas():
         else:
             st.error("⛔ Acceso Restringido")
             st.warning("Usted no tiene permisos para subir o borrar plantillas. Esta función es exclusiva del Presidente.")
+def vista_alertas():
+    import streamlit as st
+    from datetime import datetime
+    import pandas as pd
+    from database import db as supabase
 
+    st.title("⏰ Radar de Alertas y Plazos de Ley")
+    st.markdown("### Control de Vencimientos Judiciales y Registrales")
+    st.write("---")
+
+    try:
+        # Descargamos todos los expedientes de la nube
+        respuesta = supabase.table("expedientes").select("id_expediente, alertas").execute()
+        todos_los_expedientes = respuesta.data
+    except Exception as e:
+        st.error(f"Error conectando a la base de datos: {e}")
+        return
+
+    todas_las_alertas = []
+    
+    for exp in todos_los_expedientes:
+        id_exp = exp.get("id_expediente")
+        alertas = exp.get("alertas")
+        
+        if alertas:
+            for alerta in alertas:
+                if alerta.get("estado") != "Completado":
+                    alerta_limpia = {
+                        "Expediente": id_exp,
+                        "Vencimiento": alerta.get("fecha_vencimiento"),
+                        "Tarea / Descripción": alerta.get("descripcion"),
+                        "Doc. Origen": alerta.get("documento_origen")
+                    }
+                    todas_las_alertas.append(alerta_limpia)
+
+    if not todas_las_alertas:
+        st.success("🎉 ¡Excelente, Licenciado! No hay plazos pendientes ni alertas activas. El radar está despejado.")
+    else:
+        df_alertas = pd.DataFrame(todas_las_alertas)
+        
+        df_alertas['Vencimiento'] = pd.to_datetime(df_alertas['Vencimiento']).dt.date
+        hoy = datetime.now().date()
+        df_alertas['Días Restantes'] = (df_alertas['Vencimiento'] - hoy).dt.days
+
+        df_alertas = df_alertas.sort_values(by='Días Restantes')
+
+        st.markdown("### 📊 Estado de Situación de la Firma")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        vencidos = df_alertas[df_alertas['Días Restantes'] < 0]
+        urgentes = df_alertas[(df_alertas['Días Restantes'] >= 0) & (df_alertas['Días Restantes'] <= 7)]
+        a_tiempo = df_alertas[df_alertas['Días Restantes'] > 7]
+        
+        col1.error(f"🔴 Vencidos o Críticos: {len(vencidos)}")
+        col2.warning(f"🟡 Vencen en < 7 días: {len(urgentes)}")
+        col3.success(f"🟢 A tiempo: {len(a_tiempo)}")
+
+        st.write("---")
+        st.markdown("### 📋 Detalle de Tareas Pendientes")
+
+        st.dataframe(
+            df_alertas,
+            column_config={
+                "Expediente": st.column_config.TextColumn("Nº Caso", width="medium"),
+                "Días Restantes": st.column_config.ProgressColumn(
+                    "Estado (Días Restantes)",
+                    help="Días que faltan para el vencimiento",
+                    format="%d días",
+                    min_value=0,
+                    max_value=60,
+                ),
+            },
+            hide_index=True,
+            use_container_width=True
+        )
 def vista_honorarios():
     import streamlit as st
     from datetime import datetime
