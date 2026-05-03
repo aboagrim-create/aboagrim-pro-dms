@@ -275,8 +275,24 @@ def vista_registro_maestro():
         st.markdown("### 🔍 Buscador y Editor de Expedientes")
         col_b1, col_b2, col_b3 = st.columns([2, 1, 1])
         
-        # El usuario escribe el número aquí
-        exp_buscar = col_b1.text_input("Ingrese el Número de Expediente (Ej. 2026-0001):", placeholder="YYYY-0000")
+        # --- 🤖 MOTOR DE AUTONUMERACIÓN INTELIGENTE ---
+        año_actual = datetime.now().year
+        expedientes_guardados = list(st.session_state.get("db_expedientes", {}).keys())
+        
+        numeros_este_año = []
+        for exp in expedientes_guardados:
+            if exp.startswith(f"{año_actual}-"):
+                try:
+                    numero = int(exp.split("-")[1])
+                    numeros_este_año.append(numero)
+                except:
+                    pass
+                    
+        siguiente_numero = max(numeros_este_año) + 1 if numeros_este_año else 1001
+        numero_sugerido = f"{año_actual}-{siguiente_numero:04d}"
+        # ----------------------------------------------
+        
+        exp_buscar = col_b1.text_input("📁 Número de Expediente (Autogenerado / Editable):", value=numero_sugerido)
         
         if col_b2.button("🔎 Buscar y Cargar", use_container_width=True):
             if exp_buscar:
