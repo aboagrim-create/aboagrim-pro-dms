@@ -1773,17 +1773,16 @@ if "color_primario" in st.session_state:
         }}
         </style>
     """, unsafe_allow_html=True)
-    # ==========================================
-# 📱 MENÚ LATERAL AUTORIZADO Y PERFIL
+# ==========================================
+# 📱 MENÚ LATERAL Y PERFIL
 # ==========================================
 with st.sidebar:
-    # Si subió un logo en configuración, lo mostramos
     if st.session_state.get("logo_firma"):
         st.image(st.session_state["logo_firma"], use_container_width=True)
         st.divider()
 
     st.markdown(f"### 🧑‍💼 {st.session_state.get('nombre_usuario', 'Usuario')}")
-    st.caption(f"🛡️ Nivel de acceso: **{st.session_state.get('rol_actual', 'Usuario')}**")
+    st.caption(f"🛡️ Nivel: **{st.session_state.get('rol_actual', 'Usuario')}**")
     
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state["usuario_actual"] = None
@@ -1795,23 +1794,22 @@ with st.sidebar:
     
     opciones_menu = ["🏠 Mando Central", "👤 Registro Maestro", "📁 Archivo Digital", "📄 Plantillas Auto", "⏱️ Alertas y Plazos"]
     
-    # El asistente NO verá el botón de Configuración ni Honorarios
+    # El asistente NO verá Configuración ni Honorarios
     if st.session_state.get("usuario_actual") == "Jmatos":
         opciones_menu.extend(["💳 Gestión de Honorarios", "⚙️ Configuración"])
         
-    # AQUÍ ESTÁ LA VARIABLE MÁGICA QUE FALTABA
     menu = st.radio("Módulos", opciones_menu, label_visibility="collapsed")
 
     st.write("---")
-    
-    # Datos corporativos de la firma en el menú
     st.markdown(f"### 🏢 {st.session_state.get('nombre_oficina', 'OFICINA PRINCIPAL')}")
     st.markdown(f"📍 {st.session_state.get('dir_oficina', 'Santiago')}")
     st.markdown(f"📞 {st.session_state.get('tel_oficina', '829-826-5888')}")
     st.markdown("**Lic. Jhonny Matos. M.A.**\n*(Presidente-Fundador)*")
-
-# ==========================================
+# ----------------------------------------------------
+# A partir de aquí sigue su código normal que dice:
 # 🚀 EJECUCIÓN DE MÓDULOS
+# if menu == "🏠 Mando Central":
+# ...
 # ==========================================
 # (AQUÍ DEBE QUEDAR SU LÍNEA: if menu == "🏠 Mando Central":)
 # ==========================================
