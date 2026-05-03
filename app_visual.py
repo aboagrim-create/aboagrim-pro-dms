@@ -259,12 +259,54 @@ def vista_registro_maestro():
             st.session_state[rol] -= 1
 
     with st.container(border=True):
-        col_e1, col_e2 = st.columns([1, 2])
-        st.info("💡 Formato oficial de la firma: **YYYY-0000** (Ej. 2026-0001)")
-        num_expediente = col_e1.text_input("📁 Número de Expediente:", placeholder="2026-0001")
-        asunto = col_e2.text_input("📌 Asunto o Referencia del Caso:", placeholder="Saneamiento Familia García...")
+        st.markdown("### 🔍 Buscador y Editor de Expedientes")
+        col_b1, col_b2, col_b3 = st.columns([2, 1, 1])
+        
+        # El usuario escribe el número aquí
+        exp_buscar = col_b1.text_input("Ingrese el Número de Expediente (Ej. 2026-0001):", placeholder="YYYY-0000")
+        
+        if col_b2.button("🔎 Buscar y Cargar", use_container_width=True):
+            if exp_buscar:
+                try:
+                    # Buscamos el expediente en Supabase
+                    respuesta = supabase.table("expedientes").select("*").eq("id_expediente", exp_buscar).execute()
+                    
+                    if respuesta.data:
+                        datos = respuesta.data[0]
+                        st.session_state["exp_cargado"] = datos
+                        
+                        # Ajustamos los contadores dinámicos según lo que vino de la nube
+                        st.session_state["cant_cl_rm"] = len(datos.get("clientes", [])) or 1
+                        st.session_state["cant_ap_rm"] = len(datos.get("apoderados", [])) or 1
+                        st.session_state["cant_ab_rm"] = len(datos.get("abogados", [])) or 1
+                        st.session_state["cant_ag_rm"] = len(datos.get("agrimensores", [])) or 1
+                        st.session_state["cant_in_rm"] = len(datos.get("inmuebles", [])) or 1
+                        st.session_state["cant_do_rm"] = len(datos.get("documentos", [])) or 1
+                        
+                        st.success(f"✅ Expediente {exp_buscar} cargado con éxito. Puede editarlo abajo.")
+                        st.rerun()
+                    else:
+                        # Si no existe, limpiamos la memoria para crear uno nuevo
+                        st.session_state.pop("exp_cargado", None)
+                        st.warning(f"⚠️ El expediente {exp_buscar} no existe. Puede crearlo como uno nuevo a continuación.")
+                except Exception as e:
+                    st.error(f"Error al buscar en la base de datos: {e}")
+
+        if col_b3.button("🧹 Limpiar Pantalla", use_container_width=True):
+            st.session_state.pop("exp_cargado", None)
+            st.rerun()
+
+    # --- CARGA DE DATOS AL FORMULARIO ---
+    # Si hay un expediente cargado en memoria, usamos sus datos. Si no, lo dejamos en blanco.
+    expediente_actual = st.session_state.get("exp_cargado", {})
+    
+    col_e1, col_e2 = st.columns([1, 2])
+    num_expediente = col_e1.text_input("📁 Número de Expediente:", value=expediente_actual.get("id_expediente", exp_buscar))
+    asunto = col_e2.text_input("📌 Asunto o Referencia del Caso:", value=expediente_actual.get("asunto", ""))
     
     st.write("---")
+    
+    # (A partir de aquí, sigue su código normal: with st.expander("👥 1. Partes, Clientes y Representantes"... )
 
     # --- 1. PARTES Y REPRESENTANTES ---
     with st.expander("👥 1. Partes, Clientes y Representantes", expanded=False):
