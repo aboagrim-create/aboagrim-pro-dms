@@ -244,10 +244,9 @@ def vista_registro_maestro():
     from datetime import datetime
     
     st.title("👤 Registro Maestro de Expedientes")
-    st.markdown("### 🗃️ Creación y Actualización de Casos")
+    st.markdown("### 🗃️ Creación y Actualización de Casos en la Nube")
 
     # --- 0. INICIALIZACIÓN DE MEMORIA DINÁMICA ---
-    # Agregamos "cant_do_rm" para controlar la cantidad de Documentos/Actuaciones
     roles_rm = ["cant_cl_rm", "cant_ap_rm", "cant_ab_rm", "cant_ag_rm", "cant_no_rm", "cant_al_rm", "cant_in_rm", "cant_do_rm"]
     for rol in roles_rm:
         if rol not in st.session_state:
@@ -258,9 +257,6 @@ def vista_registro_maestro():
             st.session_state[rol] += 1
         elif operacion == "del" and st.session_state[rol] > 0:
             st.session_state[rol] -= 1
-
-    if "db_expedientes" not in st.session_state:
-        st.session_state["db_expedientes"] = {}
 
     with st.container(border=True):
         col_e1, col_e2 = st.columns([1, 2])
@@ -366,7 +362,7 @@ def vista_registro_maestro():
                 m = c3.text_input("Tribunal:", key=f"rm_al_m_{i}")
                 if n: lista_alguaciles.append({"nombre": n, "cedula": c, "matricula": m})
 
-    # --- 3. INMUEBLES Y TÍTULOS (AMPLIADO) ---
+    # --- 3. INMUEBLES Y TÍTULOS ---
     with st.expander("📍 3. Inmuebles, Parcelas y Títulos", expanded=False):
         c_btn1, c_btn2 = st.columns([1, 4])
         c_btn1.button("➕ Agregar Inmueble", on_click=mod_cant_rm, args=("cant_in_rm", "add"), key="rm_add_in")
@@ -393,32 +389,29 @@ def vista_registro_maestro():
             
             if p: lista_inmuebles.append({"parcela": p, "dc": dc, "provincia": prov, "coordenadas": coord, "superficie": sup, "tipo_doc": tdoc, "numero": num, "libro": lib, "folio": fol, "fecha_ins": f_ins})
 
-    # --- 4. NUEVO: ACTUACIONES Y DOCUMENTOS ---
-    with st.expander("📝 4. Actuaciones y Documentos del Expediente", expanded=True):
-        st.info("Registre las instancias, demandas, actos y notificaciones vinculadas a este caso.")
+    # --- 4. ACTUACIONES Y DOCUMENTOS ---
+    with st.expander("📝 4. Actuaciones y Documentos del Expediente", expanded=False):
         c_btn1, c_btn2 = st.columns([1, 4])
         c_btn1.button("➕ Agregar Documento", on_click=mod_cant_rm, args=("cant_do_rm", "add"), key="rm_add_do")
         c_btn2.button("➖ Quitar", on_click=mod_cant_rm, args=("cant_do_rm", "del"), key="rm_del_do")
         
         lista_documentos = []
         for i in range(st.session_state["cant_do_rm"]):
-            st.markdown(f"**Actuación / Documento {i+1}**")
             c1, c2, c3, c4 = st.columns([2, 3, 2, 2])
-            
-            tipos_doc = ["Acto", "Acta", "Instancia", "Solicitud", "Informe", "Demanda", "Carta", "Notificación", "Otro"]
-            tipo_d = c1.selectbox("Clasificación:", tipos_doc, key=f"rm_do_t_{i}")
-            desc_d = c2.text_input("Descripción / Título:", placeholder="Ej. Instancia de fijación de audiencia", key=f"rm_do_d_{i}")
+            tipo_d = c1.selectbox("Clasificación:", ["Acto", "Acta", "Instancia", "Solicitud", "Informe", "Demanda", "Carta", "Notificación", "Otro"], key=f"rm_do_t_{i}")
+            desc_d = c2.text_input("Descripción:", key=f"rm_do_d_{i}")
             fecha_d = c3.date_input("Fecha:", key=f"rm_do_f_{i}")
-            estado_d = c4.selectbox("Estado Actual:", ["Redactado", "Depositado", "Notificado", "Aprobado", "Rechazado"], key=f"rm_do_e_{i}")
+            estado_d = c4.selectbox("Estado:", ["Redactado", "Depositado", "Notificado", "Aprobado", "Rechazado"], key=f"rm_do_e_{i}")
             
             if desc_d: lista_documentos.append({"tipo": tipo_d, "descripcion": desc_d, "fecha": str(fecha_d), "estado": estado_d})
 
     st.write("---")
     
-    # --- BOTÓN DE GUARDADO MAESTRO ---
-    if st.button("💾 Guardar / Actualizar Expediente en Bóveda", type="primary", use_container_width=True):
+    # 🚀 --- INTEGRACIÓN CON SUPABASE: GUARDAR --- 🚀
+    if st.button("💾 Guardar Expediente en la Nube", type="primary", use_container_width=True):
         if num_expediente and asunto:
-            st.session_state["db_expedientes"][num_expediente] = {
+            datos_expediente = {
+                "id_expediente": num_expediente, 
                 "asunto": asunto,
                 "fecha_creacion": datetime.now().strftime("%Y-%m-%d"),
                 "clientes": lista_clientes,
@@ -428,34 +421,50 @@ def vista_registro_maestro():
                 "notarios": lista_notarios,
                 "alguaciles": lista_alguaciles,
                 "inmuebles": lista_inmuebles,
-                "documentos": lista_documentos # Guardamos la nueva lista de actuaciones
+                "documentos": lista_documentos
             }
-            st.success(f"✅ ¡Expediente {num_expediente} guardado exitosamente en el Registro Maestro!")
-            st.balloons()
+            
+            try:
+                # La magia ocurre aquí: Enviamos el diccionario directo a Supabase
+                supabase.table("expedientes").upsert(datos_expediente).execute()
+                st.success(f"✅ ¡Expediente {num_expediente} guardado en la base de datos maestra!")
+                st.balloons()
+            except Exception as e:
+                st.error(f"❌ Error al conectar con Supabase. Detalle técnico: {e}")
+                st.info("Asegúrese de que las columnas en Supabase se llamen exactamente igual que en el código y sean tipo JSONB.")
         else:
             st.error("⚠️ Debe indicar al menos el Número de Expediente y el Asunto para poder guardar.")
 
-    # --- LISTADO DE EXPEDIENTES ---
+    # 🚀 --- INTEGRACIÓN CON SUPABASE: LECTURA --- 🚀
     st.divider()
-    st.subheader("🗂️ Archivo de Expedientes Registrados")
-    if st.session_state["db_expedientes"]:
-        for exp_num, exp_data in st.session_state["db_expedientes"].items():
-            with st.expander(f"📁 Expediente: {exp_num} - {exp_data['asunto']}"):
-                col_d1, col_d2, col_d3 = st.columns(3)
-                col_d1.write(f"**Fecha Registro:** {exp_data['fecha_creacion']}")
-                col_d1.write(f"**Clientes:** {len(exp_data['clientes'])}")
-                
-                col_d2.write(f"**Profesionales:** {len(exp_data['abogados']) + len(exp_data['agrimensores'])}")
-                col_d2.write(f"**Inmuebles:** {len(exp_data['inmuebles'])}")
-                
-                # Usamos .get() por si hay expedientes viejos que no tenían la lista de documentos
-                col_d3.write(f"**Actuaciones/Docs:** {len(exp_data.get('documentos', []))}")
-                
-                if st.button("🗑️ Eliminar Expediente", key=f"del_exp_{exp_num}"):
-                    del st.session_state["db_expedientes"][exp_num]
-                    st.rerun()
-    else:
-        st.info("No hay expedientes registrados aún. Llene los datos arriba y presione Guardar.")
+    st.subheader("🗂️ Archivo de Expedientes Registrados (En Vivo)")
+    
+    try:
+        # Descargamos los datos desde la nube
+        respuesta_db = supabase.table("expedientes").select("*").execute()
+        datos_nube = respuesta_db.data
+        
+        if datos_nube:
+            for exp_data in datos_nube:
+                exp_num = exp_data.get('id_expediente', 'Sin ID')
+                with st.expander(f"📁 Expediente: {exp_num} - {exp_data.get('asunto', '')}"):
+                    col_d1, col_d2, col_d3 = st.columns(3)
+                    col_d1.write(f"**Fecha Registro:** {exp_data.get('fecha_creacion', '')}")
+                    col_d1.write(f"**Clientes:** {len(exp_data.get('clientes', []))}")
+                    
+                    col_d2.write(f"**Profesionales:** {len(exp_data.get('abogados', [])) + len(exp_data.get('agrimensores', []))}")
+                    col_d2.write(f"**Inmuebles:** {len(exp_data.get('inmuebles', []))}")
+                    
+                    col_d3.write(f"**Actuaciones/Docs:** {len(exp_data.get('documentos', []))}")
+                    
+                    if st.button("🗑️ Eliminar de la Nube", key=f"del_exp_{exp_num}"):
+                        supabase.table("expedientes").delete().eq("id_expediente", exp_num).execute()
+                        st.rerun()
+        else:
+            st.info("La base de datos está limpia. Registre su primer expediente arriba.")
+            
+    except Exception as e:
+        st.error(f"No se pudo cargar la lista desde Supabase. Error: {e}")
 # =====================================================================
 # MÓDULO 5: ALERTAS Y PLAZOS
 # =====================================================================
