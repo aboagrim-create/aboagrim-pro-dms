@@ -11,16 +11,9 @@ import io
 import json
 from datetime import datetime, timedelta
 from docxtpl import DocxTemplate
-st.set_page_config(page_title="AboAgrim Pro", page_icon="🏛️", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="AboAgrim Pro", page_icon="🏛️", layout="centered", initial_sidebar_state="expanded")
 # from fpdf import FPDF  <-- Agréguela aquí si usa la parte de facturación
-ocultar_iconos = """
-<style>
-    /* Oculta las herramientas de desarrollador arriba a la derecha */
-    [data-testid="stToolbar"] {visibility: hidden !important;}
-    footer {visibility: hidden !important;}
-    
-    /* 🚨 RESCATE DEL BOTÓN DE LA BARRA LATERAL 🚨 */
-    [data-testid="collapsedControl"] {
+
         visibility: visible !important;
         display: flex !important;
     }
