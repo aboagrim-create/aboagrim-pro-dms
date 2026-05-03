@@ -1588,8 +1588,20 @@ def vista_plantillas():
                             
                             if buffer:
                                 prefijo = exp_seleccionado if exp_seleccionado != "-- Expediente Independiente (Manual) --" else "Doc"
-                                st.download_button(label=f"⬇️ Descargar: {p}", data=buffer, file_name=f"{prefijo}_{p}")
+                                nombre_doc_final = f"{prefijo}_{p}"
+                                
+                                # Botón de descarga manual
+                                st.download_button(label=f"⬇️ Descargar: {p}", data=buffer, file_name=nombre_doc_final)
                                 archivos_generados += 1
+                                
+                                # 💾 NUEVO: GUARDADO AUTOMÁTICO EN EL ARCHIVO DIGITAL
+                                if exp_seleccionado != "-- Expediente Independiente (Manual) --":
+                                    ruta_anexos = f"expedientes_anexos/{exp_seleccionado}"
+                                    if not os.path.exists(ruta_anexos):
+                                        os.makedirs(ruta_anexos)
+                                    # Guardamos la copia del Word forjado en la carpeta
+                                    with open(os.path.join(ruta_anexos, nombre_doc_final), "wb") as f_out:
+                                        f_out.write(buffer.getvalue())
                                 
                             # Borramos el temporal de la computadora virtual para no ocupar espacio
                             if os.path.exists(ruta_temp):
@@ -1619,18 +1631,22 @@ def vista_plantillas():
 
             if btn_subir:
                 if archivos_subidos:
+                    hubo_errores = False
                     for archivo in archivos_subidos:
                         try:
                             # Subimos el archivo a Supabase Storage
                             supabase.storage.from_("plantillas_maestras").upload(
                                 path=f"{destino}/{archivo.name}",
                                 file=archivo.getvalue(),
-                                file_options={"upsert": "true", "content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+                                file_options={"content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
                             )
                         except Exception as e:
-                            st.error(f"Error al subir {archivo.name}: {e}")
-                    st.success(f"✅ Se guardaron {len(archivos_subidos)} plantilla(s) exitosamente en la bóveda corporativa.")
-                    st.rerun() # Refrescamos para ver los cambios
+                            st.error(f"❌ Supabase rechazó el archivo '{archivo.name}'. Motivo: {e}")
+                            hubo_errores = True
+                    
+                    if not hubo_errores:
+                        st.success(f"✅ Se guardaron {len(archivos_subidos)} plantilla(s) exitosamente en la bóveda corporativa.")
+                        st.rerun() # Solo refrescamos si TODO salió perfecto
                 else:
                     st.warning("⚠️ Debe arrastrar al menos un archivo (.docx) antes de guardar.")
 
