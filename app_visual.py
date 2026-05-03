@@ -1824,7 +1824,7 @@ def vista_plantillas():
         st.subheader("Gestión de Archivos Maestros en la Nube (.docx)")
         
         # 🔒 BLOQUEO PRESIDENCIAL
-        if st.session_state.get("usuario_actual") == "Jmatos":
+        if st.session_state.get("rol_actual") == "Presidente Fundador":
             
             with st.form("form_subida_plantillas", clear_on_submit=True):
                 col_up1, col_up2 = st.columns([2, 3])
@@ -1891,7 +1891,7 @@ def vista_honorarios():
     st.markdown("### 💰 Cotizaciones, Acuerdos y Estado de Cuentas")
 
     # 🛡️ Seguridad: Solo Administradores ven el dinero
-    if st.session_state.get("rol_actual") != "Administrador":
+    if st.session_state.get("rol_actual") != "Presidente Fundador":
         st.error("⛔ Acceso Denegado. Área exclusiva de la Presidencia.")
         return
 
@@ -2021,42 +2021,6 @@ def vista_honorarios():
                 
         else:
             st.error("⚠️ Debe agregar al menos un servicio o concepto con su valor antes de generar la proforma.")
-
-# ==========================================
-# 🔒 SISTEMA DE SEGURIDAD Y LOGIN DINÁMICO
-# ==========================================
-if "db_usuarios" not in st.session_state:
-    st.session_state["db_usuarios"] = {
-        "Jmatos": {"pass": "0681", "rol": "Administrador", "nombre": "Lic. Jhonny Matos"},
-        "asistente": {"pass": "abo123", "rol": "Usuario", "nombre": "Asistente Legal"}
-    }
-
-if "usuario_actual" not in st.session_state:
-    st.session_state["usuario_actual"] = None
-    st.session_state["rol_actual"] = None
-
-if st.session_state["usuario_actual"] is None:
-    st.markdown("<br><br><h2 style='text-align: center; color: #1E3A8A;'>🔒 Acceso Restringido</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center;'>AboAgrim Pro - Sistema de Gestión Integral</p>", unsafe_allow_html=True)
-    
-    col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
-    with col_l2:
-        with st.container(border=True):
-            usuario_input = st.text_input("👤 Usuario:")
-            pass_input = st.text_input("🔑 Contraseña:", type="password")
-            
-            if st.button("Iniciar Sesión", use_container_width=True, type="primary"):
-                db = st.session_state["db_usuarios"]
-                usuario_valido = next((u for u in db if u.lower() == usuario_input.lower()), None)
-                
-                if usuario_valido and db[usuario_valido]["pass"] == pass_input:
-                    st.session_state["usuario_actual"] = usuario_valido
-                    st.session_state["rol_actual"] = db[usuario_valido]["rol"]
-                    st.session_state["nombre_usuario"] = db[usuario_valido]["nombre"]
-                    st.rerun()
-                else:
-                    st.error("❌ Credenciales incorrectas. Sistema bloqueado.")
-    st.stop()
 
 # ==========================================
 # 🎨 APLICADOR DE DISEÑO GLOBAL
