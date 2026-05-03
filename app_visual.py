@@ -1481,20 +1481,28 @@ def vista_plantillas():
     with tab_boveda:
         st.subheader("Gestión de Archivos Maestros (.docx)")
         
-        # 🔒 BLOQUEO PRESIDENCIAL: Tal como lo ordenó, solo Jmatos puede alterar la bóveda
+        # 🔒 BLOQUEO PRESIDENCIAL: Solo el Presidente Jmatos puede alterar la bóveda
         if st.session_state.get("usuario_actual") == "Jmatos":
-            col_up1, col_up2 = st.columns([2, 3])
-            with col_up1:
-                destino = st.selectbox("Cargar en:", carpetas_base)
-            with col_up2:
-                archivos_subidos = st.file_uploader("Arrastrar Plantillas Nuevas", type=["docx"], accept_multiple_files=True)
+            
+            # --- NUEVO SISTEMA DE SUBIDA CON FORMULARIO (EVITA EL BUCLE) ---
+            with st.form("form_subida_plantillas", clear_on_submit=True):
+                col_up1, col_up2 = st.columns([2, 3])
+                with col_up1:
+                    destino = st.selectbox("Cargar en:", carpetas_base)
+                with col_up2:
+                    archivos_subidos = st.file_uploader("Arrastrar Plantillas Nuevas", type=["docx"], accept_multiple_files=True)
+                
+                btn_subir = st.form_submit_button("💾 Subir y Guardar en Bóveda", use_container_width=True)
 
-            if archivos_subidos:
-                for archivo in archivos_subidos:
-                    with open(os.path.join("plantillas_maestras", destino, archivo.name), "wb") as f:
-                        f.write(archivo.getbuffer())
-                st.success("✅ Plantillas guardadas en la bóveda.")
-                st.rerun()
+            # La acción solo ocurre al presionar el botón del formulario
+            if btn_subir:
+                if archivos_subidos:
+                    for archivo in archivos_subidos:
+                        with open(os.path.join("plantillas_maestras", destino, archivo.name), "wb") as f:
+                            f.write(archivo.getbuffer())
+                    st.success(f"✅ Se guardaron {len(archivos_subidos)} plantilla(s) exitosamente en la bóveda.")
+                else:
+                    st.warning("⚠️ Debe arrastrar al menos un archivo (.docx) antes de guardar.")
 
             st.divider()
             st.write("**⚠️ Zona de Eliminación (Solo Presidente)**")
