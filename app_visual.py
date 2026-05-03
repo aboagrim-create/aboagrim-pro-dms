@@ -2021,99 +2021,6 @@ def vista_honorarios():
                 
         else:
             st.error("⚠️ Debe agregar al menos un servicio o concepto con su valor antes de generar la proforma.")
-def vista_configuracion():
-    import streamlit as st
-    
-    st.title("⚙️ Configuración Maestra del Sistema")
-    st.markdown("### 🎛️ Centro de Mando: Personalización y Seguridad")
-    
-    if st.session_state.get("rol_actual") != "Administrador":
-        st.error("⛔ Acceso Denegado. Área exclusiva de la Presidencia.")
-        return
-
-    # Inicializar variables de marca si no existen
-    if "color_primario" not in st.session_state: st.session_state["color_primario"] = "#1E3A8A"
-    if "color_fondo" not in st.session_state: st.session_state["color_fondo"] = "#0E1117"
-    if "tipo_letra" not in st.session_state: st.session_state["tipo_letra"] = "sans-serif"
-    if "nombre_oficina" not in st.session_state: st.session_state["nombre_oficina"] = "OFICINA PRINCIPAL"
-    if "dir_oficina" not in st.session_state: st.session_state["dir_oficina"] = "Calle Boy Scout 83, Plaza Jasansa, Mod. 5-B, Centro Ciudad, Santiago."
-    if "tel_oficina" not in st.session_state: st.session_state["tel_oficina"] = "829-826-5888 / 809-691-3333"
-
-    # Dividimos la pantalla en 3 pestañas profesionales
-    tab_usuarios, tab_apariencia, tab_oficina = st.tabs(["👥 Usuarios y Accesos", "🎨 Diseño y Marca", "🏢 Datos de la Firma"])
-    
-    with tab_usuarios:
-        db = st.session_state["db_usuarios"]
-        st.subheader("📋 Directorio de Usuarios Activos")
-        for usr, datos in db.items():
-            col1, col2, col3, col4 = st.columns([2, 3, 2, 2])
-            col1.write(f"**ID:** {usr}")
-            col2.write(f"**Nombre:** {datos['nombre']}")
-            col3.write(f"**Rol:** {datos['rol']}")
-            with col4:
-                if usr.lower() == "jmatos":
-                    st.info("👑 Admin Principal")
-                else:
-                    if st.button("🗑️ Borrar", key=f"del_{usr}"):
-                        del st.session_state["db_usuarios"][usr]
-                        st.rerun()
-        st.write("---")
-        c_izq, c_der = st.columns(2)
-        with c_izq:
-            st.markdown("**➕ Agregar Personal**")
-            nuevo_usr = st.text_input("ID de Usuario (Ej. asistente2):")
-            nuevo_pass = st.text_input("Contraseña Temporal:", type="password")
-            nuevo_nombre = st.text_input("Nombre Completo:")
-            nuevo_rol = st.selectbox("Nivel de Acceso:", ["Usuario", "Administrador"])
-            if st.button("💾 Inscribir", type="primary"):
-                if nuevo_usr and nuevo_pass:
-                    st.session_state["db_usuarios"][nuevo_usr] = {"pass": nuevo_pass, "rol": nuevo_rol, "nombre": nuevo_nombre}
-                    st.success("✅ Usuario agregado.")
-                    st.rerun()
-        with c_der:
-            st.markdown("**🔑 Cambiar Contraseñas**")
-            usr_modificar = st.selectbox("Seleccione la cuenta:", list(db.keys()))
-            nueva_clave = st.text_input("Escriba la Nueva Contraseña:", type="password")
-            if st.button("🔄 Actualizar", type="primary"):
-                if nueva_clave:
-                    st.session_state["db_usuarios"][usr_modificar]["pass"] = nueva_clave
-                    st.success("✅ Contraseña cambiada.")
-
-    with tab_apariencia:
-        st.subheader("🎨 Personalización Visual del Sistema")
-        st.info("💡 Cambie los colores corporativos y la tipografía. Para ver los cambios, haga clic en Aplicar Diseño.")
-        
-        c_color1, c_color2 = st.columns(2)
-        with c_color1:
-            nuevo_primario = st.color_picker("Color Principal (Botones y Títulos):", st.session_state["color_primario"])
-            nuevo_fondo = st.color_picker("Color de Fondo (Pantalla):", st.session_state["color_fondo"])
-        with c_color2:
-            nueva_letra = st.selectbox("Tipografía (Letra):", ["sans-serif", "serif", "monospace", "Arial", "Courier New", "Georgia"])
-            logo_subido = st.file_uploader("Subir Logo de la Firma (PNG/JPG):", type=["png", "jpg", "jpeg"])
-            
-        if st.button("💾 Aplicar y Guardar Diseño", type="primary", use_container_width=True):
-            st.session_state["color_primario"] = nuevo_primario
-            st.session_state["color_fondo"] = nuevo_fondo
-            st.session_state["tipo_letra"] = nueva_letra
-            if logo_subido:
-                st.session_state["logo_firma"] = logo_subido.getvalue()
-            st.success("✅ Diseño actualizado. El sistema adoptará su marca ahora mismo.")
-            st.rerun()
-
-    with tab_oficina:
-        st.subheader("🏢 Datos Oficiales de la Firma")
-        st.markdown("Estos datos alimentarán automáticamente la barra lateral de su sistema.")
-        
-        nuevo_n_oficina = st.text_input("Nombre de la Firma / Oficina:", st.session_state["nombre_oficina"])
-        nueva_dir = st.text_input("Dirección Principal:", st.session_state["dir_oficina"])
-        nuevo_tel = st.text_input("Teléfonos de Contacto:", st.session_state["tel_oficina"])
-        
-        if st.button("💾 Guardar Datos Corporativos", type="primary", use_container_width=True):
-            st.session_state["nombre_oficina"] = nuevo_n_oficina
-            st.session_state["dir_oficina"] = nueva_dir
-            st.session_state["tel_oficina"] = nuevo_tel
-            st.success("✅ Datos corporativos actualizados.")
-            st.rerun()
 
 # ==========================================
 # 🔒 SISTEMA DE SEGURIDAD Y LOGIN DINÁMICO
@@ -2171,59 +2078,125 @@ if "color_primario" in st.session_state:
         }}
         </style>
     """, unsafe_allow_html=True)
-# ==========================================
-# 📱 MENÚ LATERAL Y PERFIL
-# ==========================================
-with st.sidebar:
-    if st.session_state.get("logo_firma"):
-        st.image(st.session_state["logo_firma"], use_container_width=True)
-        st.divider()
+# =====================================================================
+# 🔐 CANDADO MAESTRO Y NAVEGACIÓN DINÁMICA (AL FONDO DEL ARCHIVO)
+# =====================================================================
+import streamlit as st
+from database import db as supabase # Asegúrese de que este import coincida con su sistema
 
-    st.markdown(f"### 🧑‍💼 {st.session_state.get('nombre_usuario', 'Usuario')}")
-    st.caption(f"🛡️ Nivel: **{st.session_state.get('rol_actual', 'Usuario')}**")
+# 1. Inicializar la memoria de seguridad del sistema
+if "autenticado" not in st.session_state:
+    st.session_state.autenticado = False
+if "usuario_actual" not in st.session_state:
+    st.session_state.usuario_actual = ""
+if "rol_actual" not in st.session_state:
+    st.session_state.rol_actual = ""
+
+# ==========================================
+# 🛑 LA PUERTA DE HIERRO (LOGIN GLOBAL)
+# ==========================================
+if not st.session_state.autenticado:
+    # Ocultamos el menú lateral nativo de Streamlit con un pequeño truco visual
+    st.markdown("""<style>[data-testid="collapsedControl"] {display: none;}</style>""", unsafe_allow_html=True)
     
-    if st.button("🚪 Cerrar Sesión", use_container_width=True):
-        st.session_state["usuario_actual"] = None
-        st.session_state["rol_actual"] = None
-        st.rerun()
+    st.markdown("<h1 style='text-align: center; color: #1E3A8A; font-size: 4rem;'>🏛️</h1>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'>AboAgrim Pro</h2>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center; color: gray;'>Acceso Restringido</h4>", unsafe_allow_html=True)
     
-    st.write("---")
-    st.markdown("**Navegación:**")
+    col_izq, col_centro, col_der = st.columns([1, 2, 1])
     
-    opciones_menu = ["🏠 Mando Central", "👤 Registro Maestro", "📁 Archivo Digital", "📄 Plantillas Auto", "⏱️ Alertas y Plazos"]
+    with col_centro:
+        with st.container(border=True):
+            st.write("Por favor, identifíquese para acceder a la bóveda:")
+            u_login = st.text_input("Usuario:")
+            p_login = st.text_input("PIN de Acceso:", type="password")
+            
+            if st.button("🔓 Iniciar Sesión", use_container_width=True, type="primary"):
+                if u_login and p_login:
+                    try:
+                        # Vamos a Supabase a verificar si existe y si la clave es correcta
+                        res = supabase.table("usuarios").select("*").eq("nombre_usuario", u_login).eq("pin_acceso", p_login).execute()
+                        
+                        if res.data and len(res.data) > 0:
+                            usuario_valido = res.data[0]
+                            st.session_state.autenticado = True
+                            st.session_state.usuario_actual = usuario_valido["nombre_usuario"]
+                            st.session_state.rol_actual = usuario_valido["rol"]
+                            st.rerun() # Recargamos la página para abrir el sistema
+                        else:
+                            # 🔑 RESPALDO MASTER (Por si Supabase falla o usted queda fuera)
+                            if u_login == "JhonnyMatos" and p_login == "0681":
+                                st.session_state.autenticado = True
+                                st.session_state.usuario_actual = "Jhonny Matos"
+                                st.session_state.rol_actual = "Presidente Fundador"
+                                st.rerun()
+                            else:
+                                st.error("❌ Usuario o PIN incorrectos. Acceso denegado.")
+                    except Exception as e:
+                        st.error(f"Error en los servidores de autenticación: {e}")
+                else:
+                    st.warning("⚠️ Ingrese credenciales.")
+
+# ==========================================
+# 🟢 EL SISTEMA INTERNO (Si ya pasó el Login)
+# ==========================================
+else:
+    # Recuperamos el menú lateral nativo
+    st.markdown("""<style>[data-testid="collapsedControl"] {display: block;}</style>""", unsafe_allow_html=True)
     
-    # El asistente NO verá Configuración ni Honorarios
-    if st.session_state.get("usuario_actual") == "Jmatos":
-        opciones_menu.extend(["💳 Gestión de Honorarios", "⚙️ Configuración"])
+    # --- MENÚ LATERAL DINÁMICO ---
+    with st.sidebar:
+        st.markdown(f"### 👤 {st.session_state.usuario_actual}")
+        st.caption(f"🛡️ Nivel: **{st.session_state.rol_actual}**")
         
-    menu = st.radio("Módulos", opciones_menu, label_visibility="collapsed")
+        if st.button("🚪 Cerrar Sesión", use_container_width=True):
+            st.session_state.autenticado = False
+            st.rerun()
+            
+        st.divider()
+        st.markdown("**Navegación Principal:**")
+        
+        opciones_menu = [
+            "🏠 Mando Central", 
+            "👤 Registro Maestro", 
+            "📁 Archivo Digital", 
+            "⏰ Alertas y Plazos"
+        ]
+        
+        # --- ⚖️ MATRIZ DE PERMISOS INTELIGENTE ---
+        rol = st.session_state.rol_actual
+        es_presidente = (rol == "Presidente Fundador")
+        
+        puede_ver_plantillas = es_presidente or (rol in ["Abogado", "Agrimensor"])
+        puede_ver_honorarios = es_presidente or (rol in ["Contabilidad"]) 
+        puede_ver_config = es_presidente # Exclusivo de la Presidencia
+        
+        if puede_ver_plantillas:
+            opciones_menu.append("📄 Plantillas Auto")
+        if puede_ver_honorarios:
+            opciones_menu.append("💳 Gestión de Honorarios")
+        if puede_ver_config:
+            opciones_menu.append("⚙️ Configuración")
 
-    st.write("---")
-    st.markdown(f"### 🏢 {st.session_state.get('nombre_oficina', 'OFICINA PRINCIPAL')}")
-    st.markdown(f"📍 {st.session_state.get('dir_oficina', 'Santiago')}")
-    st.markdown(f"📞 {st.session_state.get('tel_oficina', '829-826-5888')}")
-    st.markdown("**Lic. Jhonny Matos. M.A.**\n*(Presidente-Fundador)*")
-# ----------------------------------------------------
-# A partir de aquí sigue su código normal que dice:
-# 🚀 EJECUCIÓN DE MÓDULOS
-# if menu == "🏠 Mando Central":
-# ...
-# ==========================================
-# (AQUÍ DEBE QUEDAR SU LÍNEA: if menu == "🏠 Mando Central":)
-# ==========================================
-# 🚀 EJECUCIÓN DE MÓDULOS
-# ==========================================
-if menu == "🏠 Mando Central":
-    vista_mando()
-elif menu == "👤 Registro Maestro":
-    vista_registro_maestro()
-elif menu == "📁 Archivo Digital":
-    vista_archivo_digital()
-elif menu == "📄 Plantillas Auto":
-    vista_plantillas()
-elif menu == "⏱️ Alertas y Plazos":
-    vista_alertas_plazos()
-elif menu == "💳 Gestión de Honorarios":
-    vista_honorarios()
-elif menu == "⚙️ Configuración":
-    vista_configuracion()
+        # ESTO DIBUJA LOS BOTONES DENTRO DE LA BARRA LATERAL
+        seleccion = st.radio("Módulos", opciones_menu, label_visibility="collapsed")
+        
+        st.divider()
+        st.caption("📍 AboAgrim Pro | Santiago")
+
+    # --- RUTAS DE NAVEGACIÓN (Enlazando sus funciones) ---
+    # ESTO VA AFUERA DE LA BARRA (Para que el contenido salga en el centro)
+    if seleccion == "🏠 Mando Central":
+        vista_mando()
+    elif seleccion == "👤 Registro Maestro":
+        vista_registro_maestro()
+    elif seleccion == "📁 Archivo Digital":
+        vista_archivo_digital()
+    elif seleccion == "⏰ Alertas y Plazos":
+        vista_alertas_plazos()
+    elif seleccion == "📄 Plantillas Auto":
+        vista_plantillas()
+    elif seleccion == "💳 Gestión de Honorarios":
+        vista_honorarios()
+    elif seleccion == "⚙️ Configuración":
+        vista_configuracion()
