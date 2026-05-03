@@ -1596,7 +1596,7 @@ def vista_plantillas():
                                 
                                 # 💾 NUEVO: GUARDADO AUTOMÁTICO EN EL ARCHIVO DIGITAL
                                 if exp_seleccionado != "-- Expediente Independiente (Manual) --":
-                                    ruta_anexos = f"expedientes_anexos/{exp_seleccionado}"
+                                    ruta_anexos = f"boveda_digital/{exp_seleccionado}"
                                     if not os.path.exists(ruta_anexos):
                                         os.makedirs(ruta_anexos)
                                     # Guardamos la copia del Word forjado en la carpeta
