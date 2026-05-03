@@ -186,8 +186,6 @@ def generar_paquete_documentos(datos_formulario, rutas_plantillas):
 # =====================================================================
 def vista_mando():
     import streamlit as st
-    import json
-    from datetime import datetime
 
     # --- ENCABEZADO CORPORATIVO ---
     col_logo, col_titulo = st.columns([1, 4])
@@ -234,33 +232,6 @@ def vista_mando():
         st.subheader("⚡ Acciones Rápidas")
         st.button("➕ Nuevo Caso", use_container_width=True, disabled=True)
         st.button("📄 Forjar Doc", use_container_width=True, disabled=True)
-
-    # --- 3. BÓVEDA DE RESPALDO (SOLO PRESIDENTE) ---
-    st.write("---")
-    st.subheader("💾 Copia de Seguridad y Respaldo")
-    
-    if st.session_state.get("usuario_actual") == "Jmatos":
-        st.markdown("Descargue el respaldo maestro de toda la oficina.")
-        
-        # Preparamos los datos para la descarga
-        backup_data = {
-            "fecha_respaldo": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "usuarios": st.session_state.get("db_usuarios", {}),
-            "expedientes": exps
-        }
-        json_str = json.dumps(backup_data, indent=4, ensure_ascii=False)
-        
-        # El botón corregido, sin los tres puntos
-        st.download_button(
-            label="⬇️ Descargar Backup Maestro (.json)",
-            data=json_str,
-            file_name=f"Respaldo_AboAgrim_{datetime.now().strftime('%d_%m_%Y')}.json",
-            mime="application/json",
-            type="primary",
-            use_container_width=True
-        )
-    else:
-        st.info("🔒 Función reservada exclusivamente para el Presidente de la Firma.")
 # =====================================================================
 # MÓDULO 2: REGISTRO MAESTRO (CON PESTAÑAS Y 7 ROLES)
 # =====================================================================
@@ -1788,35 +1759,38 @@ if st.session_state["usuario_actual"] is None:
 if "color_primario" in st.session_state:
     st.markdown(f"""
         <style>
-        /* Pintamos el fondo y las letras generales */
         .stApp {{
             background-color: {st.session_state["color_fondo"]};
             font-family: {st.session_state["tipo_letra"]};
         }}
-        
-        /* Pintamos los botones principales */
         .stButton>button[kind="primary"] {{
             background-color: {st.session_state["color_primario"]};
             border-color: {st.session_state["color_primario"]};
         }}
-        
-        /* Pintamos los títulos */
         h1, h2, h3 {{
             color: {st.session_state["color_primario"]} !important;
             font-family: {st.session_state["tipo_letra"]};
         }}
         
-        /* 📱 MAGIA PARA EL CELULAR: Resalta la flecha (>) del menú lateral */
-        [data-testid="collapsedControl"] {{
-            color: {st.session_state["color_primario"]} !important;
-            background-color: {st.session_state["color_fondo"]} !important;
-            border-radius: 5px;
-            box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
+        /* 📱 MAGIA PARA EL CELULAR: Forzar el botón del menú (Cubre versiones nuevas y viejas) */
+        [data-testid="collapsedControl"],
+        [data-testid="stSidebarCollapsedControl"] {{
+            display: flex !important;
+            background-color: {st.session_state["color_primario"]} !important;
+            border-radius: 8px !important;
+            padding: 5px !important;
+            margin-top: 10px !important;
+            margin-left: 10px !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            z-index: 999999 !important; /* Esto asegura que NADA lo tape */
         }}
-        [data-testid="collapsedControl"] svg {{
-            fill: {st.session_state["color_primario"]} !important;
-            width: 2rem;
-            height: 2rem;
+        
+        [data-testid="collapsedControl"] svg,
+        [data-testid="stSidebarCollapsedControl"] svg {{
+            fill: #FFFFFF !important; /* Pinta la flecha de blanco para que resalte */
+            width: 25px !important;
+            height: 25px !important;
         }}
         </style>
     """, unsafe_allow_html=True)
