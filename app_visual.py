@@ -1741,6 +1741,8 @@ def vista_plantillas():
                     
                     datos_para_word = {
                         "expediente": exp_seleccionado, "fecha_hoy": datetime.now().strftime("%d de %B del %Y"),
+                        "tipo_caso": tipo_caso_db,
+                        "organo_jurisdiccional": organo_db_real,
                         "clientes_nombres": cl_nombres, "clientes_generales": cl_generales,
                         "apoderados_nombres": ap_nombres, "apoderados_generales": ap_generales,
                         "abogados_nombres": ab_nombres, "abogados_generales": ab_generales,
@@ -1775,7 +1777,10 @@ def vista_plantillas():
                                 
                                 # 💾 GUARDADO AUTOMÁTICO EN EL ARCHIVO DIGITAL
                                 if exp_seleccionado != "-- Expediente Independiente (Manual) --":
-                                    ruta_anexos = f"boveda_digital/{exp_seleccionado}"
+                                    # Crea carpetas por año y tipo de proceso automáticamente
+                                    año_actual = datetime.now().strftime("%Y")
+                                    tipo_folder = tipo_caso_db.replace("/", "-").replace(" ", "_")
+                                    ruta_anexos = f"boveda_digital/Expedientes_{año_actual}/{tipo_folder}/{exp_seleccionado}"
                                     if not os.path.exists(ruta_anexos):
                                         os.makedirs(ruta_anexos)
                                     with open(os.path.join(ruta_anexos, nombre_doc_final), "wb") as f_out:
