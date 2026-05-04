@@ -1911,6 +1911,7 @@ def vista_plantillas():
 def vista_honorarios():
     import streamlit as st
     from datetime import datetime
+    from database import db as supabase  # ☁️ Conexión maestra a la nube
 
     st.title("💳 Gestión de Honorarios y Facturación")
     st.markdown("### 💰 Cotizaciones, Acuerdos y Estado de Cuentas")
@@ -1920,9 +1921,30 @@ def vista_honorarios():
         st.error("⛔ Acceso Denegado. Área exclusiva de la Presidencia.")
         return
 
-    # --- 1. VINCULACIÓN AL CASO ---
-    lista_exps = ["-- Cliente Independiente --"] + list(st.session_state.get("db_expedientes", {}).keys())
+    # --- 1. VINCULACIÓN AL CASO (DESDE SUPABASE) ---
+    try:
+        respuesta = supabase.table("expedientes").select("*").execute()
+        db_expedientes_cloud = {row['id_expediente']: row for row in respuesta.data}
+    except Exception:
+        db_expedientes_cloud = {}
+
+    lista_exps = ["-- Cliente Independiente --"] + list(db_expedientes_cloud.keys())
     exp_seleccionado = st.selectbox("Vincular Facturación a Expediente:", lista_exps)
+
+    cliente_proforma = "Cliente no especificado"
+    asunto_proforma = "Servicios Legales / Agrimensura"
+
+    if exp_seleccionado != "-- Cliente Independiente --":
+        # Extraemos los datos del expediente para inyectarlos en la proforma
+        exp_data = db_expedientes_cloud[exp_seleccionado]
+        asunto_proforma = exp_data.get("asunto", "Servicios Legales")
+        
+        # Intentamos obtener el nombre del primer cliente
+        lista_clientes = exp_data.get("clientes", [])
+        if lista_clientes and isinstance(lista_clientes, list) and len(lista_clientes) > 0:
+            cliente_proforma = lista_clientes[0].get("nombre", "Cliente del Expediente")
+            
+        st.success(f"🔗 Vinculado a Expediente: **{asunto_proforma}** (Cliente: {cliente_proforma})")
 
     st.write("---")
 
