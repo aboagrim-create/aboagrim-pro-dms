@@ -1485,25 +1485,36 @@ def vista_plantillas():
 
         lista_exps = ["-- Expediente Independiente (Manual) --"] + list(db_expedientes_cloud.keys())
             
-        col_sel1, col_sel2 = st.columns([1, 2])
-        with col_sel1:
-            exp_seleccionado = st.selectbox("Vincular a Expediente:", lista_exps)
-        with col_sel2:
-            organo_ji = st.selectbox("Órgano Destino (Buscar Plantilla en):", [
-                "Mensuras Catastrales", 
-                "Jurisdicción Original", 
-                "Registro de Títulos",
-                "Tribunal Superior de Tierras",
-                "Otros Documentos"
-            ])
+        # --- NUEVO: RADAR DE ÓRGANO AUTOMÁTICO ---
+        exp_seleccionado = st.selectbox("Vincular a Expediente:", lista_exps)
+        
+        organo_default = "Otros Documentos"
+        tipo_caso_db = "Proceso Legal General"
+        organo_db_real = "No Especificado"
+
+        if exp_seleccionado != "-- Expediente Independiente (Manual) --":
+            # Leemos los datos recién guardados de la base de datos
+            exp_data = db_expedientes_cloud[exp_seleccionado]
+            organo_db_real = exp_data.get("organo_jurisdiccional", "")
+            tipo_caso_db = exp_data.get("tipo_caso", "Proceso Legal General")
+            
+            # El sistema adivina qué carpeta de plantillas abrir basado en el tribunal
+            if "Mensuras" in organo_db_real: organo_default = "Mensuras Catastrales"
+            elif "Original" in organo_db_real: organo_default = "Jurisdicción Original"
+            elif "Títulos" in organo_db_real: organo_default = "Registro de Títulos"
+            elif "Superior" in organo_db_real: organo_default = "Tribunal Superior de Tierras"
+
+        opciones_organos_ui = ["Mensuras Catastrales", "Jurisdicción Original", "Registro de Títulos", "Tribunal Superior de Tierras", "Otros Documentos"]
+        idx_org = opciones_organos_ui.index(organo_default) if organo_default in opciones_organos_ui else 4
+        
+        organo_ji = st.selectbox("🏛️ Órgano Destino (Filtra las Plantillas):", opciones_organos_ui, index=idx_org)
 
         st.write("---")
         
         # 🧠 2. LÓGICA INTELIGENTE DE CARGA DE DATOS
         if exp_seleccionado != "-- Expediente Independiente (Manual) --":
-            st.success(f"🔗 **Conectado al Expediente {exp_seleccionado}.** Los datos de partes, profesionales e inmuebles se han cargado desde Supabase.")
+            st.success(f"🔗 **Conectado: {exp_seleccionado} ({tipo_caso_db}).** Los datos maestros se inyectaron en la memoria.")
             
-            exp_data = db_expedientes_cloud[exp_seleccionado]
             lista_clientes = exp_data.get("clientes", [])
             lista_apoderados = exp_data.get("apoderados", [])
             lista_abogados = exp_data.get("abogados", [])
@@ -1514,6 +1525,7 @@ def vista_plantillas():
             
             with st.expander("👁️ Ver resumen de datos maestros cargados", expanded=False):
                 st.info("Estos datos se inyectarán en su documento de Word:")
+                st.write(f"- 📋 **Proceso:** {tipo_caso_db} | 🏛️ **Tribunal:** {organo_db_real}")
                 st.write(f"- 👤 **Clientes:** {len(lista_clientes)} | 🤝 **Apoderados:** {len(lista_apoderados)}")
                 st.write(f"- ⚖️ **Profesionales:** {len(lista_abogados)} Abogados, {len(lista_agrimensores)} Agrimensores")
                 st.write(f"- 📍 **Inmuebles:** {len(lista_inmuebles)}")
