@@ -589,103 +589,117 @@ def vista_registro_maestro():
 # =====================================================================
 
 def vista_alertas_plazos():
-    st.title("📅 Radar de Alertas y Plazos JI")
-    st.subheader("Control Normativo Ley 108-05 | AboAgrim Pro")
-    
-    # 1. BOTÓN DINÁMICO DE BÚSQUEDA
-    st.markdown("### 🔍 Motor de Rastreo de Expedientes")
-    col_scan, col_info = st.columns([1, 2])
-    escanear = col_scan.button("🚀 Escanear Plazos Activos", type="primary", use_container_width=True)
-    col_info.info("Haga clic para sincronizar las fechas con la nube y calcular los vencimientos normativos de sus expedientes.")
-    
-    # 2. LAS TRES GRANDES ÁREAS DE LA JURISDICCIÓN INMOBILIARIA
-    tab_tecnica, tab_judicial, tab_registro = st.tabs([
-        "📐 Área Técnica (Mensuras)", 
-        "⚖️ Judicial y Recursos", 
-        "📜 Registro de Títulos"
-    ])
-    
-    hoy = datetime.now().date()
-    
-    if escanear:
-        # Extraemos la data de la base de datos maestra
-        try:
-            res = supabase.table("expedientes_maestros").select("*").execute()
-            expedientes = res.data if res.data else []
-        except Exception as e:
-            expedientes = []
-            st.error(f"Error de conexión a la Nube: {e}")
-            
-        with tab_tecnica:
-            st.markdown("#### ⏳ Plazos de la Dirección Regional de Mensuras Catastrales")
-            st.write("Control de autorizaciones, trabajo de campo y revisión técnica.")
-            
-            if expedientes:
-                for caso in expedientes:
-                    if caso.get('fecha_creacion'):
-                        f_ini = datetime.strptime(caso['fecha_creacion'][:10], '%Y-%m-%d').date()
-                        
-                        # CÁLCULOS TÉCNICOS AMPLIADOS (Ley 108-05)
-                        venc_campo = f_ini + timedelta(days=60) # Plazo de ejecución de mensura
-                        venc_deposito = venc_campo + timedelta(days=15) # Plazo para depósito tras el trabajo
-                        
-                        dias_campo = (venc_campo - hoy).days
-                        
-                        with st.container(border=True):
-                            c1, c2 = st.columns([3, 1])
-                            c1.markdown(f"**Exp:** {caso['expediente']} | **Propietario:** {caso.get('nombre_propietario', 'N/A')}")
-                            c1.caption(f"Operación: {caso.get('tipo_acto', 'Mensura Catastral')} | Fecha de Inicio: {f_ini}")
-                            
-                            if dias_campo < 0:
-                                c2.error(f"Vencido hace {abs(dias_campo)} días")
-                            elif dias_campo <= 15:
-                                c2.warning(f"Queda(n) {dias_campo} día(s) (CRÍTICO)")
-                            else:
-                                c2.success(f"En tiempo ({dias_campo} días)")
-                                
-                            # Desglose Dinámico
-                            with st.expander("Ver Desglose de Plazos Técnicos"):
-                                st.write(f"🟢 **Vencimiento Autorización (60 días):** {venc_campo.strftime('%d/%m/%Y')}")
-                                st.write(f"🟡 **Límite Depósito de Planos (+15 días):** {venc_deposito.strftime('%d/%m/%Y')}")
-            else:
-                st.warning("No se encontraron expedientes técnicos activos.")
-                
-        with tab_judicial:
-            st.markdown("#### ⚖️ Control de Audiencias y Vías de Recurso")
-            st.write("Gestión de plazos ante los Tribunales de Tierras y la SCJ.")
-            
-            with st.container(border=True):
-                st.markdown("**📌 Alarmas Normativas para Recursos:**")
-                c_j1, c_j2 = st.columns(2)
-                
-                with c_j1:
-                    st.error("**Vía Administrativa:**")
-                    st.write("• **Recurso de Reconsideración:** 15 días (Ante el mismo órgano).")
-                    st.write("• **Recurso Jerárquico:** 15 días (Ante el órgano superior).")
-                
-                with c_j2:
-                    st.error("**Vía Jurisdiccional:**")
-                    st.write("• **Recurso de Apelación:** 30 días (Tribunal Superior de Tierras).")
-                    st.write("• **Recurso de Casación:** 30 días (Suprema Corte de Justicia).")
-                    
-            st.info("💡 Utilice el 'Registro Maestro' para registrar las fechas de notificación de las sentencias u oficios y activar automáticamente estas cuentas regresivas.")
+    import streamlit as st
+    from datetime import datetime
+    from database import db as supabase  # ☁️ Conexión a la nube
 
-        with tab_registro:
-            st.markdown("#### 📜 Control del Registro de Títulos")
-            st.write("Seguimiento a emisión de Certificados de Título y depósitos registrales.")
+    st.title("📅 Radar de Alertas y Plazos")
+    st.subheader("Control Normativo Inteligente | AboAgrim Pro")
+    
+    st.info("💡 Este radar lee automáticamente las fechas de vencimiento generadas por la Fábrica de Documentos al forjar instancias y contratos.")
+
+    if st.button("🚀 Escanear Plazos en la Nube", type="primary", use_container_width=True):
+        
+        try:
+            # 1. Descargamos todos los expedientes de la nube
+            res = supabase.table("expedientes").select("id_expediente, asunto, alertas").execute()
+            expedientes = res.data if res.data else []
             
-            with st.container(border=True):
-                st.markdown("**📌 Plazos Normativos Registrales:**")
-                st.write("• **Calificación y Emisión de Título:** 45 días laborables.")
-                st.write("• **Anotación de Litis sobre Derechos Registrados:** 15 días laborables.")
-                st.write("• **Inscripción de Hipotecas / Privilegios:** 15 días laborables.")
-                st.write("• **Aprobación de Condominios:** 45 días laborables.")
+            alertas_rojas = []
+            alertas_amarillas = []
+            alertas_verdes = []
             
-            st.info("💡 Los expedientes que pasen a la fase de 'Registro de Títulos' iniciarán su cuenta regresiva de 45 días laborables aquí.")
+            hoy = datetime.now().date()
+            
+            # 2. Clasificamos las alertas en el semáforo
+            for exp in expedientes:
+                lista_alertas = exp.get("alertas")
+                if lista_alertas and isinstance(lista_alertas, list):
+                    for alerta in lista_alertas:
+                        if alerta.get("estado") != "Completado": # Ignoramos las ya resueltas
+                            fv_str = alerta.get("fecha_vencimiento")
+                            if fv_str:
+                                try:
+                                    fv = datetime.strptime(fv_str, "%Y-%m-%d").date()
+                                    dias_restantes = (fv - hoy).days
+                                    
+                                    # Empaquetamos los datos para mostrarlos bonito
+                                    datos_alerta = {
+                                        "exp": exp["id_expediente"],
+                                        "asunto": exp["asunto"],
+                                        "doc": alerta["documento_origen"],
+                                        "desc": alerta["descripcion"],
+                                        "vence": fv_str,
+                                        "dias": dias_restantes
+                                    }
+                                    
+                                    # Lógica del semáforo
+                                    if dias_restantes <= 5:     # 0 a 5 días (Rojo)
+                                        alertas_rojas.append(datos_alerta)
+                                    elif dias_restantes <= 20:  # 6 a 20 días (Amarillo)
+                                        alertas_amarillas.append(datos_alerta)
+                                    else:                       # Más de 20 días (Verde)
+                                        alertas_verdes.append(datos_alerta)
+                                except Exception:
+                                    pass # Si hay error en una fecha, la saltamos
+
+            # 3. DIBUJAMOS EL DASHBOARD VISUAL
+            st.write("---")
+            st.markdown("### 🚦 Tablero de Control de Vencimientos")
+            
+            col_r, col_a, col_v = st.columns(3)
+            with col_r:
+                st.error(f"🔴 CRÍTICO: {len(alertas_rojas)}")
+            with col_a:
+                st.warning(f"🟡 PRÓXIMOS: {len(alertas_amarillas)}")
+            with col_v:
+                st.success(f"🟢 A TIEMPO: {len(alertas_verdes)}")
+                
+            st.write("---")
+            
+            # --- ZONA ROJA ---
+            if alertas_rojas:
+                st.subheader("🚨 Plazos Críticos (Vencen en menos de 5 días o vencidos)")
+                # Ordenamos de menor a mayor (los más atrasados primero)
+                alertas_rojas = sorted(alertas_rojas, key=lambda x: x["dias"])
+                for a in alertas_rojas:
+                    with st.container(border=True):
+                        st.markdown(f"**Expediente:** {a['exp']} - {a['asunto']}")
+                        st.markdown(f"**Alerta:** {a['desc']} *(Doc: {a['doc']})*")
+                        if a['dias'] < 0:
+                            st.error(f"⚠️ VENCIDO HACE {abs(a['dias'])} DÍAS (Límite: {a['vence']})")
+                        else:
+                            st.error(f"⏳ Vence en {a['dias']} días (Límite: {a['vence']})")
+
+            # --- ZONA AMARILLA ---
+            if alertas_amarillas:
+                st.subheader("⚠️ Atención Próxima (Vencen entre 6 y 20 días)")
+                alertas_amarillas = sorted(alertas_amarillas, key=lambda x: x["dias"])
+                for a in alertas_amarillas:
+                    with st.container(border=True):
+                        c1, c2 = st.columns([3, 1])
+                        c1.markdown(f"**{a['exp']}** | {a['desc']}")
+                        c1.caption(f"Trámite: {a['doc']}")
+                        c2.warning(f"Faltan {a['dias']} días\n({a['vence']})")
+
+            # --- ZONA VERDE ---
+            if alertas_verdes:
+                with st.expander(f"✅ Plazos Cómodos y a Tiempo ({len(alertas_verdes)} expedientes)", expanded=False):
+                    alertas_verdes = sorted(alertas_verdes, key=lambda x: x["dias"])
+                    for a in alertas_verdes:
+                        st.markdown(f"🟢 **{a['exp']}**: {a['desc']} *(Vence en {a['dias']} días)*")
+
+            if not alertas_rojas and not alertas_amarillas and not alertas_verdes:
+                st.info("No hay alertas activas en el sistema. Todo está al día.")
+                st.balloons()
+                
+        except Exception as e:
+            st.error(f"❌ Error al conectar con la bóveda de alertas: {e}")
             
     else:
         # Pantalla en espera si no se ha hecho clic en el botón
-        st.info("👈 Presione el botón azul 'Escanear Plazos Activos' arriba para iniciar el rastreo normativo en su base de datos.")
+        st.write("")
+        st.write("")
             
 def vista_configuracion():
     import streamlit as st
