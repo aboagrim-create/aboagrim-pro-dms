@@ -329,14 +329,25 @@ def vista_registro_maestro():
     # Si hay un expediente cargado en memoria, usamos sus datos. Si no, lo dejamos en blanco.
     expediente_actual = st.session_state.get("exp_cargado", {})
     
+    st.markdown("#### 📋 Datos Generales del Caso")
     col_e1, col_e2 = st.columns([1, 2])
     num_expediente = col_e1.text_input("📁 Número de Expediente:", value=expediente_actual.get("id_expediente", exp_buscar))
     asunto = col_e2.text_input("📌 Asunto o Referencia del Caso:", value=expediente_actual.get("asunto", ""))
     
+    col_e3, col_e4 = st.columns(2)
+    # --- NUEVO: Clasificación Técnica para la Fábrica de Documentos ---
+    opciones_tipo_caso = ["Deslinde", "Saneamiento", "Mensura Catastral", "Litis sobre Derechos Registrados", "Determinación de Herederos", "Transferencia / Venta", "Hipotecas / Privilegios", "Civil Ordinario", "Otro"]
+    tipo_caso_guardado = expediente_actual.get("tipo_caso", "Deslinde")
+    idx_tipo = opciones_tipo_caso.index(tipo_caso_guardado) if tipo_caso_guardado in opciones_tipo_caso else 0
+    tipo_caso = col_e3.selectbox("⚙️ Tipo de Proceso (Define la Plantilla):", opciones_tipo_caso, index=idx_tipo)
+
+    opciones_organo = ["Dirección Regional de Mensuras Catastrales", "Registro de Títulos", "Tribunal de Jurisdicción Original", "Tribunal Superior de Tierras", "Corte de Apelación", "Juzgado de Paz", "Cámara Civil y Comercial", "Administrativo / Interno"]
+    organo_guardado = expediente_actual.get("organo_jurisdiccional", "Dirección Regional de Mensuras Catastrales")
+    idx_organo = opciones_organo.index(organo_guardado) if organo_guardado in opciones_organo else 0
+    organo_jurisdiccional = col_e4.selectbox("🏛️ Órgano Jurisdiccional / Entidad:", opciones_organo, index=idx_organo)
+    
     st.write("---")
     
-    # (A partir de aquí, sigue su código normal: with st.expander("👥 1. Partes, Clientes y Representantes"... )
-
     # --- 1. PARTES Y REPRESENTANTES ---
     with st.expander("👥 1. Partes, Clientes y Representantes", expanded=False):
         t_cli, t_apo = st.tabs(["👤 Clientes / Propietarios", "🤝 Apoderados / Representantes"])
@@ -522,6 +533,8 @@ def vista_registro_maestro():
             datos_expediente = {
                 "id_expediente": num_expediente, 
                 "asunto": asunto,
+                "tipo_caso": tipo_caso,                     # <- NUEVO DATO
+                "organo_jurisdiccional": organo_jurisdiccional, # <- NUEVO DATO
                 "fecha_creacion": datetime.now().strftime("%Y-%m-%d"),
                 "clientes": lista_clientes,
                 "apoderados": lista_apoderados,
@@ -534,19 +547,14 @@ def vista_registro_maestro():
             }
             
             try:
-                # La magia ocurre aquí: Enviamos el diccionario directo a Supabase
                 supabase.table("expedientes").upsert(datos_expediente).execute()
-                st.success(f"✅ ¡Expediente {num_expediente} guardado en la base de datos maestra!")
+                st.success(f"✅ ¡Expediente {num_expediente} ({tipo_caso}) guardado en la base de datos maestra!")
                 st.balloons()
             except Exception as e:
                 st.error(f"❌ Error al conectar con Supabase. Detalle técnico: {e}")
-                st.info("Asegúrese de que las columnas en Supabase se llamen exactamente igual que en el código y sean tipo JSONB.")
+                st.info("Asegúrese de que las columnas en Supabase se llamen exactamente igual que en el código.")
         else:
             st.error("⚠️ Debe indicar al menos el Número de Expediente y el Asunto para poder guardar.")
-
-    # 🚀 --- INTEGRACIÓN CON SUPABASE: LECTURA --- 🚀
-    st.divider()
-    st.subheader("🗂️ Archivo de Expedientes Registrados (En Vivo)")
     
     try:
         # Descargamos los datos desde la nube
