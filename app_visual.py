@@ -2040,8 +2040,11 @@ def vista_honorarios():
             st.markdown("<br>", unsafe_allow_html=True)
             with st.container(border=True):
                 st.markdown(f"<h3 style='text-align: center;'>📄 Proforma de Honorarios y Servicios</h3>", unsafe_allow_html=True)
-                st.markdown(f"**Fecha:** {datetime.now().strftime('%d/%m/%Y')}")
-                st.markdown(f"**Referencia / Expediente:** {exp_seleccionado}")
+                col_prof1, col_prof2 = st.columns(2)
+                col_prof1.markdown(f"**Fecha:** {datetime.now().strftime('%d/%m/%Y')}")
+                col_prof1.markdown(f"**Cliente:** {cliente_proforma}")
+                col_prof2.markdown(f"**Expediente:** {exp_seleccionado}")
+                col_prof2.markdown(f"**Asunto:** {asunto_proforma}")
                 st.divider()
                 st.markdown(f"**Términos del Acuerdo:** {tipo_acuerdo}")
                 st.markdown(f"**Plan de Pago:** {plan_pago}")
