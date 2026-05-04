@@ -916,36 +916,49 @@ def login_sistema():
 def vista_archivo_digital():
     import streamlit as st
     import os
+    from database import db as supabase  # ☁️ Conexión maestra a la nube
 
     st.title("🗄️ Archivo Digital y Bóveda")
     st.markdown("### Repositorio Central de Expedientes y Anexos Técnicos")
     
-    # --- 1. SINCRONIZACIÓN CON EL REGISTRO MAESTRO ---
-    # Verificamos si el otro módulo ya creó expedientes en la memoria
-    if "db_expedientes" not in st.session_state or not st.session_state["db_expedientes"]:
-        st.info("ℹ️ El Archivo Digital está esperando datos. Registre un caso en el 'Registro Maestro' primero para que aparezca aquí.")
+    # --- 1. SINCRONIZACIÓN MAESTRA CON SUPABASE ---
+    try:
+        res = supabase.table("expedientes").select("*").execute()
+        db_expedientes_cloud = {row['id_expediente']: row for row in res.data}
+    except Exception as e:
+        st.error(f"Error al conectar con la bóveda en la nube: {e}")
         return
 
-    # Crear estructura física de la bóveda si no existe
-    if not os.path.exists("boveda_digital"):
-        os.makedirs("boveda_digital")
+    if not db_expedientes_cloud:
+        st.info("ℹ️ El Archivo Digital está esperando datos. Registre un caso en el 'Registro Maestro' primero para que aparezca aquí.")
+        return
 
     st.write("---")
 
     # --- 2. BUSCADOR INTELIGENTE INTERCONECTADO ---
-    lista_exps = list(st.session_state["db_expedientes"].keys())
+    lista_exps = list(db_expedientes_cloud.keys())
     
     col_busq1, col_busq2 = st.columns([3, 1])
     with col_busq1:
         exp_seleccionado = st.selectbox("🔍 Buscar y Seleccionar Expediente:", lista_exps)
     
-    # El sistema crea una carpeta única para ese expediente automáticamente
-    ruta_exp = os.path.join("boveda_digital", exp_seleccionado)
+    # Extraemos los datos que usted llenó en el Registro Maestro desde la nube
+    datos_exp = db_expedientes_cloud[exp_seleccionado]
+
+    # 🚀 EL TRUCO: Reconstruimos la ruta exacta que usa la Fábrica de Documentos
+    tipo_caso_db = datos_exp.get("tipo_caso", "Proceso Legal General")
+    tipo_folder = tipo_caso_db.replace("/", "-").replace(" ", "_")
+    
+    # Sacamos el año de la fecha de creación
+    fecha_creacion = datos_exp.get("fecha_creacion", "2026-01-01")
+    año_creacion = fecha_creacion.split("-")[0] if "-" in fecha_creacion else "2026"
+
+    # Ahora sí, el Archivo Digital y las Plantillas apuntan al MISMO almacén
+    ruta_exp = f"boveda_digital/Expedientes_{año_creacion}/{tipo_folder}/{exp_seleccionado}"
+
+    # Crear estructura física de la bóveda si no existe
     if not os.path.exists(ruta_exp):
         os.makedirs(ruta_exp)
-
-    # Extraemos los datos que usted llenó en el Registro Maestro
-    datos_exp = st.session_state["db_expedientes"][exp_seleccionado]
 
     # --- 3. INTERFAZ DE GESTIÓN DOCUMENTAL ---
     tab_resumen, tab_anexos, tab_zip = st.tabs([
@@ -955,19 +968,14 @@ def vista_archivo_digital():
     # PESTAÑA A: Visor de Memoria
     with tab_resumen:
         st.subheader(f"Radiografía: {exp_seleccionado}")
-        st.markdown(f"**Trámite Solicitado:** {datos_exp.get('tramite', 'No especificado')}")
-        st.markdown(f"**Jurisdicción:** {datos_exp.get('jurisdiccion', 'No especificada')}")
+        st.markdown(f"**Proceso Legal:** {tipo_caso_db}")
+        st.markdown(f"**Jurisdicción:** {datos_exp.get('organo_jurisdiccional', 'No especificada')}")
         
-        estado = datos_exp.get('estado', 'N/A')
-        # Etiqueta de estado con colores dinámicos
-        if estado in ["Aprobado", "Cerrado"]:
-            st.success(f"**Estado del Caso:** {estado}")
-        elif estado == "En Litigio":
-            st.error(f"**Estado del Caso:** {estado}")
-        else:
-            st.warning(f"**Estado del Caso:** {estado}")
+        clientes = datos_exp.get("clientes", [])
+        nombres_cli = ", ".join([c.get("nombre", "") for c in clientes]) if clientes else "No registrado"
+        st.markdown(f"**Clientes / Propietarios:** {nombres_cli}")
             
-        st.info("💡 Este módulo lee en tiempo real los datos que usted ingresa en el Registro Maestro. Si modifica algo allá, se reflejará aquí.")
+        st.info("💡 Este módulo lee en tiempo real los datos blindados en Supabase.")
 
     # PESTAÑA B: Bóveda de Anexos
     with tab_anexos:
@@ -981,12 +989,13 @@ def vista_archivo_digital():
                 for archivo in archivos_subidos:
                     with open(os.path.join(ruta_exp, archivo.name), "wb") as f:
                         f.write(archivo.getbuffer())
-                st.success(f"✅ {len(archivos_subidos)} documento(s) blindado(s) exitosamente.")
+                st.success(f"✅ {len(archivos_subidos)} documento(s) guardado(s) junto a los Word generados.")
                 st.rerun()
         
         # Listador de documentos anexos con opción a borrar
         st.write("---")
-        st.markdown(f"**Documentos actualmente en la carpeta {exp_seleccionado}:**")
+        st.markdown(f"**Documentos actualmente unificados en la carpeta del caso:**")
+        st.caption(f"📁 Ruta: `{ruta_exp}`")
         archivos_guardados = os.listdir(ruta_exp)
         
         if archivos_guardados:
@@ -1002,7 +1011,7 @@ def vista_archivo_digital():
     # PESTAÑA C: Empaquetado para el Tribunal
     with tab_zip:
         st.subheader("Preparación para Depósito / Entrega")
-        st.write("Genere un archivo comprimido (.zip) con todo el contenido del expediente para enviarlo por correo o subirlo a la plataforma virtual de la Jurisdicción Inmobiliaria.")
+        st.write("Genere un archivo comprimido (.zip) con TODO el contenido (Las instancias Word forjadas + Los PDF/Planos anexados).")
         
         if st.button("📦 Empaquetar Todo en ZIP", use_container_width=True):
             if not os.listdir(ruta_exp):
@@ -1019,7 +1028,7 @@ def vista_archivo_digital():
                             zip_file.write(ruta_completa, file)
                 
                 zip_buffer.seek(0)
-                st.success("✅ Paquete de depósito generado con éxito.")
+                st.success("✅ Paquete de depósito consolidado con éxito.")
                 st.download_button(
                     label=f"⬇️ Descargar {exp_seleccionado}_Completo.zip",
                     data=zip_buffer,
@@ -1027,9 +1036,6 @@ def vista_archivo_digital():
                     mime="application/zip",
                     type="primary"
                 )
-
-# Aquí debajo empieza su def generar_documento_word...
-
 
 def generar_documento_word(ruta_plantilla, diccionario_datos):
     """
