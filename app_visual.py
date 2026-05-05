@@ -2263,3 +2263,17 @@ else:
         vista_honorarios()
     elif seleccion == "⚙️ Configuración":
         vista_configuracion()
+# --- CENTRO DE ENLACES INSTITUCIONALES (BARRA LATERAL) ---
+    st.sidebar.divider()
+    
+    with st.sidebar.expander("🔗 Accesos Institucionales (R.D.)", expanded=False):
+        st.markdown("**Jurisdicción Inmobiliaria**")
+        st.link_button("📍 Consulta Parcelaria RI", "https://oficinavirtual.ri.gob.do/ConsultaParcelaria", use_container_width=True, help="Verificar estado de parcelas")
+        st.link_button("🏛️ Portal Acceso Digital", "https://oficinavirtual.ri.gob.do/", use_container_width=True, help="Someter expedientes a Mensuras/Registro")
+        st.link_button("🌐 Portal RI Principal", "https://ri.gob.do/", use_container_width=True)
+        
+        st.divider()
+        st.markdown("**Otras Entidades**")
+        st.link_button("💰 DGII - Oficina Virtual", "https://dgii.gov.do/ofv/", use_container_width=True, help="Consultar IPI y transferencias")
+        st.link_button("⚖️ Poder Judicial", "https://poderjudicial.gob.do/", use_container_width=True)
+        st.link_button("📐 CODIA", "https://codia.org.do/", use_container_width=True)
