@@ -194,6 +194,7 @@ def generar_paquete_documentos(datos_formulario, rutas_plantillas):
 # =====================================================================
 def vista_mando():
     import streamlit as st
+    import os
     from database import db as supabase  # ☁️ Conexión maestra a la nube
 
     # --- ENCABEZADO CORPORATIVO ---
@@ -201,15 +202,14 @@ def vista_mando():
         col_logo, col_titulo = st.columns([1, 4])
         
         with col_logo:
-            import os
-            ruta_logo = "logo.png"  # 👈 Aquí el sistema buscará su imagen
+            ruta_logo = "logo.png"  # 👈 Aquí el sistema detectará el archivo que acaba de subir
             
             if os.path.exists(ruta_logo):
                 st.image(ruta_logo, use_container_width=True)
             elif st.session_state.get("logo_firma"):
                 st.image(st.session_state["logo_firma"], use_container_width=True)
             else:
-                # Si no encuentra el logo físico, muestra un escudo provisional
+                # Escudo de respaldo en caso de no encontrar la imagen
                 st.markdown("<h1 style='text-align: center; font-size: 4.5rem; color: #1E3A8A;'>🛡️</h1>", unsafe_allow_html=True)
                 
         with col_titulo:
@@ -218,7 +218,8 @@ def vista_mando():
             st.caption(f"📍 {st.session_state.get('dir_oficina', 'Santiago')} | 📞 {st.session_state.get('tel_oficina', '829-826-5888')}")
             st.markdown("**Lic. Jhonny Matos. M.A.** - *Presidente Fundador*")
 
-
+    st.write("")
+    
     # --- 1. EXTRACCIÓN DE DATOS DESDE SUPABASE ---
     try:
         res = supabase.table("expedientes").select("*").execute()
