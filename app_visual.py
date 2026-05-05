@@ -201,10 +201,16 @@ def vista_mando():
         col_logo, col_titulo = st.columns([1, 4])
         
         with col_logo:
-            if st.session_state.get("logo_firma"):
+            import os
+            ruta_logo = "logo.png"  # 👈 Aquí el sistema buscará su imagen
+            
+            if os.path.exists(ruta_logo):
+                st.image(ruta_logo, use_container_width=True)
+            elif st.session_state.get("logo_firma"):
                 st.image(st.session_state["logo_firma"], use_container_width=True)
             else:
-                st.markdown("<h1 style='text-align: center; font-size: 4rem; color: #1E3A8A;'>🏛️</h1>", unsafe_allow_html=True)
+                # Si no encuentra el logo físico, muestra un escudo provisional
+                st.markdown("<h1 style='text-align: center; font-size: 4.5rem; color: #1E3A8A;'>🛡️</h1>", unsafe_allow_html=True)
                 
         with col_titulo:
             st.title(st.session_state.get("nombre_oficina", "AboAgrim Pro"))
