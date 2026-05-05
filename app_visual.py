@@ -204,17 +204,24 @@ def vista_mando():
         with col_logo:
             import os
             
-            # El radar inteligente busca en los 3 formatos más comunes
-            if os.path.exists("logo.png"):
-                st.image("logo.png", use_container_width=True)
-            elif os.path.exists("logo.jpg"):
-                st.image("logo.jpg", use_container_width=True)
-            elif os.path.exists("logo.jpeg"):
-                st.image("logo.jpeg", use_container_width=True)
+            # 🕵️‍♂️ EL CAZADOR DE LOGOS: Escanea la carpeta buscando su imagen
+            archivo_encontrado = None
+            try:
+                # Revisa todos los archivos en la carpeta principal
+                for archivo in os.listdir('.'): 
+                    if "logo" in archivo.lower() and archivo.lower().endswith(('.png', '.jpg', '.jpeg')):
+                        archivo_encontrado = archivo
+                        break  # Si lo encuentra, detiene la búsqueda
+            except Exception:
+                pass
+                
+            # Si el cazador encontró la imagen, la muestra
+            if archivo_encontrado:
+                st.image(archivo_encontrado, use_container_width=True)
             elif st.session_state.get("logo_firma"):
                 st.image(st.session_state["logo_firma"], use_container_width=True)
             else:
-                # Escudo de respaldo en caso de no encontrar la imagen
+                # El escudo azul aparece si definitivamente no hay ningún archivo llamado "logo"
                 st.markdown("<h1 style='text-align: center; font-size: 4.5rem; color: #1E3A8A;'>🛡️</h1>", unsafe_allow_html=True)
                 
         with col_titulo:
