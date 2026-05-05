@@ -2197,17 +2197,157 @@ def vista_honorarios():
                         st.rerun()
         else:
             st.info("No hay facturas registradas.")
-# --- CENTRO DE ENLACES INSTITUCIONALES (BARRA LATERAL) ---
-    st.sidebar.divider()
+
+# ==========================================
+# 🎨 APLICADOR DE DISEÑO GLOBAL
+# ==========================================
+if "color_primario" in st.session_state:
+    st.markdown(f"""
+        <style>
+        .stApp {{
+            background-color: {st.session_state["color_fondo"]};
+            font-family: {st.session_state["tipo_letra"]};
+        }}
+        .stButton>button[kind="primary"] {{
+            background-color: {st.session_state["color_primario"]};
+            border-color: {st.session_state["color_primario"]};
+        }}
+        h1, h2, h3 {{
+            color: {st.session_state["color_primario"]} !important;
+            font-family: {st.session_state["tipo_letra"]};
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+
+# =====================================================================
+# 🔐 CANDADO MAESTRO Y NAVEGACIÓN DINÁMICA (AL FONDO DEL ARCHIVO)
+# =====================================================================
+import streamlit as st
+from database import db as supabase 
+
+# 1. Inicializar la memoria de seguridad del sistema
+if "autenticado" not in st.session_state:
+    st.session_state.autenticado = False
+if "usuario_actual" not in st.session_state:
+    st.session_state.usuario_actual = ""
+if "rol_actual" not in st.session_state:
+    st.session_state.rol_actual = ""
+
+# ==========================================
+# 🛑 LA PUERTA DE HIERRO (LOGIN GLOBAL)
+# ==========================================
+if not st.session_state.autenticado:
+    # Ocultamos el menú lateral nativo de Streamlit
+    st.markdown("""<style>[data-testid="collapsedControl"] {display: none;}</style>""", unsafe_allow_html=True)
     
-    with st.sidebar.expander("🔗 Accesos Institucionales (R.D.)", expanded=False):
-        st.markdown("**Jurisdicción Inmobiliaria**")
-        st.link_button("📍 Consulta Parcelaria RI", "https://oficinavirtual.ri.gob.do/ConsultaParcelaria", use_container_width=True, help="Verificar estado de parcelas")
-        st.link_button("🏛️ Portal Acceso Digital", "https://oficinavirtual.ri.gob.do/", use_container_width=True, help="Someter expedientes a Mensuras/Registro")
-        st.link_button("🌐 Portal RI Principal", "https://ri.gob.do/", use_container_width=True)
+    st.markdown("<h1 style='text-align: center; color: #1E3A8A; font-size: 4rem;'>🏛️</h1>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'>AboAgrim Pro</h2>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center; color: gray;'>Acceso Restringido</h4>", unsafe_allow_html=True)
+    
+    col_izq, col_centro, col_der = st.columns([1, 2, 1])
+    
+    with col_centro:
+        with st.container(border=True):
+            st.write("Por favor, identifíquese para acceder a la bóveda:")
+            u_login = st.text_input("Usuario:")
+            p_login = st.text_input("PIN de Acceso:", type="password")
+            
+            if st.button("🔓 Iniciar Sesión", use_container_width=True, type="primary"):
+                if u_login and p_login:
+                    try:
+                        res = supabase.table("usuarios").select("*").eq("nombre_usuario", u_login).eq("pin_acceso", p_login).execute()
+                        
+                        if res.data and len(res.data) > 0:
+                            usuario_valido = res.data[0]
+                            st.session_state.autenticado = True
+                            st.session_state.usuario_actual = usuario_valido["nombre_usuario"]
+                            st.session_state.rol_actual = usuario_valido["rol"]
+                            st.rerun() 
+                        else:
+                            # 🔑 RESPALDO MASTER
+                            if u_login == "JhonnyMatos" and p_login == "0681":
+                                st.session_state.autenticado = True
+                                st.session_state.usuario_actual = "Jhonny Matos"
+                                st.session_state.rol_actual = "Presidente Fundador"
+                                st.rerun()
+                            else:
+                                st.error("❌ Usuario o PIN incorrectos. Acceso denegado.")
+                    except Exception as e:
+                        st.error(f"Error en los servidores de autenticación: {e}")
+                else:
+                    st.warning("⚠️ Ingrese credenciales.")
+
+# ==========================================
+# 🟢 EL SISTEMA INTERNO (Si ya pasó el Login)
+# ==========================================
+else:
+    # Recuperamos el menú lateral nativo
+    st.markdown("""<style>[data-testid="collapsedControl"] {display: block;}</style>""", unsafe_allow_html=True)
+    
+    # --- MENÚ LATERAL DINÁMICO ---
+    with st.sidebar:
+        st.markdown(f"### 👤 {st.session_state.usuario_actual}")
+        st.caption(f"🛡️ Nivel: **{st.session_state.rol_actual}**")
         
+        if st.button("🚪 Cerrar Sesión", use_container_width=True):
+            st.session_state.autenticado = False
+            st.rerun()
+            
         st.divider()
-        st.markdown("**Otras Entidades**")
-        st.link_button("💰 DGII - Oficina Virtual", "https://dgii.gov.do/ofv/", use_container_width=True, help="Consultar IPI y transferencias")
-        st.link_button("⚖️ Poder Judicial", "https://poderjudicial.gob.do/", use_container_width=True)
-        st.link_button("📐 CODIA", "https://codia.org.do/", use_container_width=True)
+        st.markdown("**Navegación Principal:**")
+        
+        opciones_menu = [
+            "🏠 Mando Central", 
+            "👤 Registro Maestro", 
+            "📁 Archivo Digital", 
+            "⏰ Alertas y Plazos"
+        ]
+        
+        rol = st.session_state.rol_actual
+        es_presidente = (rol == "Presidente Fundador")
+        
+        puede_ver_plantillas = es_presidente or (rol in ["Abogado", "Agrimensor"])
+        puede_ver_honorarios = es_presidente or (rol in ["Contabilidad"]) 
+        puede_ver_config = es_presidente 
+        
+        if puede_ver_plantillas:
+            opciones_menu.append("📄 Plantillas Auto")
+        if puede_ver_honorarios:
+            opciones_menu.append("💳 Gestión de Honorarios")
+        if puede_ver_config:
+            opciones_menu.append("⚙️ Configuración")
+
+        seleccion = st.radio("Módulos", opciones_menu, label_visibility="collapsed")
+        
+        # --- CENTRO DE ENLACES INSTITUCIONALES ---
+        st.divider()
+        with st.expander("🔗 Accesos Institucionales (R.D.)", expanded=False):
+            st.markdown("**Jurisdicción Inmobiliaria**")
+            st.link_button("📍 Consulta Parcelaria RI", "https://oficinavirtual.ri.gob.do/ConsultaParcelaria", use_container_width=True)
+            st.link_button("🏛️ Portal Acceso Digital", "https://oficinavirtual.ri.gob.do/", use_container_width=True)
+            st.link_button("🌐 Portal RI Principal", "https://ri.gob.do/", use_container_width=True)
+            
+            st.divider()
+            st.markdown("**Otras Entidades**")
+            st.link_button("💰 DGII - Oficina Virtual", "https://dgii.gov.do/ofv/", use_container_width=True)
+            st.link_button("⚖️ Poder Judicial", "https://poderjudicial.gob.do/", use_container_width=True)
+            st.link_button("📐 CODIA", "https://codia.org.do/", use_container_width=True)
+
+        st.divider()
+        st.caption("📍 AboAgrim Pro | Santiago")
+
+    # --- RUTAS DE NAVEGACIÓN ---
+    if seleccion == "🏠 Mando Central":
+        vista_mando()
+    elif seleccion == "👤 Registro Maestro":
+        vista_registro_maestro()
+    elif seleccion == "📁 Archivo Digital":
+        vista_archivo_digital()
+    elif seleccion == "⏰ Alertas y Plazos":
+        vista_alertas_plazos()
+    elif seleccion == "📄 Plantillas Auto":
+        vista_plantillas()
+    elif seleccion == "💳 Gestión de Honorarios":
+        vista_honorarios()
+    elif seleccion == "⚙️ Configuración":
+        vista_configuracion()
