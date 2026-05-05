@@ -218,8 +218,7 @@ def vista_mando():
             st.caption(f"📍 {st.session_state.get('dir_oficina', 'Santiago')} | 📞 {st.session_state.get('tel_oficina', '829-826-5888')}")
             st.markdown("**Lic. Jhonny Matos. M.A.** - *Presidente Fundador*")
 
-    st.write("")
-    
+
     # --- 1. EXTRACCIÓN DE DATOS DESDE SUPABASE ---
     try:
         res = supabase.table("expedientes").select("*").execute()
