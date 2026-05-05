@@ -194,52 +194,76 @@ def generar_paquete_documentos(datos_formulario, rutas_plantillas):
 # =====================================================================
 def vista_mando():
     import streamlit as st
+    from database import db as supabase  # ☁️ Conexión maestra a la nube
 
     # --- ENCABEZADO CORPORATIVO ---
-    col_logo, col_titulo = st.columns([1, 4])
-    
-    with col_logo:
-        if st.session_state.get("logo_firma"):
-            st.image(st.session_state["logo_firma"], use_container_width=True)
-        else:
-            st.markdown("<h1 style='text-align: center; font-size: 4rem; color: #1E3A8A;'>🏛️</h1>", unsafe_allow_html=True)
-            
-    with col_titulo:
-        st.title(st.session_state.get("nombre_oficina", "AboAgrim Pro"))
-        st.markdown("##### *Sistema Integrado de Gestión Legal y Topográfica*")
-        st.caption(f"📍 {st.session_state.get('dir_oficina', 'Santiago')} | 📞 {st.session_state.get('tel_oficina', '829-826-5888')}")
-        st.caption("**Lic. Jhonny Matos. M.A.** - *Presidente Fundador*")
+    with st.container(border=True):
+        col_logo, col_titulo = st.columns([1, 4])
+        
+        with col_logo:
+            if st.session_state.get("logo_firma"):
+                st.image(st.session_state["logo_firma"], use_container_width=True)
+            else:
+                st.markdown("<h1 style='text-align: center; font-size: 4rem; color: #1E3A8A;'>🏛️</h1>", unsafe_allow_html=True)
+                
+        with col_titulo:
+            st.title(st.session_state.get("nombre_oficina", "AboAgrim Pro"))
+            st.markdown("##### *Sistema Integrado de Gestión Legal y Topográfica*")
+            st.caption(f"📍 {st.session_state.get('dir_oficina', 'Santiago')} | 📞 {st.session_state.get('tel_oficina', '829-826-5888')}")
+            st.markdown("**Lic. Jhonny Matos. M.A.** - *Presidente Fundador*")
 
-    st.write("---")
+    st.write("")
     
-    # --- 1. MÉTRICAS DEL SISTEMA ---
-    exps = st.session_state.get("db_expedientes", {})
-    total_exps = len(exps)
-    total_clientes = sum(len(e.get("clientes", [])) for e in exps.values())
-    total_inmuebles = sum(len(e.get("inmuebles", [])) for e in exps.values())
+    # --- 1. EXTRACCIÓN DE DATOS DESDE SUPABASE ---
+    try:
+        res = supabase.table("expedientes").select("*").execute()
+        expedientes_db = res.data if res.data else []
+    except Exception as e:
+        expedientes_db = []
+        st.error(f"Error de conexión con la matriz de datos: {e}")
 
+    # Cálculos dinámicos
+    total_exps = len(expedientes_db)
+    total_clientes = sum(len(e.get("clientes", [])) for e in expedientes_db if isinstance(e.get("clientes"), list))
+    total_inmuebles = sum(len(e.get("inmuebles", [])) for e in expedientes_db if isinstance(e.get("inmuebles"), list))
+
+    # --- 2. MÉTRICAS DEL SISTEMA ---
     st.markdown("### 📊 Panel de Control y Estadísticas")
     col1, col2, col3 = st.columns(3)
-    col1.metric("📁 Expedientes", total_exps)
-    col2.metric("👤 Clientes", total_clientes)
-    col3.metric("📍 Inmuebles", total_inmuebles)
+    
+    with col1:
+        with st.container(border=True):
+            st.metric("📁 Expedientes Activos", total_exps)
+    with col2:
+        with st.container(border=True):
+            st.metric("👤 Clientes Registrados", total_clientes)
+    with col3:
+        with st.container(border=True):
+            st.metric("📍 Inmuebles Procesados", total_inmuebles)
 
     st.write("---")
 
-    # --- 2. RECIENTES Y ACCESOS ---
+    # --- 3. RECIENTES Y ACCESOS (DISEÑO COLAPSABLE) ---
     c_izq, c_der = st.columns([2, 1])
+    
     with c_izq:
-        st.subheader("⏱️ Últimos Casos")
-        if total_exps > 0:
-            for num, datos in reversed(list(exps.items())[-5:]):
-                st.info(f"**{num}** | {datos['asunto']}")
-        else:
-            st.warning("No hay expedientes registrados aún.")
+        # Panel desplegable para mantener el escritorio limpio
+        with st.expander("⏱️ Últimos Casos Ingresados al Sistema", expanded=True):
+            if total_exps > 0:
+                # Ordenamos para mostrar los 5 más recientes
+                ultimos_5 = sorted(expedientes_db, key=lambda x: x.get('fecha_creacion', ''), reverse=True)[:5]
+                for caso in ultimos_5:
+                    st.info(f"**{caso['id_expediente']}** | {caso.get('asunto', 'Sin asunto')} - *{caso.get('tipo_caso', '')}*")
+            else:
+                st.warning("No hay expedientes registrados aún en la bóveda de Supabase.")
 
     with c_der:
-        st.subheader("⚡ Acciones Rápidas")
-        st.button("➕ Nuevo Caso", use_container_width=True, disabled=True)
-        st.button("📄 Forjar Doc", use_container_width=True, disabled=True)
+        # Menú de acciones rápidas organizado y discreto
+        with st.expander("⚡ Panel de Acciones Rápidas", expanded=True):
+            st.info("Navegue por el menú lateral para ejecutar estas operaciones:")
+            st.button("➕ Crear Nuevo Caso", use_container_width=True, disabled=True, help="Vaya a 'Registro Maestro'")
+            st.button("📄 Forjar Documento", use_container_width=True, disabled=True, help="Vaya a 'Plantillas Auto'")
+            st.button("💸 Facturar Honorarios", use_container_width=True, disabled=True, help="Vaya a 'Gestión de Honorarios'")
 # =====================================================================
 # MÓDULO 2: REGISTRO MAESTRO (CON PESTAÑAS Y 7 ROLES)
 # =====================================================================
