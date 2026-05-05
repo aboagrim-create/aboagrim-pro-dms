@@ -202,10 +202,15 @@ def vista_mando():
         col_logo, col_titulo = st.columns([1, 4])
         
         with col_logo:
-            ruta_logo = "logo.png"  # 👈 Aquí el sistema detectará el archivo que acaba de subir
+            import os
             
-            if os.path.exists(ruta_logo):
-                st.image(ruta_logo, use_container_width=True)
+            # El radar inteligente busca en los 3 formatos más comunes
+            if os.path.exists("logo.png"):
+                st.image("logo.png", use_container_width=True)
+            elif os.path.exists("logo.jpg"):
+                st.image("logo.jpg", use_container_width=True)
+            elif os.path.exists("logo.jpeg"):
+                st.image("logo.jpeg", use_container_width=True)
             elif st.session_state.get("logo_firma"):
                 st.image(st.session_state["logo_firma"], use_container_width=True)
             else:
