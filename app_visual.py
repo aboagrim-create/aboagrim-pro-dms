@@ -684,12 +684,59 @@ def vista_alertas_plazos():
     st.title("📅 Radar de Alertas y Plazos")
     st.subheader("Control Normativo Inteligente | AboAgrim Pro")
     
-    st.info("💡 Este radar lee automáticamente las fechas de vencimiento generadas por la Fábrica de Documentos al forjar instancias y contratos.")
+    st.info("💡 Este radar lee automáticamente las fechas de vencimiento generadas por la Fábrica de Documentos y le permite agregar audiencias manuales.")
 
+    # --- 1. FORMULARIO RÁPIDO PARA NUEVAS ALERTAS MANUALES (Boton Desplegable) ---
+    with st.expander("➕ Programar Nueva Audiencia o Recordatorio Manual", expanded=False):
+        try:
+            res_form = supabase.table("expedientes").select("id_expediente, asunto, alertas").execute()
+            datos_form = res_form.data if res_form.data else []
+            lista_ids = [e["id_expediente"] for e in datos_form if "id_expediente" in e]
+        except:
+            datos_form = []
+            lista_ids = []
+
+        with st.form("form_nueva_alerta", clear_on_submit=True):
+            c1, c2 = st.columns(2)
+            exp_vinculado = c1.selectbox("Vincular a Expediente:", lista_ids if lista_ids else ["Sin expedientes"])
+            tipo_alerta = c2.selectbox("Tipo de Evento:", ["Audiencia Tribunal", "Vencimiento de Plazo (JI)", "Pago de Impuestos (DGII)", "Entrega de Trabajo Técnico", "Reunión con Cliente"])
+            
+            c3, c4 = st.columns(2)
+            fecha_venc = c3.date_input("Fecha Programada / Vencimiento:")
+            desc_alerta = c4.text_input("Descripción breve (Ej. Audiencia Saneamiento 9:00 AM):")
+            
+            if st.form_submit_button("🗓️ Guardar Alerta en la Nube", type="primary", use_container_width=True):
+                if exp_vinculado != "Sin expedientes" and desc_alerta:
+                    exp_obj = next((e for e in datos_form if e["id_expediente"] == exp_vinculado), None)
+                    if exp_obj:
+                        alertas_actuales = exp_obj.get("alertas")
+                        if not isinstance(alertas_actuales, list):
+                            alertas_actuales = []
+                            
+                        nueva_alerta = {
+                            "fecha_creacion": datetime.now().strftime("%Y-%m-%d"),
+                            "documento_origen": "Manual",
+                            "tipo": tipo_alerta,
+                            "descripcion": desc_alerta,
+                            "fecha_vencimiento": str(fecha_venc),
+                            "estado": "Pendiente"
+                        }
+                        alertas_actuales.append(nueva_alerta)
+                        
+                        try:
+                            supabase.table("expedientes").update({"alertas": alertas_actuales}).eq("id_expediente", exp_vinculado).execute()
+                            st.success("✅ Audiencia programada con éxito. ¡Haga clic en 'Escanear Plazos' para verla en el radar!")
+                        except Exception as e:
+                            st.error(f"Error al guardar: {e}")
+                else:
+                    st.warning("Complete la descripción y seleccione un expediente.")
+
+    st.write("---")
+
+    # --- 2. SU MOTOR DE CLASIFICACIÓN Y SEMÁFORO VISUAL ---
     if st.button("🚀 Escanear Plazos en la Nube", type="primary", use_container_width=True):
         
         try:
-            # 1. Descargamos todos los expedientes de la nube
             res = supabase.table("expedientes").select("id_expediente, asunto, alertas").execute()
             expedientes = res.data if res.data else []
             
@@ -699,19 +746,17 @@ def vista_alertas_plazos():
             
             hoy = datetime.now().date()
             
-            # 2. Clasificamos las alertas en el semáforo
             for exp in expedientes:
                 lista_alertas = exp.get("alertas")
                 if lista_alertas and isinstance(lista_alertas, list):
                     for alerta in lista_alertas:
-                        if alerta.get("estado") != "Completado": # Ignoramos las ya resueltas
+                        if alerta.get("estado") != "Completado": 
                             fv_str = alerta.get("fecha_vencimiento")
                             if fv_str:
                                 try:
                                     fv = datetime.strptime(fv_str, "%Y-%m-%d").date()
                                     dias_restantes = (fv - hoy).days
                                     
-                                    # Empaquetamos los datos para mostrarlos bonito
                                     datos_alerta = {
                                         "exp": exp["id_expediente"],
                                         "asunto": exp["asunto"],
@@ -729,7 +774,7 @@ def vista_alertas_plazos():
                                     else:                       # Más de 20 días (Verde)
                                         alertas_verdes.append(datos_alerta)
                                 except Exception:
-                                    pass # Si hay error en una fecha, la saltamos
+                                    pass
 
             # 3. DIBUJAMOS EL DASHBOARD VISUAL
             st.write("---")
@@ -748,12 +793,11 @@ def vista_alertas_plazos():
             # --- ZONA ROJA ---
             if alertas_rojas:
                 st.subheader("🚨 Plazos Críticos (Vencen en menos de 5 días o vencidos)")
-                # Ordenamos de menor a mayor (los más atrasados primero)
                 alertas_rojas = sorted(alertas_rojas, key=lambda x: x["dias"])
                 for a in alertas_rojas:
                     with st.container(border=True):
                         st.markdown(f"**Expediente:** {a['exp']} - {a['asunto']}")
-                        st.markdown(f"**Alerta:** {a['desc']} *(Doc: {a['doc']})*")
+                        st.markdown(f"**Alerta:** {a['desc']} *(Origen: {a['doc']})*")
                         if a['dias'] < 0:
                             st.error(f"⚠️ VENCIDO HACE {abs(a['dias'])} DÍAS (Límite: {a['vence']})")
                         else:
@@ -785,7 +829,6 @@ def vista_alertas_plazos():
             st.error(f"❌ Error al conectar con la bóveda de alertas: {e}")
             
     else:
-        # Pantalla en espera si no se ha hecho clic en el botón
         st.write("")
         st.write("")
             
