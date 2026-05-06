@@ -2426,7 +2426,6 @@ def vista_copiloto_legal():
     
     try:
         genai.configure(api_key=CLAVE_API)
-        # Usamos el modelo que nos funcionó en el curl
         modelo = genai.GenerativeModel('gemini-flash-latest')
     except Exception as e:
         st.error(f"Error inicializando la IA: {e}")
@@ -2446,12 +2445,14 @@ def vista_copiloto_legal():
                         st.success("✅ ¡Listo!")
                         st.text_area("📄 Resultado:", value=res.text, height=300)
                     except Exception as e:
-                        # Este escudo evita el cuadro rojo si la API falla
                         st.error(f"Error al conectar con los servidores de Google: {e}")
             else:
                 st.warning("Licenciado, por favor escriba los detalles del caso primero.")
 
-    # --- RUTAS DE NAVEGACIÓN ---
+# =======================================================
+# --- RUTAS DE NAVEGACIÓN PROTEGIDAS ---
+# =======================================================
+try:
     if seleccion == "🏠 Mando Central":
         vista_mando()
     elif seleccion == "👤 Registro Maestro":
@@ -2468,5 +2469,8 @@ def vista_copiloto_legal():
         vista_honorarios()
     elif seleccion == "⚙️ Configuración":
         vista_configuracion()
-        
+except NameError:
+    # Este es el escudo: si el usuario no ha puesto su PIN, 
+    # el sistema ignora este bloque en lugar de mostrar un cuadro rojo.
+    pass
     
