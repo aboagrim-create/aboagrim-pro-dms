@@ -2431,6 +2431,7 @@ else:
         vista_honorarios()
     elif seleccion == "⚙️ Configuración":
         vista_configuracion()
+        
 def vista_copiloto_legal():
     import streamlit as st
     import google.generativeai as genai
