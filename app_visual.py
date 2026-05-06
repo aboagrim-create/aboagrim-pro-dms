@@ -2427,7 +2427,7 @@ def vista_copiloto_legal(): # ✅ CORRECTO: Pegado al borde, sin espacios
     
     try:
         genai.configure(api_key=CLAVE_API)
-        modelo = genai.GenerativeModel('gemini-pro')
+        modelo = genai.GenerativeModel('gemini-1.5-flash')
     except:
         st.error("Error de configuración de IA.")
 
