@@ -2413,27 +2413,6 @@ else:
 
         st.divider()
         st.caption("📍 AboAgrim Pro | Santiago")
-
-    # --- RUTAS DE NAVEGACIÓN ---
-    if seleccion == "🏠 Mando Central":
-        vista_mando()
-    elif seleccion == "👤 Registro Maestro":
-        vista_registro_maestro()
-    elif seleccion == "📁 Archivo Digital":
-        vista_archivo_digital()
-    elif seleccion == "⏰ Alertas y Plazos":
-        vista_alertas_plazos()
-    elif seleccion == "📄 Plantillas Auto":
-        vista_plantillas()
-    elif seleccion == "🤖 Copiloto Legal":
-        vista_copiloto_legal()
-    elif seleccion == "💳 Gestión de Honorarios":
-        vista_honorarios()
-    elif seleccion == "🤖 Copiloto Legal":
-        vista_copiloto_legal()
-
-# --- Deje dos líneas en blanco aquí para separar ---
-
 def vista_copiloto_legal(): # ✅ CORRECTO: Pegado al borde, sin espacios
     import streamlit as st
     import google.generativeai as genai
@@ -2466,3 +2445,21 @@ def vista_copiloto_legal(): # ✅ CORRECTO: Pegado al borde, sin espacios
                     st.text_area("📄 Resultado:", value=res.text, height=300)
             else:
                 st.warning("Escriba los detalles primero.")
+
+
+    # --- RUTAS DE NAVEGACIÓN ---
+    if seleccion == "🏠 Mando Central":
+        vista_mando()
+    elif seleccion == "👤 Registro Maestro":
+        vista_registro_maestro()
+    elif seleccion == "📁 Archivo Digital":
+        vista_archivo_digital()
+    elif seleccion == "⏰ Alertas y Plazos":
+        vista_alertas_plazos()
+    elif seleccion == "📄 Plantillas Auto":
+        vista_plantillas()
+    elif seleccion == "💳 Gestión de Honorarios":
+        vista_honorarios()
+    elif seleccion == "🤖 Copiloto Legal":
+        vista_copiloto_legal()
+
