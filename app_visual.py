@@ -2429,13 +2429,15 @@ else:
         vista_copiloto_legal()
     elif seleccion == "💳 Gestión de Honorarios":
         vista_honorarios()
-    elif seleccion == "⚙️ Configuración":
-        vista_configuracion()
-        
-        
-def vista_copiloto_legal():
+    elif seleccion == "🤖 Copiloto Legal":
+        vista_copiloto_legal()
+
+# --- Deje dos líneas en blanco aquí para separar ---
+
+def vista_copiloto_legal(): # ✅ CORRECTO: Pegado al borde, sin espacios
     import streamlit as st
     import google.generativeai as genai
+    # El resto del contenido de la función SÍ lleva sus espacios normales
 
     st.title("🤖 Copiloto Legal AI - AboAgrim Pro")
     st.markdown("### Asistente Inteligente de Redacción de Cláusulas y Textos Jurídicos")
