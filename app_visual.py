@@ -322,7 +322,7 @@ def vista_registro_maestro():
         datos_nube = []
         st.error(f"Error al conectar con la base de datos: {e}")
 
-    # --- 🤖 MOTOR DE AUTONUMERACIÓN INTELIGENTE (AHORA CONECTADO A LA NUBE) ---
+    # --- 🤖 MOTOR DE AUTONUMERACIÓN INTELIGENTE ---
     año_actual = datetime.now().year
     numeros_este_año = []
     
@@ -345,12 +345,10 @@ def vista_registro_maestro():
         
         if col_b2.button("🔎 Buscar y Cargar", use_container_width=True):
             if exp_buscar:
-                # Buscamos en los datos que ya descargamos de la nube
                 exp_encontrado = next((item for item in datos_nube if item["id_expediente"] == exp_buscar), None)
                 
                 if exp_encontrado:
                     st.session_state["exp_cargado"] = exp_encontrado
-                    # Ajustamos los contadores dinámicos
                     st.session_state["cant_cl_rm"] = len(exp_encontrado.get("clientes", [])) or 1
                     st.session_state["cant_ap_rm"] = len(exp_encontrado.get("apoderados", [])) or 1
                     st.session_state["cant_ab_rm"] = len(exp_encontrado.get("abogados", [])) or 1
@@ -393,7 +391,7 @@ def vista_registro_maestro():
         opciones_tipo_caso = ["Deslinde", "Saneamiento", "Mensura Catastral", "Litis sobre Derechos Registrados", "Determinación de Herederos", "Transferencia / Venta", "Hipotecas / Privilegios", "Civil Ordinario", "Otro"]
         tipo_caso_guardado = expediente_actual.get("tipo_caso", "Deslinde")
         idx_tipo = opciones_tipo_caso.index(tipo_caso_guardado) if tipo_caso_guardado in opciones_tipo_caso else 0
-        tipo_caso = col_e3.selectbox("⚙️ Tipo de Proceso (Fábrica de Plantillas):", opciones_tipo_caso, index=idx_tipo)
+        tipo_caso = col_e3.selectbox("⚙️ Tipo de Proceso:", opciones_tipo_caso, index=idx_tipo)
 
         opciones_organo = ["Dirección Regional de Mensuras Catastrales", "Registro de Títulos", "Tribunal de Jurisdicción Original", "Tribunal Superior de Tierras", "Corte de Apelación", "Juzgado de Paz", "Cámara Civil y Comercial", "Administrativo / Interno"]
         organo_guardado = expediente_actual.get("organo_jurisdiccional", "Dirección Regional de Mensuras Catastrales")
@@ -567,15 +565,66 @@ def vista_registro_maestro():
 
     st.write("---")
     
-    # 🚀 --- INTEGRACIÓN CON SUPABASE: GUARDAR --- 🚀
+    # 🚀 --- INTEGRACIÓN CON SUPABASE Y GOOGLE DRIVE: GUARDAR --- 🚀
     if st.button("💾 Guardar Expediente en la Nube", type="primary", use_container_width=True):
         if num_expediente and asunto:
+            # Rescatamos el enlace si ya existe, para no crear carpetas dobles
+            link_drive = expediente_actual.get("link_drive", "")
+            
+            # 1. Si no tiene carpeta, el Robot la crea con las 4 carpetas de Jurisdicción Inmobiliaria
+            if not link_drive:
+                with st.spinner("Construyendo bóveda física y Jurisdicción Inmobiliaria en Drive..."):
+                    try:
+                        from google.oauth2 import service_account
+                        from googleapiclient.discovery import build
+                        
+                        credenciales_dict = dict(st.secrets["google_drive"])
+                        credentials = service_account.Credentials.from_service_account_info(
+                            credenciales_dict, scopes=['https://www.googleapis.com/auth/drive']
+                        )
+                        servicio = build('drive', 'v3', credentials=credentials)
+                        
+                        CARPETA_PADRE_ID = "1d4innXh5rSZfpbKneROWN4kDG1ycwTbx"
+                        nombre_carpeta_oficial = f"{num_expediente} - {asunto} ({tipo_caso})"
+                        
+                        # Creando carpeta raíz del expediente
+                        file_metadata_principal = {
+                            'name': nombre_carpeta_oficial,
+                            'mimeType': 'application/vnd.google-apps.folder',
+                            'parents': [CARPETA_PADRE_ID]
+                        }
+                        carpeta_principal = servicio.files().create(body=file_metadata_principal, fields='id, webViewLink').execute()
+                        id_carpeta_principal = carpeta_principal.get('id')
+                        link_drive = carpeta_principal.get('webViewLink')
+                        
+                        # Creando subcarpetas exactas requeridas
+                        subcarpetas_ji = [
+                            "1_Mensuras_Catastrales", 
+                            "2_Tribunales_de_Tierras", 
+                            "3_Registro_de_Titulos", 
+                            "4_Documentos_Generales"
+                        ]
+                        
+                        for sub_nombre in subcarpetas_ji:
+                            file_metadata_sub = {
+                                'name': sub_nombre,
+                                'mimeType': 'application/vnd.google-apps.folder',
+                                'parents': [id_carpeta_principal]
+                            }
+                            servicio.files().create(body=file_metadata_sub, fields='id').execute()
+                            
+                        st.toast("✅ Estructura de Jurisdicción Inmobiliaria creada con éxito en Drive.")
+                    except Exception as e:
+                        st.error(f"Aviso: Drive no pudo procesar la carpeta. Detalle técnico: {e}")
+
+            # 2. Guardamos toda la información en la Base de Datos
             datos_expediente = {
                 "id_expediente": num_expediente, 
                 "asunto": asunto,
                 "tipo_caso": tipo_caso,                     
                 "organo_jurisdiccional": organo_jurisdiccional, 
-                "fecha_creacion": datetime.now().strftime("%Y-%m-%d"),
+                "fecha_creacion": expediente_actual.get("fecha_creacion", datetime.now().strftime("%Y-%m-%d")),
+                "link_drive": link_drive, # Guardamos el enlace en la base de datos
                 "clientes": lista_clientes,
                 "apoderados": lista_apoderados,
                 "abogados": lista_abogados,
@@ -589,6 +638,11 @@ def vista_registro_maestro():
             try:
                 supabase.table("expedientes").upsert(datos_expediente).execute()
                 st.success(f"✅ ¡Expediente {num_expediente} ({tipo_caso}) guardado en la base de datos maestra!")
+                
+                # Mostramos el enlace directo para acceso rápido
+                if link_drive:
+                    st.info(f"📂 **[Clic aquí para abrir la carpeta del expediente en Google Drive]({link_drive})**")
+                    
                 st.balloons()
             except Exception as e:
                 st.error(f"❌ Error al conectar con Supabase. Detalle técnico: {e}")
@@ -606,7 +660,12 @@ def vista_registro_maestro():
                     col_d1, col_d2, col_d3, col_d4 = st.columns([2, 1, 1, 1])
                     col_d1.markdown(f"**{exp_num}** | {exp_data.get('asunto', '')}")
                     col_d2.caption(f"Registro: {exp_data.get('fecha_creacion', '')}")
-                    col_d3.caption(f"Partes: {len(exp_data.get('clientes', []))} | Inmuebles: {len(exp_data.get('inmuebles', []))}")
+                    
+                    enlace = exp_data.get('link_drive', '')
+                    if enlace:
+                        col_d3.markdown(f"[📂 Ir a Drive]({enlace})")
+                    else:
+                        col_d3.caption("Sin carpeta")
                     
                     if col_d4.button("🗑️ Eliminar", key=f"del_exp_{exp_num}_{idx}", use_container_width=True):
                         supabase.table("expedientes").delete().eq("id_expediente", exp_num).execute()
