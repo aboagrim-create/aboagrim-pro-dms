@@ -934,7 +934,6 @@ def vista_configuracion():
 
 def vista_archivo_digital():
     import streamlit as st
-    import os
     from database import db as supabase  # ☁️ Conexión maestra a la nube
 
     st.title("🗄️ Archivo Digital y Bóveda")
@@ -955,7 +954,8 @@ def vista_archivo_digital():
     st.write("---")
 
     # --- 2. BUSCADOR INTELIGENTE INTERCONECTADO ---
-    lista_exps = list(db_expedientes_cloud.keys())
+    # Ordenamos la lista para que los más recientes salgan primero
+    lista_exps = sorted(list(db_expedientes_cloud.keys()), reverse=True)
     
     col_busq1, col_busq2 = st.columns([3, 1])
     with col_busq1:
@@ -964,97 +964,45 @@ def vista_archivo_digital():
     # Extraemos los datos que usted llenó en el Registro Maestro desde la nube
     datos_exp = db_expedientes_cloud[exp_seleccionado]
 
-    # 🚀 EL TRUCO: Reconstruimos la ruta exacta que usa la Fábrica de Documentos
-    tipo_caso_db = datos_exp.get("tipo_caso", "Proceso Legal General")
-    tipo_folder = tipo_caso_db.replace("/", "-").replace(" ", "_")
-    
-    # Sacamos el año de la fecha de creación
-    fecha_creacion = datos_exp.get("fecha_creacion", "2026-01-01")
-    año_creacion = fecha_creacion.split("-")[0] if "-" in fecha_creacion else "2026"
-
-    # Ahora sí, el Archivo Digital y las Plantillas apuntan al MISMO almacén
-    ruta_exp = f"boveda_digital/Expedientes_{año_creacion}/{tipo_folder}/{exp_seleccionado}"
-
-    # Crear estructura física de la bóveda si no existe
-    if not os.path.exists(ruta_exp):
-        os.makedirs(ruta_exp)
-
     # --- 3. INTERFAZ DE GESTIÓN DOCUMENTAL ---
-    tab_resumen, tab_anexos, tab_zip = st.tabs([
-        "📋 Resumen del Caso", "📎 Subir Anexos (Planos, PDF)", "📦 Empaquetar Expediente"
+    tab_resumen, tab_boveda = st.tabs([
+        "📋 Resumen del Caso", "☁️ Bóveda en Google Drive"
     ])
 
     # PESTAÑA A: Visor de Memoria
     with tab_resumen:
         st.subheader(f"Radiografía: {exp_seleccionado}")
-        st.markdown(f"**Proceso Legal:** {tipo_caso_db}")
+        st.markdown(f"**Asunto:** {datos_exp.get('asunto', 'No definido')}")
+        st.markdown(f"**Proceso Legal:** {datos_exp.get('tipo_caso', 'No definido')}")
         st.markdown(f"**Jurisdicción:** {datos_exp.get('organo_jurisdiccional', 'No especificada')}")
         
         clientes = datos_exp.get("clientes", [])
         nombres_cli = ", ".join([c.get("nombre", "") for c in clientes]) if clientes else "No registrado"
         st.markdown(f"**Clientes / Propietarios:** {nombres_cli}")
-            
+        
+        inmuebles = datos_exp.get("inmuebles", [])
+        if inmuebles:
+            st.markdown("**Inmuebles Involucrados:**")
+            for inm in inmuebles:
+                st.caption(f"📍 Parcela {inm.get('parcela', '')}, {inm.get('dc', '')}, {inm.get('provincia', '')}")
+                
         st.info("💡 Este módulo lee en tiempo real los datos blindados en Supabase.")
 
-    # PESTAÑA B: Bóveda de Anexos
-    with tab_anexos:
-        st.subheader("Bóveda de Anexos Físicos y Planos")
-        st.write("Suba aquí copias de cédulas, planos topográficos (DWG), sentencias y actos firmados.")
+    # PESTAÑA B: Bóveda de Anexos (Conectada a Drive)
+    with tab_boveda:
+        st.subheader("Repositorio de Anexos Físicos y Planos")
+        link_drive = datos_exp.get("link_drive", "")
         
-        archivos_subidos = st.file_uploader(f"Anexar a {exp_seleccionado}", accept_multiple_files=True, help="Puede subir PDF, JPG, DWG, DOCX...")
-        
-        if archivos_subidos:
-            if st.button("💾 Guardar Anexos en Bóveda", type="primary"):
-                for archivo in archivos_subidos:
-                    with open(os.path.join(ruta_exp, archivo.name), "wb") as f:
-                        f.write(archivo.getbuffer())
-                st.success(f"✅ {len(archivos_subidos)} documento(s) guardado(s) junto a los Word generados.")
-                st.rerun()
-        
-        # Listador de documentos anexos con opción a borrar
-        st.write("---")
-        st.markdown(f"**Documentos actualmente unificados en la carpeta del caso:**")
-        st.caption(f"📁 Ruta: `{ruta_exp}`")
-        archivos_guardados = os.listdir(ruta_exp)
-        
-        if archivos_guardados:
-            for arch in archivos_guardados:
-                col_file, col_del = st.columns([4, 1])
-                col_file.markdown(f"📄 `{arch}`")
-                if col_del.button("❌ Borrar", key=f"del_{exp_seleccionado}_{arch}"):
-                    os.remove(os.path.join(ruta_exp, arch))
-                    st.rerun()
+        if link_drive:
+            st.success("✅ Este expediente tiene su estructura oficial de Jurisdicción Inmobiliaria conectada.")
+            st.write("Abra su bóveda para gestionar:")
+            st.markdown("📂 `1_Mensuras_Catastrales`\n📂 `2_Tribunales_de_Tierras`\n📂 `3_Registro_de_Titulos`\n📂 `4_Documentos_Generales`")
+            
+            st.write("---")
+            st.link_button("☁️ ABRIR EXPEDIENTE EN GOOGLE DRIVE", link_drive, type="primary", use_container_width=True)
+            st.caption("Al hacer clic, será llevado a la carpeta segura de este cliente. Suba allí todos los planos DWG, PDFs, sentencias y evidencias. Todo quedará respaldado en los servidores de Google con los 2.1 TB de su cuenta.")
         else:
-            st.caption("No hay documentos anexos todavía.")
-
-    # PESTAÑA C: Empaquetado para el Tribunal
-    with tab_zip:
-        st.subheader("Preparación para Depósito / Entrega")
-        st.write("Genere un archivo comprimido (.zip) con TODO el contenido (Las instancias Word forjadas + Los PDF/Planos anexados).")
-        
-        if st.button("📦 Empaquetar Todo en ZIP", use_container_width=True):
-            if not os.listdir(ruta_exp):
-                st.warning("⚠️ El expediente no tiene documentos para empaquetar.")
-            else:
-                import io
-                import zipfile
-                
-                zip_buffer = io.BytesIO()
-                with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-                    for root, _, files in os.walk(ruta_exp):
-                        for file in files:
-                            ruta_completa = os.path.join(root, file)
-                            zip_file.write(ruta_completa, file)
-                
-                zip_buffer.seek(0)
-                st.success("✅ Paquete de depósito consolidado con éxito.")
-                st.download_button(
-                    label=f"⬇️ Descargar {exp_seleccionado}_Completo.zip",
-                    data=zip_buffer,
-                    file_name=f"{exp_seleccionado}_AboAgrim_Completo.zip",
-                    mime="application/zip",
-                    type="primary"
-                )
+            st.warning("⚠️ Este expediente fue creado antes de la integración con Google Drive o no se le generó una carpeta.")
 
 def generar_documento_word(ruta_plantilla, diccionario_datos):
     """
