@@ -757,9 +757,9 @@ def vista_configuracion():
             st.markdown("#### 🏢 Información de Contacto Institucional")
             st.info("Estos son los datos oficiales de la oficina. Al modificarlos aquí, cambiarán en el resto del sistema.")
             
-            # Intentamos recuperar la configuración guardada, si no, usamos los valores por defecto
+            # Buscamos en la NUEVA tabla 'config_oficina'
             try:
-                res_vars = supabase.table("variables_sistema").select("*").eq("id_variable", "contacto_oficina").execute()
+                res_vars = supabase.table("config_oficina").select("*").eq("id_config", "contacto_oficina").execute()
                 datos_contacto = res_vars.data[0].get("valor", {}) if res_vars.data else {}
             except:
                 datos_contacto = {}
@@ -777,11 +777,11 @@ def vista_configuracion():
                 if st.form_submit_button("💾 Actualizar Identidad Institucional", type="primary", use_container_width=True):
                     try:
                         nuevo_valor = {"telefonos": nuevo_tel, "email": nuevo_email, "direccion": nueva_dir}
-                        # Usamos upsert para actualizar o crear el registro
-                        supabase.table("variables_sistema").upsert({"id_variable": "contacto_oficina", "valor": nuevo_valor}).execute()
-                        st.success("✅ Datos actualizados correctamente en la nube maestra.")
+                        # Apuntamos a la nueva tabla segura
+                        supabase.table("config_oficina").upsert({"id_config": "contacto_oficina", "valor": nuevo_valor}).execute()
+                        st.success("✅ Datos actualizados correctamente en la nueva bóveda.")
                     except Exception as e:
-                        st.error(f"Error al guardar. Asegúrese de haber creado la tabla 'variables_sistema'. Detalle: {e}")
+                        st.error(f"Error al guardar. Detalle: {e}")
 
     # === 2. PESTAÑA DE USUARIOS (CONECTADA A SUPABASE) ===
     with tab_usuarios:
