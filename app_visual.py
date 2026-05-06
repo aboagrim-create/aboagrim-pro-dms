@@ -2423,7 +2423,7 @@ else:
         st.markdown("### Asistente Inteligente de Redacción de Cláusulas y Textos Jurídicos")
         
         # --- CONFIGURACIÓN ---
-        CLAVE_API = "AQUI_PONDREMOS_SU_CLAVE_API" 
+        CLAVE_API = "AIzaSyA3AusCugkboaqxxpdZ10pSnaL1rrZ4i-k" 
         
         try:
             genai.configure(api_key=CLAVE_API)
