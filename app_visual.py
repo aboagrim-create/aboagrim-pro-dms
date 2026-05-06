@@ -2422,7 +2422,7 @@ def vista_copiloto_legal():
     st.markdown("### Asistente Inteligente de Redacción de Cláusulas y Textos Jurídicos")
     
     # --- CONFIGURACIÓN ---
-    CLAVE_API = "AIzaSyA3AusCugkboaqxxpdZ10pSnaL1rrZ4i-k" 
+    CLAVE_API = st.secrets["GEMINI_API_KEY"] 
     
     try:
         genai.configure(api_key=CLAVE_API)
