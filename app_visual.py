@@ -2428,7 +2428,7 @@ else:
         try:
             genai.configure(api_key=CLAVE_API)
             # Cambiamos el nombre al que confirmó su prueba de curl:
-        modelo = genai.GenerativeModel('gemini-flash-latest')
+            modelo = genai.GenerativeModel('gemini-flash-latest')
         except:
             st.error("Error de configuración de IA.")
     
