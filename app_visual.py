@@ -2427,7 +2427,8 @@ def vista_copiloto_legal(): # ✅ CORRECTO: Pegado al borde, sin espacios
     
     try:
         genai.configure(api_key=CLAVE_API)
-        modelo = genai.GenerativeModel('gemini-1.5-flash')
+        # Cambiamos el nombre al que le funcionó en el curl:
+        modelo = genai.GenerativeModel('gemini-flash-latest')
     except:
         st.error("Error de configuración de IA.")
 
@@ -2448,20 +2449,20 @@ def vista_copiloto_legal(): # ✅ CORRECTO: Pegado al borde, sin espacios
                 st.warning("Escriba los detalles primero.")
 
 
-# --- RUTAS DE NAVEGACIÓN ---
-if seleccion == "🏠 Mando Central":
-    vista_mando()
-elif seleccion == "👤 Registro Maestro":
-    vista_registro_maestro()
-elif seleccion == "📁 Archivo Digital":
-    vista_archivo_digital()
-elif seleccion == "⏰ Alertas y Plazos":
-    vista_alertas_plazos()
-elif seleccion == "📄 Plantillas Auto":
-    vista_plantillas()
-elif seleccion == "🤖 Copiloto Legal":
-    vista_copiloto_legal()
-elif seleccion == "💳 Gestión de Honorarios":
-    vista_honorarios()
-elif seleccion == "⚙️ Configuración":
-    vista_configuracion()
+    # --- RUTAS DE NAVEGACIÓN ---
+    if seleccion == "🏠 Mando Central":
+        vista_mando()
+    elif seleccion == "👤 Registro Maestro":
+        vista_registro_maestro()
+    elif seleccion == "📁 Archivo Digital":
+        vista_archivo_digital()
+    elif seleccion == "⏰ Alertas y Plazos":
+        vista_alertas_plazos()
+    elif seleccion == "📄 Plantillas Auto":
+        vista_plantillas()
+    elif seleccion == "🤖 Copiloto Legal":
+        vista_copiloto_legal()
+    elif seleccion == "💳 Gestión de Honorarios":
+        vista_honorarios()
+    elif seleccion == "⚙️ Configuración":
+        vista_configuracion()
