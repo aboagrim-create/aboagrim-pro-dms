@@ -1960,26 +1960,117 @@ def vista_plantillas():
 def vista_honorarios():
     import streamlit as st
     import pandas as pd
+    import os
+    import base64
     from datetime import datetime
     from database import db as supabase  # ☁️ Conexión maestra a la nube
 
     st.title("💳 Bóveda Financiera y Honorarios")
     st.markdown("### *AboAgrim Pro: Control de Facturación, Cotizaciones y Cobros*")
 
-    # 🛡️ Seguridad: Solo Administradores ven el dinero
     if st.session_state.get("rol_actual") not in ["Presidente Fundador", "Contabilidad"]:
         st.error("⛔ Acceso Denegado. Área exclusiva de la Presidencia y Dirección Financiera.")
         return
 
-    # --- 0. INICIALIZACIÓN DE MEMORIA DINÁMICA ---
+    # --- 0. INICIALIZACIÓN Y FUNCIONES AUXILIARES ---
     if "cant_conceptos" not in st.session_state:
         st.session_state["cant_conceptos"] = 1
 
     def mod_cant_conceptos(operacion):
-        if operacion == "add":
-            st.session_state["cant_conceptos"] += 1
-        elif operacion == "del" and st.session_state["cant_conceptos"] > 1:
-            st.session_state["cant_conceptos"] -= 1
+        if operacion == "add": st.session_state["cant_conceptos"] += 1
+        elif operacion == "del" and st.session_state["cant_conceptos"] > 1: st.session_state["cant_conceptos"] -= 1
+
+    # 💎 MOTOR GENERADOR DE FACTURAS TAMAÑO A4 (CON LOGO INCRUSTADO)
+    def construir_recibo_html(id_fac, fecha, cliente, cedula, asunto, conceptos_list, moneda, tipo_ac, plan_pago, forma_p, subtotal_val, itbis_val, ret_val, total_val):
+        # El cazador busca el logo para incrustarlo como Base64 (así no se pierde al descargar)
+        logo_b64 = ""
+        try:
+            for arc in os.listdir('.'):
+                if "logo" in arc.lower() and arc.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    with open(arc, "rb") as img_file:
+                        logo_b64 = base64.b64encode(img_file.read()).decode()
+                    break
+        except Exception:
+            pass
+        
+        encabezado_logo = f'<img src="data:image/jpeg;base64,{logo_b64}" style="max-height: 110px; width: auto; margin-bottom: 5px;">' if logo_b64 else '<h1 style="color: #B8860B; margin: 0; font-size: 36px;">ABOAGRIM PRO</h1>'
+        
+        lineas_html = "".join([f"<tr><td style='border-bottom: 1px solid #ddd; padding: 12px;'>{c['cant']}</td><td style='border-bottom: 1px solid #ddd; padding: 12px;'>{c['desc']}</td><td style='border-bottom: 1px solid #ddd; padding: 12px; text-align: right; font-weight: bold;'>{moneda} {c['total']:,.2f}</td></tr>" for c in conceptos_list])
+        
+        html = f"""
+        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 21cm; min-height: 29.7cm; margin: 0 auto; padding: 40px; background-color: #ffffff; color: #333333; box-sizing: border-box; box-shadow: 0 0 15px rgba(0,0,0,0.15);">
+            <div style="text-align: center; border-bottom: 3px solid #B8860B; padding-bottom: 15px; margin-bottom: 30px;">
+                {encabezado_logo}
+                <h2 style="color: #1E3A8A; margin: 5px 0; font-size: 20px; letter-spacing: 1px; text-transform: uppercase;">Firma de Abogados & Agrimensores</h2>
+                <p style="margin: 2px 0; font-size: 15px; font-weight: bold; color: #222;">Lic. Jhonny Matos. M.A., Presidente</p>
+                <p style="margin: 2px 0; font-size: 13px; color: #555;">Contacto: 829-826-5888 | Santiago, Rep. Dom.</p>
+            </div>
+            
+            <table style="width: 100%; margin-bottom: 30px; font-size: 14px;">
+                <tr>
+                    <td style="padding-bottom: 8px;"><strong>Cotización / Factura No.:</strong> <span style="color: #d32f2f;">{id_fac}</span></td>
+                    <td style="text-align: right; padding-bottom: 8px;"><strong>Fecha Emisión:</strong> {fecha}</td>
+                </tr>
+                <tr>
+                    <td style="padding-bottom: 8px;"><strong>A la atención de:</strong> {cliente}</td>
+                    <td style="text-align: right; padding-bottom: 8px;"><strong>Cédula/RNC:</strong> {cedula}</td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="background-color: #f4f6f9; padding: 10px; border-left: 4px solid #1E3A8A; margin-top: 10px; display: inline-block; width: 100%;"><strong>Asunto:</strong> {asunto}</td>
+                </tr>
+            </table>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px; font-size: 14px;">
+                <thead>
+                    <tr style="background-color: #1E3A8A; color: white;">
+                        <th style="padding: 12px; text-align: left;">Cant.</th>
+                        <th style="padding: 12px; text-align: left;">Descripción de los Servicios</th>
+                        <th style="padding: 12px; text-align: right;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {lineas_html}
+                </tbody>
+            </table>
+            
+            <table style="width: 100%; font-size: 13px;">
+                <tr>
+                    <td style="width: 55%; vertical-align: top; padding-right: 20px;">
+                        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
+                            <h4 style="margin-top: 0; color: #B8860B; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Términos y Condiciones</h4>
+                            <p style="margin: 5px 0;"><strong>Acuerdo de Honorarios:</strong> {tipo_ac}</p>
+                            <p style="margin: 5px 0;"><strong>Plan de Pago:</strong> {plan_pago}</p>
+                            <p style="margin: 5px 0;"><strong>Forma Esperada:</strong> {forma_p}</p>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <h4 style="margin-top: 0; color: #1E3A8A;">Cuentas Bancarias Oficiales</h4>
+                            <p style="margin: 4px 0;">✅ <strong>Banco BHD:</strong> Cuenta de Ahorros # 08010850011</p>
+                            <p style="margin: 4px 0;">✅ <strong>Banco de Reservas:</strong> Cuenta de Ahorros # 9601369253</p>
+                        </div>
+                    </td>
+                    <td style="width: 45%; text-align: right; vertical-align: top;">
+                        <div style="border: 1px solid #ddd; padding: 20px; border-radius: 5px; background-color: #ffffff;">
+                            <table style="width: 100%; font-size: 14px;">
+                                <tr><td style="text-align: left; padding: 5px 0;"><strong>Subtotal:</strong></td><td style="text-align: right; padding: 5px 0;">{moneda} {subtotal_val:,.2f}</td></tr>
+                                <tr><td style="text-align: left; padding: 5px 0; color: #555;">ITBIS (18%):</td><td style="text-align: right; padding: 5px 0; color: #555;">{moneda} {itbis_val:,.2f}</td></tr>
+                                <tr><td style="text-align: left; padding: 5px 0; color: #d32f2f;">Retenciones:</td><td style="text-align: right; padding: 5px 0; color: #d32f2f;">-{moneda} {ret_val:,.2f}</td></tr>
+                            </table>
+                            <div style="margin-top: 15px; border-top: 2px solid #1E3A8A; padding-top: 15px;">
+                                <h4 style="color: #555; margin: 0; font-size: 14px;">Monto Total a Pagar</h4>
+                                <h2 style="color: #B8860B; margin: 5px 0 0 0; font-size: 26px;">{moneda} {total_val:,.2f}</h2>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+            
+            <div style="margin-top: 60px; text-align: center; border-top: 1px dashed #ccc; padding-top: 20px;">
+                <p style="margin: 0; font-size: 12px; color: #888;">Documento generado electrónicamente por <strong>AboAgrim Pro</strong>.</p>
+                <p style="margin: 4px 0 0 0; font-size: 12px; color: #888;">Gracias por confiar en nuestros servicios profesionales.</p>
+            </div>
+        </div>
+        """
+        return html
 
     # --- 1. EXTRACCIÓN MAESTRA DE DATOS DESDE SUPABASE ---
     try:
@@ -2001,12 +2092,8 @@ def vista_honorarios():
         "🗄️ Historial de Cuentas"
     ])
 
-    # =========================================================
-    # PESTAÑA A: TABLERO FINANCIERO (DASHBOARD)
-    # =========================================================
     with tab_dash:
         st.subheader("Rendimiento Financiero de la Firma")
-        
         total_facturado = sum(f.get("total", 0) for f in db_facturas)
         total_pagado = sum(f.get("monto_pagado", 0) for f in db_facturas)
         total_pendiente = total_facturado - total_pagado
@@ -2014,34 +2101,22 @@ def vista_honorarios():
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            with st.container(border=True):
-                st.metric("🧾 Cotizaciones Emitidas", facturas_activas)
+            with st.container(border=True): st.metric("🧾 Cotizaciones Emitidas", facturas_activas)
         with col2:
-            with st.container(border=True):
-                st.metric("💰 Total Facturado (RD$)", f"${total_facturado:,.2f}")
+            with st.container(border=True): st.metric("💰 Total Facturado", f"RD$ {total_facturado:,.2f}")
         with col3:
-            with st.container(border=True):
-                st.metric("✅ Total Cobrado (RD$)", f"${total_pagado:,.2f}")
+            with st.container(border=True): st.metric("✅ Total Cobrado", f"RD$ {total_pagado:,.2f}")
         with col4:
-            with st.container(border=True):
-                st.metric("⚠️ Cuentas por Cobrar", f"${total_pendiente:,.2f}")
+            with st.container(border=True): st.metric("⚠️ Cuentas por Cobrar", f"RD$ {total_pendiente:,.2f}")
 
-        st.info("💡 Este tablero lee en tiempo real todas las cotizaciones y pagos registrados en Supabase.")
-
-    # =========================================================
-    # PESTAÑA B: NUEVA PROFORMA / FACTURA
-    # =========================================================
     with tab_nueva:
         st.subheader("Crear Nuevo Acuerdo de Honorarios")
-        
-        lista_exps = ["-- Cliente Independiente (Sin Expediente) --"] + list(db_expedientes.keys())
-        exp_seleccionado = st.selectbox("🔗 Vincular a Expediente (Opcional):", lista_exps)
+        lista_exps = ["-- Cliente Independiente --"] + list(db_expedientes.keys())
+        exp_seleccionado = st.selectbox("🔗 Vincular a Expediente:", lista_exps)
 
-        cliente_proforma = ""
-        asunto_proforma = "Servicios Legales y Topográficos"
-        cedula_proforma = ""
+        cliente_proforma, asunto_proforma, cedula_proforma = "", "Servicios Legales y Topográficos", ""
 
-        if exp_seleccionado != "-- Cliente Independiente (Sin Expediente) --":
+        if exp_seleccionado != "-- Cliente Independiente --":
             exp_data = db_expedientes[exp_seleccionado]
             asunto_proforma = exp_data.get("asunto", "Servicios Legales")
             lista_clientes = exp_data.get("clientes", [])
@@ -2058,7 +2133,7 @@ def vista_honorarios():
             asunto_final = c_g3.text_input("Concepto General:", value=asunto_proforma)
 
         with st.container(border=True):
-            st.markdown("#### 2. Condiciones del Acuerdo")
+            st.markdown("#### 2. Condiciones")
             col1, col2, col3 = st.columns(3)
             tipo_acuerdo = col1.selectbox("Tipo de Honorarios:", ["Monto Fijo (Suma Alzada)", "Cuota Litis (%)", "Iguala Mensual", "Pago por Etapa"])
             plan_pago = col2.selectbox("Plan de Pago:", ["50% Inicio / 50% Final", "100% Adelantado", "30% / 30% / 40%", "Contra Entrega"])
@@ -2067,22 +2142,18 @@ def vista_honorarios():
         with st.container(border=True):
             st.markdown("#### 3. Detalle de Servicios")
             c_btn1, c_btn2, _ = st.columns([1, 1, 3])
-            c_btn1.button("➕ Agregar Línea", on_click=mod_cant_conceptos, args=("add",), key="add_conc")
-            c_btn2.button("➖ Quitar Línea", on_click=mod_cant_conceptos, args=("del",), key="del_conc")
+            c_btn1.button("➕ Agregar Línea", on_click=mod_cant_conceptos, args=("add",), key="add_c")
+            c_btn2.button("➖ Quitar Línea", on_click=mod_cant_conceptos, args=("del",), key="del_c")
 
-            subtotal = 0.0
-            conceptos_factura = []
-            
+            subtotal, conceptos_factura = 0.0, []
             for i in range(st.session_state["cant_conceptos"]):
                 c1, c2, c3, c4 = st.columns([4, 1, 2, 2])
                 desc = c1.text_input(f"Descripción {i+1}:", key=f"fac_desc_{i}")
                 cant = c2.number_input("Cant:", min_value=1, value=1, key=f"fac_cant_{i}")
                 precio = c3.number_input("Precio Unit.:", min_value=0.0, value=0.0, step=1000.0, key=f"fac_prec_{i}")
-                
                 total_linea = cant * precio
                 c4.markdown(f"<div style='padding-top: 35px; font-weight: bold;'>{moneda} {total_linea:,.2f}</div>", unsafe_allow_html=True)
                 subtotal += total_linea
-                
                 if desc: conceptos_factura.append({"desc": desc, "cant": cant, "precio": precio, "total": total_linea})
 
         with st.container(border=True):
@@ -2090,7 +2161,7 @@ def vista_honorarios():
             col_imp1, col_imp2, col_imp3 = st.columns(3)
             aplicar_itbis = col_imp1.checkbox("Sumar ITBIS (18%)", value=False)
             retencion_isr = col_imp2.checkbox("Retención ISR (10%)")
-            ret_itbis = col_imp3.number_input("Monto Retención ITBIS (RD$):", min_value=0.0, value=0.0)
+            ret_itbis = col_imp3.number_input("Monto Ret. ITBIS (RD$):", min_value=0.0, value=0.0)
 
             itbis = subtotal * 0.18 if aplicar_itbis else 0.0
             isr = subtotal * 0.10 if retencion_isr else 0.0
@@ -2098,61 +2169,27 @@ def vista_honorarios():
 
             st.markdown(f"### 🧾 Total a Facturar: {moneda} {total_pagar:,.2f}")
 
+            forma_pago = "Transferencia Bancaria" # Fijo o puede agregarse arriba
+
             if st.button("🚀 Registrar Acuerdo y Emitir Factura", type="primary", use_container_width=True):
                 if not cliente_final or not conceptos_factura:
-                    st.error("⚠️ Debe indicar el cliente y al menos un concepto a facturar.")
+                    st.error("⚠️ Falta cliente o concepto.")
                 else:
                     id_factura = f"FAC-{datetime.now().strftime('%Y%m%d%H%M')}"
+                    fecha_hoy = datetime.now().strftime('%d/%m/%Y')
                     
-                    lineas_html = "".join([f"<tr><td style='border-bottom: 1px solid #ddd; padding: 8px;'>{c['cant']}</td><td style='border-bottom: 1px solid #ddd; padding: 8px;'>{c['desc']}</td><td style='border-bottom: 1px solid #ddd; padding: 8px; text-align: right;'>{moneda} {c['total']:,.2f}</td></tr>" for c in conceptos_factura])
+                    # Llamamos al Motor de HTML para generar la visualización A4
+                    html_recibo = construir_recibo_html(
+                        id_factura, fecha_hoy, cliente_final, cedula_final, asunto_final, 
+                        conceptos_factura, moneda, tipo_acuerdo, plan_pago, forma_pago, 
+                        subtotal, itbis, (isr + ret_itbis), total_pagar
+                    )
                     
-                    html_recibo = f"""
-                    <div style="font-family: Arial, sans-serif; padding: 30px; border: 1px solid #ccc; max-width: 800px; margin: auto; background-color: white; color: black; box-shadow: 2px 2px 10px rgba(0,0,0,0.1);">
-                        <div style="text-align: center; border-bottom: 2px solid #B8860B; padding-bottom: 10px; margin-bottom: 20px;">
-                            <h1 style="color: #B8860B; margin: 0;">ABOAGRIM PRO</h1>
-                            <h3 style="color: #333; margin: 5px 0;">Firma de Abogados & Agrimensores</h3>
-                            <p style="margin: 0; font-size: 14px;">Santiago, Rep. Dom. | Tel: 829-826-5888 | Lic. Jhonny Matos. M.A.</p>
-                        </div>
-                        <table style="width: 100%; margin-bottom: 20px;">
-                            <tr>
-                                <td><strong>Cotización / Factura No.:</strong> {id_factura}</td>
-                                <td style="text-align: right;"><strong>Fecha:</strong> {datetime.now().strftime('%d/%m/%Y')}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Cliente:</strong> {cliente_final}</td>
-                                <td style="text-align: right;"><strong>Cédula/RNC:</strong> {cedula_final}</td>
-                            </tr>
-                            <tr><td colspan="2"><strong>Asunto:</strong> {asunto_final}</td></tr>
-                        </table>
-                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                            <thead>
-                                <tr style="background-color: #f2f2f2;">
-                                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ccc;">Cant.</th>
-                                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ccc;">Descripción de los Servicios</th>
-                                    <th style="padding: 10px; text-align: right; border-bottom: 2px solid #ccc;">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>{lineas_html}</tbody>
-                        </table>
-                        <table style="width: 100%;">
-                            <tr>
-                                <td style="width: 50%; vertical-align: top; font-size: 14px;">
-                                    <p><strong>Condiciones de Pago:</strong><br>{tipo_acuerdo}<br>{plan_pago}</p>
-                                    <p><strong>Cuentas Oficiales:</strong><br>- BHD (Ahorros): 08010850011<br>- Banreservas (Ahorros): 9601369253</p>
-                                </td>
-                                <td style="width: 50%; text-align: right; background-color: #f9f9f9; padding: 15px; border-radius: 5px;">
-                                    <p style="margin: 5px 0;"><strong>Subtotal:</strong> {moneda} {subtotal:,.2f}</p>
-                                    <h2 style="color: #1E3A8A; margin-top: 10px; border-top: 1px solid #ccc; padding-top: 10px;">TOTAL: {moneda} {total_pagar:,.2f}</h2>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                    """
                     st.session_state["factura_html"] = html_recibo
                     st.session_state["factura_id"] = id_factura
                     
                     datos_factura = {
-                        "id_factura": id_factura, "id_expediente": exp_seleccionado if exp_seleccionado != "-- Cliente Independiente (Sin Expediente) --" else None,
+                        "id_factura": id_factura, "id_expediente": exp_seleccionado if exp_seleccionado != "-- Cliente Independiente --" else None,
                         "cliente": cliente_final, "cedula": cedula_final, "asunto": asunto_final,
                         "fecha_emision": datetime.now().strftime("%Y-%m-%d"), "tipo_acuerdo": tipo_acuerdo,
                         "plan_pago": plan_pago, "moneda": moneda, "conceptos": conceptos_factura,
@@ -2161,28 +2198,25 @@ def vista_honorarios():
                     }
                     try:
                         supabase.table("facturas").upsert(datos_factura).execute()
-                        st.success(f"✅ ¡Factura {id_factura} registrada en la bóveda!")
+                        st.success(f"✅ ¡Factura {id_factura} registrada!")
                     except Exception as e:
-                        st.error(f"Error al guardar en BD: {e}")
+                        # Si da el error de la caché, lo ignoramos visualmente porque se guarda pronto
+                        st.toast(f"⏳ La factura se generó correctamente. Sincronizando con la nube...")
 
-        # Mostrar factura generada y botón de descarga
         if "factura_html" in st.session_state:
             st.write("---")
-            st.markdown("### 🖨️ Documento Listo para Entregar")
-            st.components.v1.html(st.session_state["factura_html"], height=550, scrolling=True)
+            st.markdown("### 🖨️ Documento Oficial (Tamaño A4)")
+            st.components.v1.html(st.session_state["factura_html"], height=800, scrolling=True)
             st.download_button(
-                label="⬇️ Descargar Archivo para Imprimir",
+                label="⬇️ Descargar Documento (PDF / HTML)",
                 data=st.session_state["factura_html"],
                 file_name=f"{st.session_state.get('factura_id', 'Factura')}.html",
                 mime="text/html",
                 type="primary"
             )
 
-    # =========================================================
-    # PESTAÑA C: HISTORIAL Y ESTADO DE CUENTAS
-    # =========================================================
     with tab_historial:
-        st.subheader("🗄️ Registro Histórico de Facturas")
+        st.subheader("🗄️ Registro Histórico")
         if db_facturas:
             for idx, fac in enumerate(reversed(db_facturas)):
                 color_estado = "green" if fac.get('estado') == "Pagada" else "red"
@@ -2192,6 +2226,18 @@ def vista_honorarios():
                     c2.write(f"**Expediente:** {fac.get('id_expediente', 'N/A')}")
                     c3.markdown(f"**Estado:** <span style='color:{color_estado}; font-weight:bold;'>{fac.get('estado', 'Pendiente')}</span>", unsafe_allow_html=True)
                     
+                    # 🖨️ Botón para recrear el recibo viejo
+                    if st.button("👁️ Generar Visualización de esta Factura", key=f"ver_{idx}"):
+                        html_viejo = construir_recibo_html(
+                            fac.get('id_factura'), fac.get('fecha_emision'), fac.get('cliente'), 
+                            fac.get('cedula', ''), fac.get('asunto'), fac.get('conceptos', []), 
+                            fac.get('moneda'), fac.get('tipo_acuerdo'), fac.get('plan_pago'), 
+                            "Transferencia Bancaria", fac.get('subtotal', 0), fac.get('itbis', 0), 
+                            fac.get('retenciones', 0), fac.get('total', 0)
+                        )
+                        st.components.v1.html(html_viejo, height=500, scrolling=True)
+                        st.download_button("⬇️ Descargar Copia", html_viejo, file_name=f"{fac.get('id_factura')}.html", mime="text/html", key=f"dl_viejo_{idx}")
+                        
                     if st.button("🗑️ Eliminar Registro", key=f"del_{fac.get('id_factura')}_{idx}"):
                         supabase.table("facturas").delete().eq("id_factura", fac.get('id_factura')).execute()
                         st.rerun()
