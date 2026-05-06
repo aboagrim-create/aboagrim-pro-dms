@@ -2389,6 +2389,7 @@ else:
         
         if puede_ver_plantillas:
             opciones_menu.append("📄 Plantillas Auto")
+            opciones_menu.append("🤖 Copiloto Legal")
         if puede_ver_honorarios:
             opciones_menu.append("💳 Gestión de Honorarios")
         if puede_ver_config:
@@ -2424,7 +2425,10 @@ else:
         vista_alertas_plazos()
     elif seleccion == "📄 Plantillas Auto":
         vista_plantillas()
+    elif seleccion == "🤖 Copiloto Legal":
+        vista_copiloto_legal()
     elif seleccion == "💳 Gestión de Honorarios":
         vista_honorarios()
     elif seleccion == "⚙️ Configuración":
         vista_configuracion()
+    
