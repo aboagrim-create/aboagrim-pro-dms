@@ -2413,41 +2413,43 @@ else:
 
         st.divider()
         st.caption("📍 AboAgrim Pro | Santiago")
-        
-    def vista_copiloto_legal(): # ✅ CORRECTO: Pegado al borde, sin espacios
-        import streamlit as st
-        import google.generativeai as genai
-        # El resto del contenido de la función SÍ lleva sus espacios normales
+
+def vista_copiloto_legal():
+    import streamlit as st
+    import google.generativeai as genai
     
-        st.title("🤖 Copiloto Legal AI - AboAgrim Pro")
-        st.markdown("### Asistente Inteligente de Redacción de Cláusulas y Textos Jurídicos")
-        
-        # --- CONFIGURACIÓN ---
-        CLAVE_API = "AIzaSyA3AusCugkboaqxxpdZ10pSnaL1rrZ4i-k" 
-        
-        try:
-            genai.configure(api_key=CLAVE_API)
-            # Cambiamos el nombre al que confirmó su prueba de curl:
-            modelo = genai.GenerativeModel('gemini-flash-latest')
-        except:
-            st.error("Error de configuración de IA.")
+    st.title("🤖 Copiloto Legal AI - AboAgrim Pro")
+    st.markdown("### Asistente Inteligente de Redacción de Cláusulas y Textos Jurídicos")
     
-        with st.container(border=True):
-            c1, c2 = st.columns(2)
-            tipo = c1.selectbox("📋 Tipo de Cláusula:", ["Penalidad por Mora", "Confidencialidad (NDA)", "Resolución de Conflictos", "Honorarios", "Otra"])
-            tono = c2.selectbox("⚖️ Tono:", ["Formal y Estricto", "Conciliador", "Técnico Inmobiliario"])
-            contexto = st.text_area("📝 Detalles específicos:", height=100)
+    # --- CONFIGURACIÓN ---
+    CLAVE_API = "AIzaSyA3AusCugkboaqxxpdZ10pSnaL1rrZ4i-k" 
     
-            if st.button("✨ Generar Cláusula Legal", type="primary", use_container_width=True):
-                if contexto:
-                    with st.spinner("Redactando..."):
+    try:
+        genai.configure(api_key=CLAVE_API)
+        # Usamos el modelo que nos funcionó en el curl
+        modelo = genai.GenerativeModel('gemini-flash-latest')
+    except Exception as e:
+        st.error(f"Error inicializando la IA: {e}")
+    
+    with st.container(border=True):
+        c1, c2 = st.columns(2)
+        tipo = c1.selectbox("📋 Tipo de Cláusula:", ["Penalidad por Mora", "Confidencialidad (NDA)", "Resolución de Conflictos", "Honorarios", "Otra"])
+        tono = c2.selectbox("⚖️ Tono:", ["Formal y Estricto", "Conciliador", "Técnico Inmobiliario"])
+        contexto = st.text_area("📝 Detalles específicos:", height=100)
+
+        if st.button("✨ Generar Cláusula Legal", type="primary", use_container_width=True):
+            if contexto:
+                with st.spinner("Redactando texto jurídico..."):
+                    try:
                         prompt = f"Actúa como abogado experto de Rep. Dominicana. Redacta una cláusula de {tipo} con estos detalles: {contexto}. Tono: {tono}. Solo el texto legal."
                         res = modelo.generate_content(prompt)
                         st.success("✅ ¡Listo!")
                         st.text_area("📄 Resultado:", value=res.text, height=300)
-                else:
-                    st.warning("Escriba los detalles primero.")
-
+                    except Exception as e:
+                        # Este escudo evita el cuadro rojo si la API falla
+                        st.error(f"Error al conectar con los servidores de Google: {e}")
+            else:
+                st.warning("Licenciado, por favor escriba los detalles del caso primero.")
 
     # --- RUTAS DE NAVEGACIÓN ---
     if seleccion == "🏠 Mando Central":
@@ -2466,3 +2468,5 @@ else:
         vista_honorarios()
     elif seleccion == "⚙️ Configuración":
         vista_configuracion()
+        
+    
