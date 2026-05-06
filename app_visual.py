@@ -1046,12 +1046,13 @@ def vista_alertas_plazos():
     import streamlit as st
     from datetime import date, datetime
     import pandas as pd
+    import uuid
     from database import db as supabase
 
-    st.title("⏱️ Sistema Integrado de Plazos (SIP)")
-    st.markdown("### Motor Lógico de Caducidad y Rutas Críticas")
+    st.title("⏱️ Sistema Integrado de Plazos y Redactor (SIP)")
+    st.markdown("### Motor Lógico de Caducidad, Rutas Críticas y Generación de Actos")
 
-    # --- 1. CATÁLOGO LEGAL ---
+    # --- 1. CATÁLOGO LEGAL (SU MOTOR ORIGINAL INTACTO) ---
     catalogo_acciones = {
         # MENSURAS CATASTRALES
         'Vigencia Autorización de Mensura': {
@@ -1203,24 +1204,103 @@ def vista_alertas_plazos():
             'procedimientos': ["1. Preparar el plano de levantamiento o replanteo.", "2. Incoar la demanda en Reivindicación (o Deslinde) ante J.O.", "3. Probar la titularidad y la ocupación ilegal en audiencia."]
         }
     }
-# ==========================================
+
+    # --- 2. EXTRACCIÓN DE DATOS ---
+    try:
+        res_exp = supabase.table("expedientes").select("*").execute()
+        db_expedientes = {row['id_expediente']: row for row in res_exp.data} if res_exp.data else {}
+        todos_los_expedientes = res_exp.data if res_exp.data else []
+    except Exception as e:
+        db_expedientes = {}
+        todos_los_expedientes = []
+
+    try:
+        res_alertas = supabase.table("alertas").select("*").execute()
+        db_alertas = res_alertas.data if res_alertas.data else []
+    except Exception:
+        db_alertas = []
+
+    # ==========================================
     # 🗂️ SISTEMA DE PESTAÑAS (FUSIÓN MAESTRA)
     # ==========================================
-    tab_radar, tab_calculadora = st.tabs([
-        "🚦 Radar Automático (Expedientes AboAgrim)",
-        "🧮 Depuración Manual (Calculadora SIP)"
+    tab_radar, tab_nueva, tab_calculadora = st.tabs([
+        "🚦 Radar Automático y Redactor", 
+        "➕ Agendar Nuevo Plazo", 
+        "🧮 Calculadora SIP (Depuración)"
     ])
 
+    # =========================================================
+    # PESTAÑA A: RADAR Y REDACTOR (Combinación de lo viejo y lo nuevo)
+    # =========================================================
     with tab_radar:
-        try:
-            respuesta = supabase.table("expedientes").select("id_expediente, alertas").execute()
-            todos_los_expedientes = respuesta.data
-        except Exception as e:
-            st.error(f"Error conectando a la base de datos: {e}")
-            todos_los_expedientes = []
+        st.subheader("📋 Monitor Central de Vencimientos y Actos")
+        
+        # 1. ALERTAS ACTIVAS DESDE LA NUEVA TABLA (CON EL REDACTOR)
+        alertas_pendientes = [a for a in db_alertas if a.get("estado") == "Pendiente"]
+        
+        if alertas_pendientes:
+            st.markdown("#### 🚨 Plazos Manuales y Audiencias Agendadas")
+            alertas_pendientes.sort(key=lambda x: x.get("fecha_limite", "9999-12-31"))
+            
+            for idx, alerta in enumerate(alertas_pendientes):
+                fecha_alerta = datetime.strptime(alerta.get("fecha_limite"), "%Y-%m-%d").date()
+                dias_restantes = (fecha_alerta - date.today()).days
+                
+                if dias_restantes < 0: color_alerta, icono_alerta = "red", "🚨 VENCIDO"
+                elif dias_restantes <= 3: color_alerta, icono_alerta = "orange", "⚠️ URGENTE"
+                else: color_alerta, icono_alerta = "green", "🟢 A TIEMPO"
 
+                with st.expander(f"{icono_alerta} | {alerta.get('fecha_limite')} | {alerta.get('tipo_evento')}"):
+                    st.markdown(f"**Expediente:** {alerta.get('id_expediente', 'N/A')}")
+                    st.markdown(f"**Detalle:** {alerta.get('descripcion')}")
+                    st.markdown(f"**Días restantes:** <span style='color:{color_alerta}; font-weight:bold;'>{dias_restantes} días</span>", unsafe_allow_html=True)
+                    st.divider()
+                    
+                    # 🚀 EL MOTOR REDACTOR DE ACTOS
+                    if alerta.get('id_expediente') and "Plazo" in alerta.get('tipo_evento'):
+                        st.markdown("#### 🤖 Acción Sugerida: Generar Instancia Automática")
+                        if st.button("📝 Redactar Solicitud de Prórroga", key=f"redactar_{idx}", type="primary"):
+                            exp_data = db_expedientes.get(alerta.get('id_expediente'), {})
+                            lista_clientes = exp_data.get("clientes", [])
+                            cliente_nombre = lista_clientes[0].get("nombre") if lista_clientes else "[NOMBRE DEL CLIENTE]"
+                            
+                            texto_instancia = f"""AL: TRIBUNAL DE JURISDICCIÓN ORIGINAL / DIRECCIÓN REGIONAL DE MENSURAS CATASTRALES DE SANTIAGO.
+
+ASUNTO: SOLICITUD DE PRÓRROGA DE PLAZO PARA DEPÓSITO DE DOCUMENTOS.
+REFERENCIA: Expediente No. {alerta.get('id_expediente')}.
+FECHA LÍMITE ORIGINAL: {alerta.get('fecha_limite')}.
+
+Honorable Magistrado / Director(a):
+
+Quien suscribe, Lic. Jhonny Matos. M.A., actuando en representación de {cliente_nombre}, tiene a bien dirigirse a usted para exponer y solicitar lo siguiente:
+
+ATENDIDO: A que actualmente nos encontramos dentro del plazo otorgado por esa jurisdicción para la presentación de los requisitos técnicos y legales relativos al expediente de la referencia.
+
+ATENDIDO: A que por motivos de fuerza mayor relativos a la recopilación de certificaciones externas, no nos ha sido posible completar el legajo en el plazo estipulado.
+
+Por tales motivos, SOLICITAMOS:
+ÚNICO: Que nos sea concedida una PRÓRROGA de QUINCE (15) DÍAS HÁBILES a partir de la fecha de vencimiento original, a fin de poder cumplir cabalmente con los requerimientos exigidos en el proceso.
+
+En la ciudad de Santiago, República Dominicana, a los {date.today().strftime('%d días del mes %m del año %Y')}.
+
+___________________________________________________
+Lic. Jhonny Matos. M.A.
+AboAgrim Pro - Presidente Fundador
+"""
+                            st.text_area("📄 Borrador del Acto Generado (Cópielo a Word):", value=texto_instancia, height=400)
+                            st.success("Borrador generado con éxito.")
+
+                    c_btn1, c_btn2 = st.columns([1, 3])
+                    if c_btn1.button("✅ Marcar Resuelto", key=f"check_{idx}"):
+                        supabase.table("alertas").update({"estado": "Completado"}).eq("id_alerta", alerta.get("id_alerta")).execute()
+                        st.rerun()
+
+        st.write("---")
+        
+        # 2. EL RADAR ORIGINAL (DETECTANDO DESDE LOS EXPEDIENTES)
+        st.markdown("#### 🔍 Radar Automático (Documentos de Expedientes)")
         todas_las_alertas = []
-        lista_expedientes = ["-- Todos los Expedientes --"]
+        lista_exps_radar = ["-- Todos los Expedientes --"]
         
         def clasificar_categoria(texto):
             t = str(texto).lower()
@@ -1233,51 +1313,47 @@ def vista_alertas_plazos():
         if todos_los_expedientes:
             for exp in todos_los_expedientes:
                 id_exp = exp.get("id_expediente")
-                alertas = exp.get("alertas")
+                alertas_exp = exp.get("alertas")
                 
-                if alertas and isinstance(alertas, list):
+                if alertas_exp and isinstance(alertas_exp, list):
                     tiene_pendientes = False
-                    for alerta in alertas:
-                        if alerta.get("estado") != "Completado":
+                    for al in alertas_exp:
+                        if al.get("estado") != "Completado":
                             tiene_pendientes = True
-                            cat_detectada = clasificar_categoria(alerta.get("documento_origen", "") + " " + alerta.get("descripcion", ""))
+                            cat_detectada = clasificar_categoria(al.get("documento_origen", "") + " " + al.get("descripcion", ""))
                             
                             todas_las_alertas.append({
                                 "Expediente": id_exp,
                                 "Categoría": cat_detectada,
-                                "Vencimiento": alerta.get("fecha_vencimiento"),
-                                "Actuación / Tarea": alerta.get("descripcion"),
-                                "Doc. Vinculado": alerta.get("documento_origen"),
+                                "Vencimiento": al.get("fecha_vencimiento"),
+                                "Actuación / Tarea": al.get("descripcion"),
+                                "Doc. Vinculado": al.get("documento_origen"),
                             })
                     
-                    if tiene_pendientes and id_exp not in lista_expedientes:
-                        lista_expedientes.append(id_exp)
+                    if tiene_pendientes and id_exp not in lista_exps_radar:
+                        lista_exps_radar.append(id_exp)
 
-        st.markdown("### 🔍 Panel Automático de Vencimientos")
         col_f1, col_f2 = st.columns(2)
-        filtro_exp = col_f1.selectbox("1. Filtrar por Expediente:", lista_expedientes)
-        
+        filtro_exp = col_f1.selectbox("1. Filtrar por Expediente:", lista_exps_radar)
         categorias_disp = ["-- Todas las Categorías --", "Mensuras Catastrales", "Registro de Títulos", "Tribunales (Litis e Incidentes)", "Altas Cortes y Recursos", "Otras Actuaciones"]
         filtro_cat = col_f2.selectbox("2. Filtrar por Categoría:", categorias_disp)
 
         alertas_filtradas = todas_las_alertas
-        if filtro_exp != "-- Todos los Expedientes --":
-            alertas_filtradas = [a for a in alertas_filtradas if a["Expediente"] == filtro_exp]
-        if filtro_cat != "-- Todas las Categorías --":
-            alertas_filtradas = [a for a in alertas_filtradas if a["Categoría"] == filtro_cat]
-
-        st.write("---")
+        if filtro_exp != "-- Todos los Expedientes --": alertas_filtradas = [a for a in alertas_filtradas if a["Expediente"] == filtro_exp]
+        if filtro_cat != "-- Todas las Categorías --": alertas_filtradas = [a for a in alertas_filtradas if a["Categoría"] == filtro_cat]
 
         if not alertas_filtradas:
-            st.success("🎉 ¡El radar está despejado para esta selección, Licenciado!")
+            st.success("🎉 ¡El radar de documentos está despejado para esta selección!")
         else:
             df_alertas = pd.DataFrame(alertas_filtradas)
-            df_alertas['Vencimiento_DT'] = pd.to_datetime(df_alertas['Vencimiento'])
-            hoy = pd.to_datetime(datetime.now().date())
-            df_alertas['Días Restantes'] = (df_alertas['Vencimiento_DT'] - hoy).dt.days
+            # Asegurar formato de fecha para evitar errores en pandas
+            df_alertas['Vencimiento_DT'] = pd.to_datetime(df_alertas['Vencimiento'], errors='coerce')
+            hoy_pd = pd.to_datetime(datetime.now().date())
+            df_alertas['Días Restantes'] = (df_alertas['Vencimiento_DT'] - hoy_pd).dt.days.fillna(999).astype(int)
 
             def obtener_semaforo(dias):
-                if dias < 0: return "🔴 Vencido"
+                if dias == 999: return "⚪ Sin fecha"
+                elif dias < 0: return "🔴 Vencido"
                 elif dias <= 15: return "🟡 Urgente"
                 else: return "🟢 A tiempo"
                 
@@ -1287,30 +1363,58 @@ def vista_alertas_plazos():
             col1, col2, col3 = st.columns(3)
             vencidos = df_alertas[df_alertas['Días Restantes'] < 0]
             urgentes = df_alertas[(df_alertas['Días Restantes'] >= 0) & (df_alertas['Días Restantes'] <= 15)]
-            a_tiempo = df_alertas[df_alertas['Días Restantes'] > 15]
+            a_tiempo = df_alertas[(df_alertas['Días Restantes'] > 15) & (df_alertas['Días Restantes'] != 999)]
             
             col1.error(f"🔴 Vencidos: {len(vencidos)}")
             col2.warning(f"🟡 Urgentes: {len(urgentes)}")
             col3.success(f"🟢 A tiempo: {len(a_tiempo)}")
 
-            st.write("---")
             df_mostrar = df_alertas[['Expediente', 'Categoría', 'Estado', 'Días Restantes', 'Vencimiento', 'Actuación / Tarea', 'Doc. Vinculado']]
-            st.dataframe(
-                df_mostrar,
-                column_config={"Días Restantes": st.column_config.NumberColumn("Faltan (Días)")},
-                hide_index=True,
-                use_container_width=True
-            )
+            st.dataframe(df_mostrar, column_config={"Días Restantes": st.column_config.NumberColumn("Faltan (Días)")}, hide_index=True, use_container_width=True)
 
+    # =========================================================
+    # PESTAÑA B: REGISTRAR NUEVO PLAZO (NUEVO)
+    # =========================================================
+    with tab_nueva:
+        with st.container(border=True):
+            st.subheader("Agendar Nuevo Vencimiento o Audiencia")
+            
+            lista_exps = ["-- Cliente Independiente / Sin Expediente --"] + list(db_expedientes.keys())
+            exp_seleccionado = st.selectbox("🔗 Vincular a Expediente:", lista_exps)
+            
+            c_al1, c_al2 = st.columns(2)
+            tipo_evento = c_al1.selectbox("Tipo de Evento:", ["Vencimiento de Plazo (Mensuras)", "Vencimiento de Plazo (Tribunal)", "Audiencia", "Depósito de Documentos", "Reunión con Cliente"])
+            fecha_limite = c_al2.date_input("Fecha Límite / Fecha del Evento:", min_value=date.today())
+            
+            descripcion = st.text_input("Descripción o Notas Adicionales:", placeholder="Ej. Presentar planos definitivos...")
+            
+            if st.button("💾 Guardar Alerta en la Nube", type="primary", use_container_width=True):
+                id_alerta = f"AL-{str(uuid.uuid4())[:8].upper()}"
+                datos_alerta = {
+                    "id_alerta": id_alerta,
+                    "id_expediente": exp_seleccionado if exp_seleccionado != "-- Cliente Independiente / Sin Expediente --" else None,
+                    "tipo_evento": tipo_evento,
+                    "descripcion": descripcion,
+                    "fecha_limite": fecha_limite.strftime("%Y-%m-%d"),
+                    "estado": "Pendiente"
+                }
+                
+                try:
+                    supabase.table("alertas").upsert(datos_alerta).execute()
+                    st.success("✅ ¡Alerta procesal registrada correctamente!")
+                except Exception as e:
+                    st.error(f"❌ Error al guardar. Asegúrese de haber creado la tabla 'alertas' en Supabase. Detalle: {e}")
+
+    # =========================================================
+    # PESTAÑA C: CALCULADORA SIP (SU MOTOR ORIGINAL)
+    # =========================================================
     with tab_calculadora:
-        # --- 2. INTERFAZ DE USUARIO ---
         with st.container(border=True):
             st.markdown("#### Depuración y Operaciones")
             
             c_cat, c_acc = st.columns(2)
             with c_cat:
-                categoria_sel = st.selectbox("1. Categoría de la Actuación:", 
-                                             ["Mensuras Catastrales", "Registro de Títulos", "Tribunales (Litis e Incidentes)", "Altas Cortes y Recursos", "Acciones Imprescriptibles"])
+                categoria_sel = st.selectbox("1. Categoría de la Actuación:", ["Mensuras Catastrales", "Registro de Títulos", "Tribunales (Litis e Incidentes)", "Altas Cortes y Recursos", "Acciones Imprescriptibles"])
             
             acciones_filtradas = [k for k, v in catalogo_acciones.items() if v['cat'] == categoria_sel]
             
@@ -1331,7 +1435,6 @@ def vista_alertas_plazos():
                 fecha_ref = st.date_input(label_f, value=date.today())
                 st.info("⚠️ **Atención:** Para plazos procesales, el cálculo excluye fines de semana si la norma indica 'días hábiles' o francos. El sistema calcula en días calendario base.")
     
-        # --- 3. MOTOR DE CÁLCULO Y RESULTADOS ---
         if st.button("🚀 Generar Ruta Crítica y Diagnóstico", type="primary", use_container_width=True):
             st.write("---")
             
@@ -1366,16 +1469,15 @@ def vista_alertas_plazos():
                     esta_prescrita = dias_transcurridos > datos_accion['plazo']
                     texto_tiempo = f"{dias_transcurridos} días transcurridos"
     
-                if esta_prescrita:
-                    color_badge = "#dc3545"
-                    titulo_alerta = "🔴 PLAZO VENCIDO / CADUCIDAD"
-                    diag_final = datos_accion['diagnosticoRechazado']
-                else:
-                    color_badge = "#28a745"
-                    titulo_alerta = "🟢 DENTRO DEL PLAZO LEGAL / ACTIVO"
-                    diag_final = datos_accion['diagnosticoAprobado']
+            if esta_prescrita:
+                color_badge = "#dc3545"
+                titulo_alerta = "🔴 PLAZO VENCIDO / CADUCIDAD"
+                diag_final = datos_accion['diagnosticoRechazado']
+            else:
+                color_badge = "#28a745"
+                titulo_alerta = "🟢 DENTRO DEL PLAZO LEGAL / ACTIVO"
+                diag_final = datos_accion['diagnosticoAprobado']
     
-            # --- 4. RENDERIZADO DEL DICTAMEN ---
             with st.container(border=True):
                 st.markdown(f"<h2 style='text-align: center; color: #0d253f; font-family: serif;'>DICTAMEN TÉCNICO-LEGAL</h2>", unsafe_allow_html=True)
                 st.markdown(f"<p style='text-align: center; color: gray; font-size: 0.85rem;'>Expedido vía plataforma automatizada • {hoy.strftime('%d de %B de %Y')}</p>", unsafe_allow_html=True)
@@ -1410,18 +1512,16 @@ def vista_alertas_plazos():
                 
                 st.markdown(f"""
                 <div style="margin-top: 20px; text-align: right; font-size: 0.95rem; color: #333;">
-                    <div style="font-family: serif; font-size: 1.4rem; color: #c5a059; font-weight: bold; margin-bottom: 5px;">ABOAGRIM</div>
+                    <div style="font-family: serif; font-size: 1.4rem; color: #c5a059; font-weight: bold; margin-bottom: 5px;">ABOAGRIM PRO</div>
                     <strong>Lic. Jhonny Matos, M.A.</strong><br>
                     <span style="color: #0d253f; font-weight: 600;">Presidente | Abogado y Agrimensor</span><br>
                     <span style="color: gray; font-size: 0.85rem;">Tel: 829-826-5888</span>
                 </div>
                 """, unsafe_allow_html=True)
     
-            # --- 5. BOTÓN DE EXPORTACIÓN (Instrucción visual) ---
             st.write("")
             if st.button("🖨️ Exportar Dictamen a PDF", use_container_width=True):
                 st.toast("⌨️ Presione Ctrl + P en su teclado para abrir el menú de impresión o guardado PDF.", icon="🖨️")
-                st.success("💡 **Instrucción para el equipo:** Presione **`Ctrl + P`** (o `Cmd + P` en Mac) y seleccione **Guardar como PDF** en la ventana que aparecerá en su navegador.")
 def vista_plantillas():
     import streamlit as st
     import os
