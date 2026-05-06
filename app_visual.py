@@ -2413,38 +2413,39 @@ else:
 
         st.divider()
         st.caption("📍 AboAgrim Pro | Santiago")
-def vista_copiloto_legal(): # ✅ CORRECTO: Pegado al borde, sin espacios
-    import streamlit as st
-    import google.generativeai as genai
-    # El resto del contenido de la función SÍ lleva sus espacios normales
-
-    st.title("🤖 Copiloto Legal AI - AboAgrim Pro")
-    st.markdown("### Asistente Inteligente de Redacción de Cláusulas y Textos Jurídicos")
+        
+    def vista_copiloto_legal(): # ✅ CORRECTO: Pegado al borde, sin espacios
+        import streamlit as st
+        import google.generativeai as genai
+        # El resto del contenido de la función SÍ lleva sus espacios normales
     
-    # --- CONFIGURACIÓN ---
-    CLAVE_API = "AQUI_PONDREMOS_SU_CLAVE_API" 
+        st.title("🤖 Copiloto Legal AI - AboAgrim Pro")
+        st.markdown("### Asistente Inteligente de Redacción de Cláusulas y Textos Jurídicos")
+        
+        # --- CONFIGURACIÓN ---
+        CLAVE_API = "AQUI_PONDREMOS_SU_CLAVE_API" 
+        
+        try:
+            genai.configure(api_key=CLAVE_API)
+            modelo = genai.GenerativeModel('gemini-1.5-flash')
+        except:
+            st.error("Error de configuración de IA.")
     
-    try:
-        genai.configure(api_key=CLAVE_API)
-        modelo = genai.GenerativeModel('gemini-1.5-flash')
-    except:
-        st.error("Error de configuración de IA.")
-
-    with st.container(border=True):
-        c1, c2 = st.columns(2)
-        tipo = c1.selectbox("📋 Tipo de Cláusula:", ["Penalidad por Mora", "Confidencialidad (NDA)", "Resolución de Conflictos", "Honorarios", "Otra"])
-        tono = c2.selectbox("⚖️ Tono:", ["Formal y Estricto", "Conciliador", "Técnico Inmobiliario"])
-        contexto = st.text_area("📝 Detalles específicos:", height=100)
-
-        if st.button("✨ Generar Cláusula Legal", type="primary", use_container_width=True):
-            if contexto:
-                with st.spinner("Redactando..."):
-                    prompt = f"Actúa como abogado experto de Rep. Dominicana. Redacta una cláusula de {tipo} con estos detalles: {contexto}. Tono: {tono}. Solo el texto legal."
-                    res = modelo.generate_content(prompt)
-                    st.success("✅ ¡Listo!")
-                    st.text_area("📄 Resultado:", value=res.text, height=300)
-            else:
-                st.warning("Escriba los detalles primero.")
+        with st.container(border=True):
+            c1, c2 = st.columns(2)
+            tipo = c1.selectbox("📋 Tipo de Cláusula:", ["Penalidad por Mora", "Confidencialidad (NDA)", "Resolución de Conflictos", "Honorarios", "Otra"])
+            tono = c2.selectbox("⚖️ Tono:", ["Formal y Estricto", "Conciliador", "Técnico Inmobiliario"])
+            contexto = st.text_area("📝 Detalles específicos:", height=100)
+    
+            if st.button("✨ Generar Cláusula Legal", type="primary", use_container_width=True):
+                if contexto:
+                    with st.spinner("Redactando..."):
+                        prompt = f"Actúa como abogado experto de Rep. Dominicana. Redacta una cláusula de {tipo} con estos detalles: {contexto}. Tono: {tono}. Solo el texto legal."
+                        res = modelo.generate_content(prompt)
+                        st.success("✅ ¡Listo!")
+                        st.text_area("📄 Resultado:", value=res.text, height=300)
+                else:
+                    st.warning("Escriba los detalles primero.")
 
 
     # --- RUTAS DE NAVEGACIÓN ---
