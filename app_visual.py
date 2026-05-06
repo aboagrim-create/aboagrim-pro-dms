@@ -735,212 +735,143 @@ def vista_configuracion():
     import pandas as pd
     from database import db as supabase
     
-    st.title("⚙️ Panel de Control Maestro")
+    st.title("⚙️ Cuarto de Máquinas (Configuración)")
+    st.markdown("### *Panel de Control Maestro - AboAgrim Pro*")
     
-    if st.session_state.get("admin_autenticado", False):
-        tab_perfil, tab_usuarios, tab_sistema = st.tabs(["👤 Mi Perfil", "👥 Gestión de Personal", "🛠️ Base de Datos"])
+    # 🛡️ Seguridad Presidencial (Conectada al candado global)
+    if st.session_state.get("rol_actual") != "Presidente Fundador":
+        st.error("⛔ Acceso Denegado. Solo el Presidente Fundador puede modificar las entrañas del sistema.")
+        return
         
-        # --- TAB 1: PERFIL PROFESIONAL ---
-        with tab_perfil:
-            with st.container(border=True):
-                c1, c2 = st.columns([1, 3])
-                c1.markdown("## ⚖️")
-                c2.markdown(f"### {st.session_state.get('usuario', 'Lic. Jhonny Matos')}")
-                c2.caption(f"**Cargo:** {st.session_state.get('rol', 'Presidente Fundador')}")
-                
-                st.divider()
-                st.markdown("**Información de Contacto Institucional:**")
-                st.write("📧 **Email:** Aboagrim@gmail.com")
-                st.write("📞 **Teléfonos:** 829-826-5888 | 809-691-3333")
-                st.write("📍 **Oficina:** Calle Boy Scout 83, Plaza Jasansa, Santiago.")
-        
-        # === 2. PESTAÑA DE USUARIOS (CONECTADA A SUPABASE) ===
-        with tab_usuarios:
-            st.subheader("👥 Gestión de Capital Humano y Permisos")
-            st.write("Administre los niveles de acceso y roles oficiales de la firma.")
-
-            # --- SECCIÓN A: LISTA OFICIAL DE PERSONAL ---
-            st.markdown("### 📋 Directorio de Usuarios (Base de Datos)")
+    tab_perfil, tab_usuarios, tab_sistema = st.tabs(["🏛️ Identidad de la Firma", "👥 Gestión de Personal", "🛠️ Estado del Servidor"])
+    
+    # === 1. PESTAÑA DE IDENTIDAD INSTITUCIONAL ===
+    with tab_perfil:
+        with st.container(border=True):
+            c1, c2 = st.columns([1, 4])
+            c1.markdown("<h1 style='text-align: center; color: #B8860B;'>⚖️</h1>", unsafe_allow_html=True)
+            c2.markdown(f"### {st.session_state.get('usuario_actual', 'Lic. Jhonny Matos')}")
+            c2.caption(f"**Nivel de Autoridad:** {st.session_state.get('rol_actual', 'Presidente Fundador')}")
             
+            st.divider()
+            st.markdown("#### 🏢 Información de Contacto Institucional")
+            st.info("Estos son los datos oficiales de la oficina. Al modificarlos aquí, cambiarán en el resto del sistema.")
+            
+            # Intentamos recuperar la configuración guardada, si no, usamos los valores por defecto
             try:
-                # Descargamos los usuarios directamente de la nube
-                res_usuarios = supabase.table("usuarios").select("*").execute()
-                usuarios_db = res_usuarios.data
-            except Exception as e:
-                st.error(f"Error conectando a la base de datos: {e}")
-                usuarios_db = []
-                
-            if usuarios_db:
-                df_usuarios = pd.DataFrame(usuarios_db)
-                # Filtramos las columnas para que se vea limpio
-                cols_mostrar = [col for col in ["nombre_usuario", "rol", "pin_acceso", "fecha_creacion"] if col in df_usuarios.columns]
-                st.dataframe(df_usuarios[cols_mostrar], use_container_width=True)
-            else:
-                st.info("Aún no hay usuarios registrados en el sistema.")
-
-            st.divider()
-
-            # --- SECCIÓN B: REGISTRO DE NUEVO TALENTO ---
-            with st.expander("➕ Dar de Alta a Nuevo Miembro del Equipo", expanded=False):
-                c_u1, c_u2 = st.columns(2)
-                with c_u1:
-                    nuevo_user = st.text_input("Nombre de Usuario (Login):", placeholder="Ej. PAlmonte")
-                    nueva_clave = st.text_input("PIN / Contraseña de Acceso:", type="password")
-                with c_u2:
-                    nuevo_rol = st.selectbox("Rol en el Sistema:", [
-                        "Presidente Fundador",
-                        "Abogado", 
-                        "Agrimensor", 
-                        "Asistente", 
-                        "Pasante",
-                        "Contabilidad"
-                    ])
-
-                if st.button("💾 Guardar Usuario en la Nube", use_container_width=True):
-                    if nuevo_user and nueva_clave:
-                        try:
-                            # Inyectamos en las columnas exactas que usted creó
-                            supabase.table("usuarios").insert({
-                                "nombre_usuario": nuevo_user,
-                                "pin_acceso": nueva_clave,
-                                "rol": nuevo_rol
-                            }).execute()
-                            st.success(f"✅ ¡Usuario {nuevo_user} creado exitosamente y guardado de forma permanente!")
-                            st.rerun() # Refresca la pantalla para mostrarlo en la tabla
-                        except Exception as e:
-                            st.error(f"Error al guardar el usuario: {e}")
-                    else:
-                        st.warning("⚠️ Debe llenar el usuario y la contraseña para continuar.")
-
-            st.divider()
-            
-            # --- SECCIÓN C: GESTIÓN Y BAJAS (NUEVO) ---
-            if usuarios_db:
-                st.markdown("### 🗑️ Dar de Baja (Eliminar Usuario)")
-                # Filtramos para que usted nunca pueda borrarse a sí mismo por accidente
-                lista_nombres = [u["nombre_usuario"] for u in usuarios_db if u["nombre_usuario"] != "JhonnyMatos"]
-                
-                if lista_nombres:
-                    c_del1, c_del2 = st.columns([3, 1])
-                    usuario_a_borrar = c_del1.selectbox("Seleccione el usuario que desea eliminar del sistema:", lista_nombres)
-                    
-                    if c_del2.button("🚨 Eliminar Acceso", type="primary"):
-                        try:
-                            supabase.table("usuarios").delete().eq("nombre_usuario", usuario_a_borrar).execute()
-                            st.success(f"🗑️ El usuario {usuario_a_borrar} ha sido eliminado permanentemente.")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Error al intentar eliminar: {e}")
-                else:
-                    st.info("No hay usuarios adicionales para eliminar.")
-
-            st.divider()
-
-            # --- SECCIÓN D: MATRIZ DE PERMISOS (Visual) ---
-            st.markdown("### 🔐 Matriz de Acceso por Módulo")
-            st.info("Configure qué módulos son visibles para cada rol. (Blindaje de Seguridad)")
-            
-            col_perm1, col_perm2 = st.columns(2)
-            with col_perm1:
-                st.markdown("**📂 Gestión de Expedientes**")
-                p_abog = st.checkbox("Abogados", value=True)
-                p_agrim = st.checkbox("Agrimensores", value=True)
-                p_pasant = st.checkbox("Pasantes", value=False)
-                
-                st.markdown("**💰 Gestión de Honorarios (Finanzas)**")
-                f_abog = st.checkbox("Abogados (Solo ver)", value=True)
-                f_cont = st.checkbox("Contabilidad (Acceso Total)", value=True)
-                f_pasant = st.checkbox("Pasantes (Acceso Denegado)", value=False, disabled=True)
-
-            with col_perm2:
-                st.markdown("**📄 Fábrica de Documentos**")
-                d_abog = st.checkbox("Acceso Abogados", value=True)
-                d_agrim = st.checkbox("Acceso Agrimensores", value=True)
-                
-                st.markdown("**⚙️ Configuración del Sistema**")
-                c_master = st.checkbox("Solo Presidente (Blindaje Activo)", value=True, disabled=True)
-                
-            if st.button("🔄 Actualizar Matriz de Blindaje"):
-                st.warning("Los permisos han sido actualizados. Los usuarios verán los cambios en su próximo inicio de sesión.")
-
-        # --- TAB 3: ESTADO DE LA BASE DE DATOS ---
-        with tab_sistema:
-            st.subheader("Estado de la Nube (Supabase)")
-            
-            try:
-                res_exp = supabase.table("expedientes").select("id_expediente", count="exact").execute()
-                count_exp = res_exp.count if res_exp.count else 0
-                
-                res_doc = supabase.table("archivo_digital").select("id", count="exact").execute()
-                count_doc = res_doc.count if res_doc.count else 0
+                res_vars = supabase.table("variables_sistema").select("*").eq("id_variable", "contacto_oficina").execute()
+                datos_contacto = res_vars.data[0].get("valor", {}) if res_vars.data else {}
             except:
-                count_exp, count_doc = 0, 0
+                datos_contacto = {}
 
-            col_s1, col_s2, col_s3 = st.columns(3)
-            col_s1.metric("Expedientes", count_exp)
-            col_s1.caption("Total de casos en nube")
-            
-            col_s2.metric("Documentos", count_doc)
-            col_s2.caption("Archivos vinculados")
-            
-            col_s3.metric("Estado", "Online", delta="Conectado")
-            
-            st.divider()
-            st.info("💡 La base de datos está sincronizada con Supabase Cloud. Los respaldos se realizan cada 24 horas automáticamente.")
+            tel_actual = datos_contacto.get("telefonos", "829-826-5888 | 809-691-3333")
+            email_actual = datos_contacto.get("email", "Aboagrim@gmail.com")
+            dir_actual = datos_contacto.get("direccion", "Calle Boy Scout 83, Plaza Jasansa, Santiago.")
 
+            with st.form("form_identidad"):
+                col_i1, col_i2 = st.columns(2)
+                nuevo_tel = col_i1.text_input("📞 Teléfonos Oficiales:", value=tel_actual)
+                nuevo_email = col_i2.text_input("📧 Correo Electrónico:", value=email_actual)
+                nueva_dir = st.text_input("📍 Dirección Física de la Oficina:", value=dir_actual)
+
+                if st.form_submit_button("💾 Actualizar Identidad Institucional", type="primary", use_container_width=True):
+                    try:
+                        nuevo_valor = {"telefonos": nuevo_tel, "email": nuevo_email, "direccion": nueva_dir}
+                        # Usamos upsert para actualizar o crear el registro
+                        supabase.table("variables_sistema").upsert({"id_variable": "contacto_oficina", "valor": nuevo_valor}).execute()
+                        st.success("✅ Datos actualizados correctamente en la nube maestra.")
+                    except Exception as e:
+                        st.error(f"Error al guardar. Asegúrese de haber creado la tabla 'variables_sistema'. Detalle: {e}")
+
+    # === 2. PESTAÑA DE USUARIOS (CONECTADA A SUPABASE) ===
+    with tab_usuarios:
+        st.subheader("👥 Gestión de Capital Humano y Permisos")
+        
+        # --- SECCIÓN A: LISTA OFICIAL DE PERSONAL ---
+        try:
+            res_usuarios = supabase.table("usuarios").select("*").execute()
+            usuarios_db = res_usuarios.data if res_usuarios.data else []
+        except Exception as e:
+            st.error(f"Error conectando a la base de datos de usuarios: {e}")
+            usuarios_db = []
+            
+        if usuarios_db:
+            df_usuarios = pd.DataFrame(usuarios_db)
+            cols_mostrar = [col for col in ["nombre_usuario", "rol", "fecha_creacion"] if col in df_usuarios.columns]
+            st.dataframe(df_usuarios[cols_mostrar], use_container_width=True)
+        else:
+            st.info("Aún no hay usuarios registrados en el sistema.")
+
+        # --- SECCIÓN B: REGISTRO DE NUEVO TALENTO ---
+        with st.expander("➕ Dar de Alta a Nuevo Miembro del Equipo", expanded=False):
+            c_u1, c_u2 = st.columns(2)
+            with c_u1:
+                nuevo_user = st.text_input("Nombre de Usuario (Login):", placeholder="Ej. PAlmonte")
+                nueva_clave = st.text_input("PIN / Contraseña de Acceso:", type="password")
+            with c_u2:
+                nuevo_rol = st.selectbox("Rol en el Sistema:", [
+                    "Presidente Fundador", "Abogado", "Agrimensor", 
+                    "Asistente", "Pasante", "Contabilidad"
+                ])
+
+            if st.button("💾 Crear Usuario en la Nube", use_container_width=True):
+                if nuevo_user and nueva_clave:
+                    try:
+                        supabase.table("usuarios").insert({
+                            "nombre_usuario": nuevo_user,
+                            "pin_acceso": nueva_clave,
+                            "rol": nuevo_rol
+                        }).execute()
+                        st.success(f"✅ ¡Usuario '{nuevo_user}' autorizado exitosamente!")
+                        st.rerun() 
+                    except Exception as e:
+                        st.error(f"Error al guardar el usuario: {e}")
+                else:
+                    st.warning("⚠️ Debe llenar el usuario y la contraseña para continuar.")
+
+        # --- SECCIÓN C: BAJAS Y DESPIDOS ---
+        if usuarios_db:
+            st.markdown("### 🗑️ Revocar Acceso (Eliminar Usuario)")
+            # 🛡️ BLINDAJE: El sistema no le permitirá borrarse a sí mismo ni al administrador maestro
+            lista_nombres = [u["nombre_usuario"] for u in usuarios_db if u["nombre_usuario"] not in ["JhonnyMatos", st.session_state.usuario_actual]]
+            
+            if lista_nombres:
+                c_del1, c_del2 = st.columns([3, 1])
+                usuario_a_borrar = c_del1.selectbox("Seleccione el usuario a revocar:", lista_nombres)
+                
+                if c_del2.button("🚨 Eliminar Definitivamente", type="primary"):
+                    try:
+                        supabase.table("usuarios").delete().eq("nombre_usuario", usuario_a_borrar).execute()
+                        st.success(f"🗑️ El acceso para '{usuario_a_borrar}' ha sido revocado.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error al intentar eliminar: {e}")
+            else:
+                st.info("Usted es el único usuario administrador. No se puede auto-eliminar.")
+
+    # === 3. PESTAÑA DE ESTADO DEL SERVIDOR ===
+    with tab_sistema:
+        st.subheader("📡 Telemetría de Supabase Cloud")
+        
+        try:
+            res_exp = supabase.table("expedientes").select("id_expediente", count="exact").execute()
+            count_exp = res_exp.count if res_exp.count else 0
+            
+            res_fac = supabase.table("facturas").select("id_factura", count="exact").execute()
+            count_fac = res_fac.count if res_fac.count else 0
+            
+            res_usu = supabase.table("usuarios").select("nombre_usuario", count="exact").execute()
+            count_usu = res_usu.count if res_usu.count else 0
+        except:
+            count_exp, count_fac, count_usu = 0, 0, 0
+
+        col_s1, col_s2, col_s3 = st.columns(3)
+        col_s1.metric("📁 Expedientes en Bóveda", count_exp)
+        col_s2.metric("💳 Facturas Emitidas", count_fac)
+        col_s3.metric("👥 Personal Activo", count_usu)
+        
         st.divider()
-        if st.button("🚪 Cerrar Sesión del Sistema"):
-            st.session_state.admin_autenticado = False
-            st.rerun()
-
-    else:
-        # LOGIN (Para cuando no está autenticado en la configuración)
-        st.markdown("### 🔑 Autenticación Requerida")
-        u = st.text_input("Usuario Master:")
-        p = st.text_input("PIN de Seguridad:", type="password")
-        
-        if st.button("Desbloquear Panel"):
-            if u == "JhonnyMatos" and p == "0681":
-                st.session_state.admin_autenticado = True
-                st.session_state.usuario = "Jhonny Matos"
-                st.session_state.rol = "Presidente Fundador"
-                st.rerun()
-            else:
-                st.error("Credenciales inválidas.")
-            # Nota: Esto se complementa con CSS personalizado en el inicio del script
-        # Aquí va la función de agregar/borrar usuarios...
-def login_sistema():
-    st.markdown("""
-        <style>
-        .login-box {
-            background-color: #f0f2f6;
-            padding: 30px;
-            border-radius: 15px;
-            border: 2px solid #1E3A8A;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1,2,1])
-    
-    with col2:
-        st.image("https://vuestra-url-logo.com/logo.png", width=200) # Si tiene logo
-        st.header("🔐 Acceso AboAgrim Pro")
-        
-        u_ingreso = st.text_input("Nombre de Usuario:")
-        p_ingreso = st.text_input("PIN de Seguridad:", type="password", max_chars=4)
-        
-        if st.button("Ingresar al Sistema", use_container_width=True):
-            # Buscamos en la tabla de usuarios que ya creamos en Supabase
-            res = supabase.table("usuarios_sistema").select("*").eq("nombre_usuario", u_ingreso).eq("pin_acceso", p_ingreso).eq("estado", "Activo").execute()
-            
-            if res.data:
-                st.session_state.autenticado_global = True
-                st.session_state.usuario_actual = u_ingreso
-                st.success(f"Bienvenido, {u_ingreso}")
-                st.rerun()
-            else:
-                st.error("Usuario o PIN incorrectos, o cuenta inactiva.")
+        st.info("💡 **AboAgrim Pro** está operando en la nube. Los sistemas de base de datos están sincronizados en tiempo real y blindados con seguridad de alto nivel.")
 
 def vista_archivo_digital():
     import streamlit as st
